@@ -14,26 +14,27 @@ library(mgcv)
 library(splines)
 library(ggfortify)
 library(crs)
+library(magick)
 
 #Load in data
 source('Preliminaries.R')
 source("Utilities.R")
+
+nb <- spdep::poly2nb(germany_map, queen = FALSE)
+nb2 <- spdep::poly2nb(st_make_valid(germany_map_2), queen = FALSE)
+crs_ = st_crs(germany_border, parameters = TRUE)
 
 ################################################################################
 #Plot the structures
 
 #Plot geographical polygons and dependency structure of Germany
 par(mfrow = c(1, 2))
-nb <- spdep::poly2nb(germany_map, queen = FALSE)
 plot(st_geometry(germany_map), border = "grey")
 plot.nb(nb, st_geometry(germany_map), add = TRUE)
 
-nb2 <- spdep::poly2nb(st_make_valid(germany_map_2), queen = FALSE)
 plot(st_geometry(germany_map_2), border = "grey")
 plot.nb(nb2, st_geometry(germany_map_2), add = TRUE)
 par(mfrow = c(1,1))
-
-crs_ = st_crs(germany_border, parameters = TRUE)
 
 #Plot heatmap of population of Germany
 scale_col = heat.colors(50, rev=TRUE) #Divide color gradient into 50 
@@ -49,7 +50,7 @@ heatmap_areas(germany_map, value = germany_map$Population, scale_col, #Function 
 
 
 ################################################################################
-#Make a two-dimensional P-spline over Germany!
+#Preliminaries for tensor product smooth using 3 P-splines
 
 #Extract a spatial domain [x-min, x-max] X [y-min, y-max]
 gpts = sf::st_coordinates(germany_border$geometry)
@@ -60,16 +61,23 @@ x_min = min(gpts[,c("X")]); x_max = max(gpts[,c("X")])
 ## Find y-min and y-max
 y_min = min(gpts[,c("Y")]); y_max = max(gpts[,c("Y")])
 
-#Find equally spaced knots (20 each)
-n_knots = 15
+# Define number of knots in spatial domain 
+n_knots = 12
 
-## 20 equi-spaced knots in X
+#Define number of knots in temporal domain
+n_knots_t = 7
+
+## n_knots equi-spaced knots in X
 x_knots = seq(x_min, x_max, length.out = n_knots)[2:(n_knots - 1)]
-x_axis = seq(x_min, x_max, length.out = 100)
+x_axis = seq(x_min, x_max, length.out = 80)
 
-## 20 equi-spaced knots in Y
+## n_knots equi-spaced knots in Y
 y_knots = seq(y_min, y_max, length.out = n_knots)[2:(n_knots - 1)]
-y_axis = seq(y_min, y_max, length.out = 100)
+y_axis = seq(y_min, y_max, length.out = 80)
+
+## n_knots_t equi-spaced knots in time
+t_knots = seq(0, 13, length.out = n_knots_t)[2:(n_knots_t - 1)]
+t_axis = seq(-0.3, 13.3, length.out = 41)
 
 # Make B-spline basis functions 
 
@@ -86,6 +94,16 @@ y_basis <- bs(y_axis, knots = y_knots,
 y_basis <- y_basis[, 1:(ncol(y_basis) - 1)]
 plot(y_basis[, 1] ~ y_axis, type = "l", ylim = c(0, 1.5))
 for(i in 2:ncol(y_basis)){lines(y_basis[, i] ~ y_axis)}
+
+t_basis <- bs(t_axis, knots = t_knots, 
+              Boundary.knots = c(min(t_axis), max(t_axis)), degree = 3)
+t_basis <- t_basis[2:(nrow(t_basis) - 1), 1:(ncol(t_basis) - 1)]
+t_axis = t_axis[2:(length(t_axis) - 1)]
+plot(t_basis[, 1] ~ t_axis, type = "l", ylim = c(0, 1.5))
+for(i in 2:ncol(t_basis)){lines(t_basis[, i] ~ t_axis)}
+
+################################################################################
+#Make a two-dimensional P-spline over Germany!
 
 ### Make the combined B-matrix: B_x kronecker B_y
 B_matrix <- x_basis %x% y_basis
@@ -105,7 +123,7 @@ y_penalization_matrix <- INLA:::inla.rw(n = ncol(y_basis), order = 1,
 y_identity_matrix <- diag(x = 1, nrow = ncol(y_basis), ncol = ncol(y_basis))
 
 ### The combined penalization matrix
-x_penalty = 0.1; y_penalty = 0.1
+x_penalty = 4; y_penalty = 4
 
 S = x_penalty * (x_penalization_matrix %x% y_identity_matrix) + 
     y_penalty * (x_identity_matrix %x% y_penalization_matrix)
@@ -124,9 +142,7 @@ rownames(sampled_parameters) <- 1:nrow(sampled_parameters)
 #Calculate resulting field
 risk_surface <- B_matrix %*% sampled_parameters
 
-#Produce a data frame with the appropriate points and values
-#x_axis, y_axis
-#risk_surface.list = list()
+#Produce a list with the appropriate points and values
 
 ## make a xy-grid
 xy_grid = expand.grid(y = y_axis, x = x_axis)
@@ -142,10 +158,110 @@ risk_surface.list = sf::st_intersection(risk_surface.list,
                   st_make_valid(germany_border))
 
 
-#Visualize
+#Visualize the sampled values on Germany
 plot(st_geometry(germany_border), border = "grey")
 plot(risk_surface.list,
      add = TRUE)
+
+
+################################################################################
+#Make a 3-dim P-spline over Germany
+
+### Make the combined B-matrix: B_t Kronecker B_x Kronecker B_y  
+B_matrix <- t_basis %x% x_basis %x% y_basis 
+
+#Draw parameters for 3-dim P-spline from prior distribution
+
+## Find the penalization matrix
+x_penalization_matrix <- INLA:::inla.rw(n = ncol(x_basis), order = 1, 
+                                        scale.model = FALSE, 
+                                        sparse = TRUE)
+x_identity_matrix <- diag(x = 1, nrow = ncol(x_basis), ncol = ncol(x_basis))
+
+y_penalization_matrix <- INLA:::inla.rw(n = ncol(y_basis), order = 1, 
+                                        scale.model = FALSE, 
+                                        sparse = TRUE)
+
+y_identity_matrix <- diag(x = 1, nrow = ncol(y_basis), ncol = ncol(y_basis))
+
+t_penalization_matrix <- INLA:::inla.rw(n = ncol(t_basis), order = 1, 
+                                        scale.model = FALSE, 
+                                        sparse = TRUE)
+
+t_identity_matrix <- diag(x = 1, nrow = ncol(t_basis), ncol = ncol(t_basis))
+
+
+### The combined penalization matrix
+x_penalty = 3; y_penalty = 3; t_penalty = 50
+
+S = x_penalty * (t_identity_matrix %x% x_penalization_matrix %x% y_identity_matrix) + 
+  y_penalty * (t_identity_matrix %x% x_identity_matrix %x% y_penalization_matrix) + 
+  t_penalty * (t_penalization_matrix%x% x_identity_matrix %x% y_identity_matrix)
+
+#Just for testing
+S = S + diag(x = 0.01, nrow = nrow(S), ncol = ncol(S))
+
+## Draw from normal distribution
+
+#inla.qsample ???
+sampled_parameters <- inla.qsample(n = 1,
+                                   Q = S)
+rownames(sampled_parameters) <- 1:nrow(sampled_parameters)
+
+#Calculate resulting field
+risk_surface <- B_matrix %*% sampled_parameters
+
+#Remove large B_matrix NB!!!!!!!!!!! Only do this if no more use of B_matrix!!!
+#rm(B_matrix)
+
+#Produce a list with the appropriate points and values
+
+## make a xy-grid
+xy_grid = expand.grid(y = y_axis, x = x_axis)
+
+## add risk values to grid
+files = c()
+for(t in 1:nrow(t_basis)){
+  xy_grid$values = risk_surface[
+    ((t - 1) * (nrow(x_basis) * nrow(y_basis)) + 1):((t) * (nrow(x_basis) * nrow(y_basis))),
+    1]
+  
+  ## Make geometric points for each grid point and add values
+  risk_surface.list = st_as_sf(xy_grid, coords = c("x", "y"), crs = crs_$srid)
+  
+  ##Drop points outside Germany
+  risk_surface.list = sf::st_intersection(risk_surface.list, 
+                                          st_make_valid(germany_border))
+  
+  
+  #Visualize the sampled values on Germany
+  
+  filename = paste("./Plots/P_spline_tests/", toString(t), ".png", sep = "")
+  print(filename)
+  png(filename = filename); files[t] = filename
+  
+  plot(st_geometry(germany_border), border = "grey")
+  plot(risk_surface.list,
+       add = TRUE)
+  
+  dev.off()
+}
+
+### Make a GIF (for fun)
+img = c(image_read(files[1]))
+for(name in files[2:length(files)]){
+  img = c(img, image_read(name))
+}
+
+image_append(image_scale(img, "x200"))
+
+my.animation <- image_animate(image_scale(img, 
+                                          "400x400"),
+                              fps = 10,
+                              dispose = "previous")
+
+image_write(my.animation, "test.gif")
+
 
 
 
