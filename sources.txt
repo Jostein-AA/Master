@@ -1,0 +1,9 @@
+Shapefiles
+India: https://geodata.mit.edu/?f%5Bdc_format_s%5D%5B%5D=Shapefile&f%5Blayer_geom_type_s%5D%5B%5D=Polygon&per_page=100&q=india
+Germany second-level administrate borders: https://geodata.mit.edu/catalog/stanford-nz271ny2119
+Germany first-level administrative borders: https://geodata.mit.edu/catalog/stanford-nh891yz3147
+Germany border: https://geodata.mit.edu/catalog/stanford-hn022bw9567
+
+Data
+Population data: https://ec.europa.eu/eurostat/databrowser/view/proj_19rp3/default/table?lang=en&category=proj.proj_19r, with total number of people, total sex
+	
