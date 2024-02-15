@@ -21,6 +21,7 @@ library(INLA)
 source('Preliminaries.R')
 source("Utilities.R")
 
+#Load in structures
 nb <- spdep::poly2nb(germany_map, queen = FALSE)
 nb2 <- spdep::poly2nb(st_make_valid(germany_map_2), queen = FALSE)
 crs_ = st_crs(germany_border, parameters = TRUE)
@@ -37,22 +38,22 @@ x_min = min(gpts[,c("X")]); x_max = max(gpts[,c("X")])
 y_min = min(gpts[,c("Y")]); y_max = max(gpts[,c("Y")])
 
 # Define number of knots in spatial domain 
-n_knots = 12
+n_knots = 11
 
 #Define number of knots in temporal domain
-n_knots_t = 6
+n_knots_t = 7
 
 ## n_knots equi-spaced knots in X
 x_knots = seq(x_min, x_max, length.out = n_knots)[2:(n_knots - 1)]
-x_axis = seq(x_min, x_max, length.out = 80)
+x_axis = seq(x_min, x_max, length.out = 75)
 
 ## n_knots equi-spaced knots in Y
 y_knots = seq(y_min, y_max, length.out = n_knots)[2:(n_knots - 1)]
-y_axis = seq(y_min, y_max, length.out = 80)
+y_axis = seq(y_min, y_max, length.out = 75)
 
 ## n_knots_t equi-spaced knots in time
-t_knots = seq(0, 13, length.out = n_knots_t)[2:(n_knots_t - 1)]
-t_axis = seq(-0.1, 13.1, length.out = 67)
+t_knots = seq(-1, 13, length.out = n_knots_t)[2:(n_knots_t - 1)]
+t_axis = seq(-1, 13.1, length.out = 54)
 
 # Make B-spline basis functions 
 
@@ -72,8 +73,12 @@ for(i in 2:ncol(y_basis)){lines(y_basis[, i] ~ y_axis)}
 
 t_basis <- bs(t_axis, knots = t_knots, 
               Boundary.knots = c(min(t_axis), max(t_axis)), degree = 3)
-t_basis <- t_basis[2:(nrow(t_basis) - 1), 1:(ncol(t_basis) - 1)]
-t_axis = t_axis[2:(length(t_axis) - 1)]
+
+#Find the index of the first element in t_axis>0
+tmp_ = which(t_axis > 0)[1]
+
+t_basis <- t_basis[tmp_:(nrow(t_basis) - 1), ]
+t_axis = t_axis[tmp_:(length(t_axis) - 1)]
 plot(t_basis[, 1] ~ t_axis, type = "l", ylim = c(0, 1.5))
 for(i in 2:ncol(t_basis)){lines(t_basis[, i] ~ t_axis)}
 
@@ -165,8 +170,13 @@ plot(risk_surface.list,
 ################################################################################
 #Make a 3-dim P-spline over Germany
 
-### Make the combined B-matrix: B_t Kronecker B_x Kronecker B_y  
-B_matrix <- t_basis %x% x_basis %x% y_basis 
+## Use the row-wise Kronecker product to create a 2-dim B-spline over space
+B_space <- row_wise_Kronecker(x_basis, y_basis)
+
+## Make the combined B-matrix: B_t Kronecker B_space  
+B_matrix <- t_basis %x% B_space 
+
+#Used to be: B_matrix = t_basis %x% y_basis %x% x_basis
 
 #Draw parameters for 3-dim P-spline from prior distribution
 
@@ -190,14 +200,14 @@ t_identity_matrix <- diag(x = 1, nrow = ncol(t_basis), ncol = ncol(t_basis))
 
 
 ### The combined penalization matrix
-x_penalty = 10; y_penalty = 10; t_penalty = 200
+x_penalty = 1; y_penalty = 1; t_penalty = 5
 
 S = x_penalty * (t_identity_matrix %x% x_penalization_matrix %x% y_identity_matrix) + 
   y_penalty * (t_identity_matrix %x% x_identity_matrix %x% y_penalization_matrix) + 
   t_penalty * (t_penalization_matrix%x% x_identity_matrix %x% y_identity_matrix)
 
 #Just for testing
-S = S + diag(x = 0.01, nrow = nrow(S), ncol = ncol(S))
+S = S + diag(x = 0.001, nrow = nrow(S), ncol = ncol(S))
 
 ## Draw from normal distribution
 
@@ -319,7 +329,7 @@ mapping.df$area_id = risk_surface.list$area_id
 lambda.df <- data.frame(area_id = rep(0, nrow(germany_map_2) * tT),
                         time_id = rep(0, nrow(germany_map_2) * tT),
                         lambda_it = rep(0, nrow(germany_map_2) * tT),
-                        E_it = rep(10, nrow(germany_map_2) * tT))
+                        E_it = rep(100, nrow(germany_map_2) * tT))
 
 
 for(t in 1:tT){
@@ -348,15 +358,95 @@ lambda.df$sampled_counts = apply(lambda.df,
 ################################################################################
 # Apply models to the sampled data set!!!
 
+# Make precision matrix for RW1
+RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
+                           scale.model = FALSE, sparse = TRUE)
+
+# Make precision matrix for Besag
+matrix4inla <- nb2mat(nb2, style="B")
+mydiag = rowSums(matrix4inla)
+matrix4inla <- -matrix4inla
+diag(matrix4inla) <- mydiag
+Besag_prec <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+
+#Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
+                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+
+#Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
+spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
+                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
+
+#Interaction hyperparameter and prior (Precision of interaction)
+interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+
+#Specify the base formula
+base_formula <- sampled_counts ~ 1 + f(time_id, 
+                                       model = 'bym2',
+                                       scale.model = T, 
+                                       constr = T, 
+                                       rankdef = 1,
+                                       graph = RW1_prec,
+                                       hyper = temporal_hyper) + 
+                                     f(area_id, 
+                                       model = 'bym2',
+                                       scale.model = T,
+                                       constr = T,
+                                       rankdef = 1,
+                                       graph = Besag_prec,
+                                       hyper = spatial_hyper)
 
 
+ptm <- Sys.time()
+improper_noInt <- inla(base_formula, data = lambda.df, family = "poisson",
+                     E = E_it, 
+                     control.compute = list(config = TRUE, # To see constraints later
+                                            cpo = T,   # For model selection
+                                            waic = T)) # For model selection
+
+time_improper_noInt = Sys.time()-ptm
+print(c("Basic model fitted in: ", time_improper_noInt))
+
+plot(improper_noInt)
+
+################################################################################
+#Add a linear temporal trend to the risk
+#Integrate to get the lambda_it values
+lambda.df2 <- data.frame(area_id = rep(0, nrow(germany_map_2) * tT),
+                         time_id = rep(0, nrow(germany_map_2) * tT),
+                         lambda_it = rep(0, nrow(germany_map_2) * tT),
+                         E_it = rep(100, nrow(germany_map_2) * tT))
 
 
+for(t in 1:tT){
+  print(t)
+  for(i in 1:nrow(germany_map_2)){
+    index = (t - 1) * nrow(germany_map_2) + i
+    lambda.df2[index, ]$area_id = i; lambda.df2[index, ]$time_id = t
+    
+    tmp_ = risk_surface.list[risk_surface.list$area_id == i &
+                               risk_surface.list$time_id == t, ]
+    lambda.df2[index, ]$lambda_it = mean(tmp_$values) + 0.03 * t
+  }
+}
+
+lambda.df2$mu = lambda.df2$E_it * lambda.df2$lambda_it
+
+lambda.df2$sampled_counts = apply(lambda.df2, 
+                                 MARGIN = 1, 
+                                 FUN = function(row){return(rpois(1, row[5]))})
 
 
+ptm <- Sys.time()
+improper_noInt <- inla(base_formula, data = lambda.df2, family = "poisson",
+                       E = E_it, 
+                       control.compute = list(config = TRUE, # To see constraints later
+                                              cpo = T,   # For model selection
+                                              waic = T)) # For model selection
 
+time_improper_noInt = Sys.time()-ptm
+print(c("Basic model fitted in: ", time_improper_noInt))
 
-
-
+plot(improper_noInt)
 
 
