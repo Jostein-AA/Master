@@ -360,6 +360,70 @@ plot(improper_noInt)
 
 ## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
 
+regions = c(2, 5, 7, 10, 12, 16)
+
+region_time_series <- function(true_risk,
+                               model,
+                               region,
+                               n,
+                               tT){
+  years <- 1:13
+  values.df <- data.frame(years = years, 
+                          true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)] * 1E5,
+                          fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4] * 1E5,
+                          lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3] * 1E5,
+                          upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5] * 1E5)
+  
+  plt <- ggplot(data = values.df, aes(x = years)) + 
+      geom_ribbon(aes(x = years, ymin = lower_quant, ymax = upper_quant, col = "95% CI"), 
+                  fill = "#F8766D", alpha = 0.6) +
+      geom_line(aes(x = years, y = fitted_rate, col = "Posterior median risk")) +
+      geom_point(aes(x = years, y = true_risk, col = "True risk")) + 
+      xlab(years) + ylab("") + 
+      labs(col = NULL) +
+      theme_bw() + 
+      theme(axis.title=element_text(size=14))
+  
+  plt <- plt + scale_color_manual(values=c("#F8766D", "black", "#00BFC4"))
+  return(plt)
+}
+
+region_time_series(true_risk = lambda.df, model = improper_noInt,
+                   region = 1, n = nrow(germany_map_2), tT = tT)
+
+select_regions_lin_pred_vs_true <- function(true_risk,
+                                            model,
+                                            regions,
+                                            n, 
+                                            tT){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  plt1 <- region_time_series(true_risk, model, regions[1], n, tT)
+  plt2 <- region_time_series(true_risk, model, regions[2], n, tT)
+  plt3 <- region_time_series(true_risk, model, regions[3], n, tT)
+  plt4 <- region_time_series(true_risk, model, regions[4], n, tT)
+  plt5 <- region_time_series(true_risk, model, regions[5], n, tT)
+  plt6 <- region_time_series(true_risk, model, regions[6], n, tT)
+  
+  
+  ggarrange(plt1, plt2, plt3, 
+            plt4, plt5, plt6,
+            ncol = 3, nrow = 2, 
+            common.legend = TRUE, legend = "top")
+  
+  
+}
+
+
+
+select_regions_lin_pred_vs_true(true_risk = lambda.df,
+                                model = improper_noInt,
+                                regions = regions,
+                                n = nrow(germany_map_2),
+                                tT = tT)
+
 
 
 
