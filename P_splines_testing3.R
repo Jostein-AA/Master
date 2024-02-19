@@ -106,7 +106,7 @@ Ix <- diag(kx); Iy <- diag(ky); It <- diag(kt)
 
 
 ## Combined spatial penalty matrix
-tau_s = 25 # Isotropic spatial smoothness param
+tau_s = 50 # Isotropic spatial smoothness param
 tau_t = 150 # Temporal smoothness parameter
 
 Pst <- tau_s *(It %x% Py %x% Ix + It %x% Iy %x% Px) + 
@@ -139,8 +139,6 @@ for(t in 1:length(xt)){
 
 ## Get the risk-field
 Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
-################################################################################
-#Display the risk-field
 
 ## Make a yxt-grid
 ### First make xt-grid (not with y), then add y
@@ -159,8 +157,10 @@ risk_surface.list = st_as_sf(yxt_grid,
                              coords = c("x", "y"),
                              crs = crs_$srid)
 
-risk_surface.list$x = yxt_grid$x; risk_surface.list$y = yxt_grid$y 
+risk_surface.list$x = yxt_grid$x; risk_surface.list$y = yxt_grid$y
 
+################################################################################
+#Display the risk-field
 ## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
 test = data.frame(values = risk_surface.list$values, 
                   t = risk_surface.list$t,
@@ -236,8 +236,137 @@ my.animation <- image_animate(image_scale(img,
 image_write(my.animation, "test.gif")
 
 ################################################################################
+# Integrate to get area and time risk, and sample from Poisson
 
 ## Drop points outside Germany
-#risk_surface.list = sf::st_intersection(risk_surface.list, 
-#                                       st_make_valid(germany_border))
+risk_surface.list = sf::st_intersection(risk_surface.list, 
+                                       st_make_valid(germany_border))
+
+#Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
+
+#State first and last time point
+t0 = round(t_axis[1], digits = 0); tT = round(t_axis[length(t_axis)], digits = 0)
+
+# Make a identifier for area and time that can be used to map locations and times
+# to correct area and time. Unique id for each area, integer time, and combined
+
+# ids runs over areas then time i.e. area 1 time 1, area 2 time 1,..., area n time 1, area 1 time 2,...
+ids <- 1:(nrow(germany_map_2) * tT)
+
+#indices will be used to map risk_surface.list$values to correct area and time
+indices = 1:nrow(risk_surface.list)
+
+mapping.df <- data.frame(indices = indices, ids = rep(0, length(indices)))
+
+risk_surface.list$time_id = rep(0, nrow(risk_surface.list))
+
+## First add time id based on time integer value
+risk_surface.list$time_id = ceiling(risk_surface.list$t) 
+mapping.df$time_id = risk_surface.list$time_id
+
+
+## Get which points within areas of Germany
+risk_surface.list2 <- st_join(risk_surface.list, st_make_valid(germany_map_2),
+                              join = st_within)
+
+risk_surface.list2 <- risk_surface.list2[, c("t", "values", "polygon_id", 
+                                             "x", "y", "time_id", "ID_1",
+                                             "geometry")]
+
+
+#mapping.df$area_id = risk_surface.list2$ID_1
+
+
+#Integrate to get the lambda_it values
+lambda.df <- data.frame(area_id = rep(0, nrow(germany_map_2) * tT),
+                        time_id = rep(0, nrow(germany_map_2) * tT),
+                        lambda_it = rep(0, nrow(germany_map_2) * tT),
+                        E_it = rep(1E4, nrow(germany_map_2) * tT))
+
+
+for(t in 1:tT){
+  print(t)
+  for(i in 1:nrow(germany_map_2)){
+    index = (t - 1) * nrow(germany_map_2) + i
+    lambda.df[index, ]$area_id = i; lambda.df[index, ]$time_id = t
+    
+    tmp_ = risk_surface.list2[risk_surface.list2$ID_1 == i &
+                               risk_surface.list$time_id == t, ]
+    lambda.df[index, ]$lambda_it = mean(tmp_$values)
+  }
+}
+
+lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
+
+lambda.df$sampled_counts = apply(lambda.df, 
+                                 MARGIN = 1, 
+                                 FUN = function(row){return(rpois(1, row[5]))})
+
+################################################################################
+# fit models to the simulated data
+
+## Specify priors and precision matrices
+RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
+                           scale.model = FALSE, sparse = TRUE)
+
+# Make precision matrix for Besag
+matrix4inla <- nb2mat(nb2, style="B")
+mydiag = rowSums(matrix4inla)
+matrix4inla <- -matrix4inla
+diag(matrix4inla) <- mydiag
+Besag_prec <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+
+#Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
+                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+
+#Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
+spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
+                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
+
+#Interaction hyperparameter and prior (Precision of interaction)
+interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+
+
+## Specify the base formula
+base_formula <- sampled_counts ~ 1 + f(time_id, 
+                                       model = 'bym2',
+                                       scale.model = T, 
+                                       constr = T, 
+                                       rankdef = 1,
+                                       graph = RW1_prec,
+                                       hyper = temporal_hyper) + 
+                                    f(area_id, 
+                                      model = 'bym2',
+                                      scale.model = T,
+                                      constr = T,
+                                      rankdef = 1,
+                                      graph = Besag_prec,
+                                      hyper = spatial_hyper)
+
+ptm <- Sys.time()
+improper_noInt <- inla(base_formula, data = lambda.df, family = "poisson",
+                       E = E_it, 
+                       control.compute = list(config = TRUE, # To see constraints later
+                                              cpo = T,   # For model selection
+                                              waic = T)) # For model selection
+
+time_improper_noInt = Sys.time()-ptm
+print(c("Basic model fitted in: ", time_improper_noInt))
+
+plot(improper_noInt)
+
+## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
+
+
+
+
+
+
+
+
+
+
 

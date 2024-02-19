@@ -184,12 +184,8 @@ indices_risk_surface.list = nrow(risk_surface.list)
 rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 #Make grid over Germany (both polygons and centroid of the polygons)
-tactical_error: Below changes a lot!
 polygon_grid = st_as_sf(st_make_grid(germany_border, n = c(75, 75), square = FALSE),
                         crs = crs_$srid)
-Maybe a better strategy now is to take the centroids of each polygon,
-take locations, find values, add to df with polygons, and then I can plot w. ggplot
-
 centroid_grid = st_make_grid(germany_border, n = c(75, 75), 
                              square = F, what = "centers")
 
