@@ -124,58 +124,43 @@ Pt <- INLA:::inla.rw(n = kt, order = 1,
 Ix <- diag(kx); Iy <- diag(ky); It <- diag(kt)
 
 #Combined spatial penalty matrix
-## Isotropic spatial smoothness param
-tau_s = 40
-Ps <- tau_s *(Py %x% Ix + Iy %x% Px)
-Ps = Ps + diag(x = 0.001, nrow = ncol(Ps))
 
-#Temporal smoothness parameter
-tau_t = 150
-Pst <- 1.5 * tau_s *(It %x% Py %x% Ix + It %x% Iy %x% Px) + 
+tau_s = 25 # Isotropic spatial smoothness param
+tau_t = 150 # Temporal smoothness parameter
+
+Pst <- tau_s *(It %x% Py %x% Ix + It %x% Iy %x% Px) + 
         tau_t * (Pt %x% Iy %x% Ix)
 
 
 #Dont know if needed, but I'll keep it
-Pst <- Pst + diag(x = 0.01, nrow = ncol(Pst))
+Pst <- Pst + diag(x = 0.0001, nrow = ncol(Pst))
 
 #Set a random choosen seed
 
 n <- 1 # number of simulations
-intercept = -1.5 #Intercept
+intercept = -7.6 #Intercept
 
-set.seed(07101983)
-#sampled spatial P-spline Parameters
-sampled_theta_s = inla.qsample(n = 1, Q = Ps)
-sampled_theta_s = sampled_theta_s - mean(sampled_theta_s)
-rownames(sampled_theta_s) <- 1:nrow(sampled_theta_s)
 
-set.seed(07101984)
 #Sampled space-time P-spline parameters
+set.seed(07101984)
 sampled_theta_st = inla.qsample(n = 1, Q = Pst)
+
+#Sum-to-zero (since IGMRF approx)
 sampled_theta_st = sampled_theta_st - mean(sampled_theta_st)
 rownames(sampled_theta_st) <- 1:nrow(sampled_theta_st)
-
-
-#Get the spatial effects that are const over time
-spatial_effect = Bs %*% sampled_theta_s[, 1]; tmp_ = Bs %*% sampled_theta_s[, 1] 
-
-#Repeat the spatial effect over all time points
-for(t in 2:length(xt)){
-  spatial_effect = rbind(spatial_effect, tmp_)
-}
 
 #Get the space-time interaction
 interactions = Bst %*% sampled_theta_st[, 1]
 
 #Make a linearly increasing temporal effect
-beta_t = 0.01
+beta_t = 0.0142
 tmp_ = xt_ * beta_t; temporal_effect = rep(0, length(interactions))
 for(t in 1:length(xt)){
   temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
 }
 
 #Get the risk-field
-Lambda_st <- exp(as.vector(intercept + spatial_effect + temporal_effect + interactions))
+Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
 
 ## make a yxt-grid
 yxt_grid = expand.grid(y = y_axis, x = x_axis, t = t_axis)
@@ -198,7 +183,28 @@ risk_surface.list = sf::st_intersection(risk_surface.list,
 indices_risk_surface.list = nrow(risk_surface.list)
 rownames(risk_surface.list) = 1:indices_risk_surface.list
 
+#Make grid over Germany (both polygons and centroid of the polygons)
+tactical_error: Below changes a lot!
+polygon_grid = st_as_sf(st_make_grid(germany_border, n = c(75, 75), square = FALSE),
+                        crs = crs_$srid)
+Maybe a better strategy now is to take the centroids of each polygon,
+take locations, find values, add to df with polygons, and then I can plot w. ggplot
 
+centroid_grid = st_make_grid(germany_border, n = c(75, 75), 
+                             square = F, what = "centers")
+
+
+
+plot(st_geometry(germany_border))
+plot(polygon_grid, add = T)
+
+
+
+
+
+
+
+#Code to make a GIF
 
 for(time in unique(risk_surface.list$t)){
   if(time == risk_surface.list$t[1]){files = c(); i = 1}
@@ -394,10 +400,7 @@ print(c("Type IV model fitted in: ", time_RW1_ICAR_IV))
 plot(RW1_ICAR_IV_fit)
 
 
-#Make grid over Germany (both polygons and centroid of the polygons)
-polygon_grid = st_make_grid(germany_border, n = c(75, 75), square = FALSE)
-centroid_grid = st_make_grid(germany_border, n = c(75, 75), 
-                             square = F, what = "centers")
+
 
 
 
