@@ -1,3 +1,7 @@
+
+################################################################################
+#Plotting functions
+
 heatmap_areas <- function(map_w_values,
                           value,
                           scale_col = NULL,
@@ -59,6 +63,131 @@ heatmap_areas <- function(map_w_values,
     }
 }
 
+region_time_series <- function(true_risk,
+                               model,
+                               region,
+                               n,
+                               tT){
+  years <- 1:tT
+  values.df <- data.frame(years = years, 
+                          true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)] * 1E5,
+                          fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4] * 1E5,
+                          lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3] * 1E5,
+                          upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5] * 1E5)
+  
+  plt <- ggplot(data = values.df, aes(x = years)) + 
+    geom_ribbon(aes(x = years, ymin = lower_quant, ymax = upper_quant, col = "95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_line(aes(x = years, y = fitted_rate, col = "Posterior median risk")) +
+    geom_point(aes(x = years, y = true_risk, col = "True risk")) + 
+    xlab(years) + ylab("") + 
+    labs(col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=14))
+  
+  plt <- plt + scale_color_manual(values=c("#F8766D", "black", "#00BFC4"))
+  return(plt)
+}
+
+select_regions_lin_pred_vs_true <- function(true_risk,
+                                            model,
+                                            regions,
+                                            n, 
+                                            tT){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  plt1 <- region_time_series(true_risk, model, regions[1], n, tT)
+  plt2 <- region_time_series(true_risk, model, regions[2], n, tT)
+  plt3 <- region_time_series(true_risk, model, regions[3], n, tT)
+  plt4 <- region_time_series(true_risk, model, regions[4], n, tT)
+  plt5 <- region_time_series(true_risk, model, regions[5], n, tT)
+  plt6 <- region_time_series(true_risk, model, regions[6], n, tT)
+  plt7 <- region_time_series(true_risk, model, regions[7], n, tT)
+  plt8 <- region_time_series(true_risk, model, regions[8], n, tT)
+  plt9 <- region_time_series(true_risk, model, regions[9], n, tT)
+  
+  
+  ggarrange(plt1, plt2, plt3, 
+            plt4, plt5, plt6,
+            plt7, plt8, plt9,
+            ncol = 3, nrow = 3, 
+            common.legend = TRUE, legend = "top")
+  
+  
+}
+
+
+plots_for_GIF <- function(risk_surface.list, 
+                          polygons, 
+                          t_axis,
+                          filename_base){
+  ## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
+  tmp_ = data.frame(values = risk_surface.list$values, 
+                    t = risk_surface.list$t,
+                    polygon_id = risk_surface.list$polygon_id)
+  
+  tmp2_ = data.frame(polygon_id = polygons$polygon_id,
+                     geometry = polygons$x)
+  
+  tmp3_ = merge(tmp_, tmp2_)
+  
+  tmp_ = st_set_geometry(tmp3_[, c("t", "values", "polygon_id")], 
+                         tmp3_$geometry)
+  
+  
+  # Make it so that each heatmap is plotted on similar color scale 
+  scale_col = heat.colors(30, rev=TRUE)          #Divide color gradient into 30 
+  scale = scale_col[seq(3, 30, length.out = 15)] #Select color scale to be more red
+  risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
+  hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 15), 6)
+  files = c(); i = 1
+  for(t in t_axis){
+    #if(t == t_axis[1]){files = c(); i = 1}
+    
+    #Extract the values for time = t
+    tmp2_ = tmp_[tmp_$t == t, ]
+    
+    #Create a filename (and save filename) for where current time risk-surface is stored
+    filename = paste(filename_base, toString(i), ".png", sep = "")
+    print(filename); files[i] = filename
+    
+    p <- ggplot(data = tmp2_) +  
+      geom_sf(aes(fill = values), 
+              alpha = 1,
+              color="lightgrey") + ggtitle(round(t, 1)) + 
+      theme(plot.title = element_text(size = 15),
+            axis.title.x = element_blank(), #Remove axis and background grid
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            panel.background = element_blank(),
+            plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+            legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            panel.spacing = unit(1, 'lines')) +
+      guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
+      binned_scale( #Scaling the color
+        aesthetics = "fill",
+        scale_name = "gradientn",
+        palette = function(x) c(scale),
+        labels = function(x){x},
+        breaks = hardcoded_bins,
+        guide = "colorscale")
+    
+    ## Save the plot to filename
+    ggsave(filename = filename, plot=p, 
+           width=4,height=4,units="in",scale=1)
+    
+    #update counter i
+    i = i + 1
+  }
+  return(files)
+}
+
+
+################################################################################
+# Functions used for sampling
 
 #Define row-vise Kronecker product
 row_wise_Kronecker <- function(X1, X2){
@@ -68,7 +197,45 @@ row_wise_Kronecker <- function(X1, X2){
 }
 
 
-#Constraint maker function
+simulate_risk_surface <- function(Bst, Px, Py, Pt,
+                                  Ix, Iy, It,
+                                  tau_s, tau_t,
+                                  intercept, temporal_trend = 1,
+                                  n_sim = 1){
+  #function that simulates true risk-surface
+  n <- n_sim # number of simulations
+  
+  ## Create the precision matrix for the P-spline parameters
+  Pst <- tau_s *(It %x% Py %x% Ix + It %x% Iy %x% Px) + 
+    tau_t * (Pt %x% Iy %x% Ix)
+  
+  ## Dont know if needed, but I'll keep it (make it proper so that inla.qsample works)
+  Pst <- Pst + diag(x = 0.0001, nrow = ncol(Pst))
+  
+  #Sample the parameters according to the P-spline prec. matrix
+  sampled_theta_st = inla.qsample(n = n, Q = Pst)
+  
+  ## Sum-to-zero (since IGMRF approx)
+  sampled_theta_st = sampled_theta_st - mean(sampled_theta_st)
+  rownames(sampled_theta_st) <- 1:nrow(sampled_theta_st)
+  
+  ## Get the space-time interaction
+  interactions = Bst %*% sampled_theta_st[, 1]
+  
+  if(temporal_trend == 1){
+    temporal_effect = rep(0, length(interactions))
+  }
+  
+  ## Get the risk-field
+  Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
+  
+  return(Lambda_st)
+}
+
+################################################################################
+#Functions used for model fits
+
+## Constraint maker function
 constraints_maker <- function(type = NULL, n = NULL, t = NULL,
                               rw = "RW1", prec_matrix = NULL){
   #Type: specifies what interaction type and hence what type of constraint is desired

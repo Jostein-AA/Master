@@ -2,7 +2,8 @@
 rm(list = ls())
 
 #Load in data/functions and do necessary preliminaries
-source('Preliminaries.R')
+source("libraries.R")
+source("Preliminaries.R")
 source("Utilities.R")
 
 ################################################################################
@@ -10,7 +11,7 @@ source("Utilities.R")
 
 ## Get a polygon_grid over Germany
 polygon_grid = st_as_sf(st_make_grid(germany_border, 
-                                     n = c(75, 75), 
+                                     n = c(110, 110), 
                                      square = FALSE),
                         crs = crs_$srid)
 
@@ -35,7 +36,7 @@ x <- locs[, 1]
 y <- locs[, 2]
 
 ## Define number of knots in 1) the spatial directions and 2) temporal direction 
-n_knots_s = 10; n_knots_t = 5
+n_knots_s = 9; n_knots_t = 5
 
 ## define B-spline basis degree
 bdeg = 3
@@ -159,66 +160,30 @@ risk_surface.list = st_as_sf(yxt_grid,
 
 risk_surface.list$x = yxt_grid$x; risk_surface.list$y = yxt_grid$y
 
+## Drop points outside Germany
+risk_surface.list = sf::st_intersection(risk_surface.list, 
+                                        st_make_valid(germany_border))
+
+#Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
+
+#State first and last time point
+t0 = round(t_axis[1], digits = 0); tT = round(t_axis[length(t_axis)], digits = 0)
+
+## Add time identifier stating which time-interval
+risk_surface.list$time_id = ceiling(risk_surface.list$t) 
+
 ################################################################################
 #Display the risk-field
-## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
-test = data.frame(values = risk_surface.list$values, 
-                  t = risk_surface.list$t,
-                  polygon_id = risk_surface.list$polygon_id)
-
-test_2 = data.frame(polygon_id = polygon_grid2$polygon_id,
-                    geometry = polygon_grid2$x)
-
-test_3 <- merge(test, test_2)
-tmp_ = st_set_geometry(test_3[, c("t", "values", "polygon_id")], 
-                         test_3$geometry)
-
-# Make it so that each heatmap is plotted on similar color scale 
-scale_col = heat.colors(30, rev=TRUE) #Divide color gradient into 50 
-scale = scale_col[c(3, 7, 10, 15, 20, 24, 27, 30)] #Select color scale to be more red
-risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
-hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 8), 6)
+files <- plots_for_GIF(risk_surface.list = risk_surface.list,
+                      polygons = polygon_grid2,
+                      t_axis = t_axis,
+                      filename_base = "./Plots/P_spline_tests/")
 
 
-for(t in t_axis){
-  if(t == t_axis[1]){files = c(); i = 1}
-  
-  #Extract the values for time = t
-  tmp2_ = tmp_[tmp_$t == t, ]
-  
-  #Create a filename (and save filename) for where current time risk-surface is stored
-  filename = paste("./Plots/P_spline_tests/", toString(i), ".png", sep = "")
-  print(filename); files[i] = filename
-  
-  p <- ggplot(data = tmp2_) +  
-              geom_sf(aes(fill = values), 
-              alpha = 1,
-              color="lightgrey") + ggtitle(round(t, 1)) + 
-    theme(plot.title = element_text(size = 15),
-          axis.title.x = element_blank(), #Remove axis and background grid
-          axis.text = element_blank(),
-          axis.ticks = element_blank(),
-          panel.background = element_blank(),
-          plot.margin =  unit(c(0, 0, 0, 0), "inches"),
-          legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-          legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-          panel.spacing = unit(1, 'lines')) +
-    guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
-    binned_scale( #Scaling the color
-      aesthetics = "fill",
-      scale_name = "gradientn",
-      palette = function(x) c(scale),
-      labels = function(x){x},
-      breaks = hardcoded_bins,
-      guide = "colorscale")
-  
-  ## Save the plot to filename
-  ggsave(filename = filename, plot=p, 
-         width=4,height=4,units="in",scale=1)
-  
-  #update counter i
-  i = i + 1
-}
+#Library needed to make GIFs
+library(magick)
 
 ### Make a GIF (for fun)
 img = c(image_read(files[1]))
@@ -238,17 +203,6 @@ image_write(my.animation, "test.gif")
 ################################################################################
 # Integrate to get area and time risk, and sample from Poisson
 
-## Drop points outside Germany
-risk_surface.list = sf::st_intersection(risk_surface.list, 
-                                       st_make_valid(germany_border))
-
-#Reset the indices (Necessary!)
-indices_risk_surface.list = nrow(risk_surface.list)
-rownames(risk_surface.list) = 1:indices_risk_surface.list
-
-#State first and last time point
-t0 = round(t_axis[1], digits = 0); tT = round(t_axis[length(t_axis)], digits = 0)
-
 # Make a identifier for area and time that can be used to map locations and times
 # to correct area and time. Unique id for each area, integer time, and combined
 
@@ -260,10 +214,8 @@ indices = 1:nrow(risk_surface.list)
 
 mapping.df <- data.frame(indices = indices, ids = rep(0, length(indices)))
 
-risk_surface.list$time_id = rep(0, nrow(risk_surface.list))
-
 ## First add time id based on time integer value
-risk_surface.list$time_id = ceiling(risk_surface.list$t) 
+
 mapping.df$time_id = risk_surface.list$time_id
 
 
@@ -274,9 +226,6 @@ risk_surface.list2 <- st_join(risk_surface.list, st_make_valid(germany_map_2),
 risk_surface.list2 <- risk_surface.list2[, c("t", "values", "polygon_id", 
                                              "x", "y", "time_id", "ID_1",
                                              "geometry")]
-
-
-#mapping.df$area_id = risk_surface.list2$ID_1
 
 
 #Integrate to get the lambda_it values
@@ -293,7 +242,7 @@ for(t in 1:tT){
     lambda.df[index, ]$area_id = i; lambda.df[index, ]$time_id = t
     
     tmp_ = risk_surface.list2[risk_surface.list2$ID_1 == i &
-                               risk_surface.list$time_id == t, ]
+                               risk_surface.list2$time_id == t, ]
     lambda.df[index, ]$lambda_it = mean(tmp_$values)
   }
 }
@@ -353,71 +302,20 @@ improper_noInt <- inla(base_formula, data = lambda.df, family = "poisson",
                                               cpo = T,   # For model selection
                                               waic = T)) # For model selection
 
-time_improper_noInt = Sys.time()-ptm
+time_improper_noInt = Sys.time() - ptm
 print(c("Basic model fitted in: ", time_improper_noInt))
 
 plot(improper_noInt)
 
 ## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
+regions = c(1, 3, 5,
+            7, 9, 10,
+            12, 14, 16)
 
-regions = c(2, 5, 7, 10, 12, 16)
+#region_time_series(true_risk = lambda.df, model = improper_noInt,
+#                   region = regions[6], n = nrow(germany_map_2), tT = tT)
 
-region_time_series <- function(true_risk,
-                               model,
-                               region,
-                               n,
-                               tT){
-  years <- 1:13
-  values.df <- data.frame(years = years, 
-                          true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)] * 1E5,
-                          fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4] * 1E5,
-                          lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3] * 1E5,
-                          upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5] * 1E5)
-  
-  plt <- ggplot(data = values.df, aes(x = years)) + 
-      geom_ribbon(aes(x = years, ymin = lower_quant, ymax = upper_quant, col = "95% CI"), 
-                  fill = "#F8766D", alpha = 0.6) +
-      geom_line(aes(x = years, y = fitted_rate, col = "Posterior median risk")) +
-      geom_point(aes(x = years, y = true_risk, col = "True risk")) + 
-      xlab(years) + ylab("") + 
-      labs(col = NULL) +
-      theme_bw() + 
-      theme(axis.title=element_text(size=14))
-  
-  plt <- plt + scale_color_manual(values=c("#F8766D", "black", "#00BFC4"))
-  return(plt)
-}
-
-region_time_series(true_risk = lambda.df, model = improper_noInt,
-                   region = 1, n = nrow(germany_map_2), tT = tT)
-
-select_regions_lin_pred_vs_true <- function(true_risk,
-                                            model,
-                                            regions,
-                                            n, 
-                                            tT){
-  # Function that plots for select regions the fitted linear predictor of
-  # the provided model along w. corresponding 95% CI's
-  # against the true risk
-  
-  plt1 <- region_time_series(true_risk, model, regions[1], n, tT)
-  plt2 <- region_time_series(true_risk, model, regions[2], n, tT)
-  plt3 <- region_time_series(true_risk, model, regions[3], n, tT)
-  plt4 <- region_time_series(true_risk, model, regions[4], n, tT)
-  plt5 <- region_time_series(true_risk, model, regions[5], n, tT)
-  plt6 <- region_time_series(true_risk, model, regions[6], n, tT)
-  
-  
-  ggarrange(plt1, plt2, plt3, 
-            plt4, plt5, plt6,
-            ncol = 3, nrow = 2, 
-            common.legend = TRUE, legend = "top")
-  
-  
-}
-
-
-
+## Plot the fitted linear predictor vs the true values for the regions = regions
 select_regions_lin_pred_vs_true(true_risk = lambda.df,
                                 model = improper_noInt,
                                 regions = regions,
@@ -425,7 +323,298 @@ select_regions_lin_pred_vs_true(true_risk = lambda.df,
                                 tT = tT)
 
 
+#Get constraints for type IV interactions
+typeIV_constraints <- constraints_maker(type = "IV", n = nrow(germany_map_2),
+                                        t = tT)
 
+
+# get scaled ICAR
+scaled_ICAR_prec <- INLA::inla.scale.model(Besag_prec, 
+                                           constr = list(A = matrix(1,1,dim(Besag_prec)[1]), e = 0))
+
+
+#Scale precision matrix of RW model so the geometric mean of the marginal variances is one
+scaled_RW_prec <- inla.scale.model(RW1_prec,
+                                   list(A = matrix(1, 1, dim(RW1_prec)[1]),
+                                        e = 0))
+
+
+#Get type IV interaction precision matrix
+typeIV_prec <- scaled_RW_prec %x% scaled_ICAR_prec
+
+#Get formula for type IV
+typeIV_formula <- update(base_formula, ~. + f(space.time, 
+                                              model = "generic0",
+                                              Cmatrix = typeIV_prec,
+                                              extraconstr = typeIV_constraints,
+                                              rankdef = (nrow(germany_map_2) + 13 - 1), 
+                                              hyper = interaction_hyper))
+
+
+
+lambda.df$space.time = 1:(nrow(germany_map_2) * tT)
+
+ptm <- Sys.time()
+improper1_typeIV <- inla(typeIV_formula, data = lambda.df, family = "poisson",
+                        E = E_it, control.compute = list(config = TRUE, 
+                                                         cpo = TRUE,
+                                                         waic = TRUE))
+time_RW1_ICAR_IV = Sys.time() - ptm
+print(c("Type IV model fitted in: ", time_RW1_ICAR_IV))
+
+plot(improper1_typeIV)
+
+
+## Plot the fitted linear predictor vs the true values for the regions = regions
+select_regions_lin_pred_vs_true(true_risk = lambda.df,
+                                model = improper1_typeIV,
+                                regions = regions,
+                                n = nrow(germany_map_2),
+                                tT = tT)
+
+
+
+################################################################################
+# Use 402 areas of Germany instead
+
+# ids runs over areas then time i.e. area 1 time 1, area 2 time 1,..., area n time 1, area 1 time 2,...
+ids <- 1:(nrow(germany_map) * tT)
+
+#indices will be used to map risk_surface.list$values to correct area and time
+indices = 1:nrow(risk_surface.list)
+
+
+#Remove Bst (NB: ONly do if certain)
+#rm(Bst)
+
+## Get which points within areas of Germany
+risk_surface.list2 <- st_join(risk_surface.list, 
+                              st_make_valid(germany_map),
+                              join = st_within)
+
+risk_surface.list2 <- risk_surface.list2[, c("t", "values", "polygon_id", 
+                                             "x", "y", "time_id", "ID_2",
+                                             "geometry")]
+
+## Check if any NAs
+sum(is.na(risk_surface.list2$ID_2))
+sum(is.na(risk_surface.list2$values))
+
+## Drop NA-values
+risk_surface.list2 = drop_na(risk_surface.list2)
+#sum(is.na(risk_surface.list2$ID_2))
+
+## Certain regions do not have any associated observations to them
+### This may be solved by having a more thourough spatial grid (Bruh)
+for(id in germany_map$ID_2){
+  if(sum(risk_surface.list2$ID_2 == id) == 0){
+    print(id)
+  }
+}
+
+#Integrate to get the lambda_it values
+lambda.df <- data.frame(area_id = rep(0, nrow(germany_map) * tT),
+                        time_id = rep(0, nrow(germany_map) * tT),
+                        lambda_it = rep(0, nrow(germany_map) * tT),
+                        E_it = rep(1E4, nrow(germany_map) * tT))
+
+
+for(t in 1:tT){
+  print(c("t: ", toString(t)))
+  for(i in unique(germany_map$ID_2)){
+    index = (t - 1) * nrow(germany_map) + i
+    lambda.df[index, ]$area_id = i; lambda.df[index, ]$time_id = t
+    
+    tmp_ = risk_surface.list2[risk_surface.list2$ID_2 == i &
+                                risk_surface.list2$time_id == t, ]
+    if(is.na(mean(tmp_$values))){
+      ## Must find closest points for these areas
+      tmp_ = st_join(risk_surface.list[risk_surface.list$time_id == t,], 
+                     st_make_valid(germany_map[germany_map$ID_2 == i, ]),
+                     join = st_nearest_feature)
+      
+    }
+    
+    lambda.df[index, ]$lambda_it = mean(tmp_$values)
+  }
+}
+
+
+
+
+lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
+
+lambda.df$sampled_counts = apply(lambda.df, 
+                                 MARGIN = 1, 
+                                 FUN = function(row){return(rpois(1, row[5]))}); warnings()
+
+
+
+################################################################################
+## Specify priors and precision matrices
+RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
+                           scale.model = FALSE, sparse = TRUE)
+
+# Make precision matrix for Besag
+matrix4inla <- nb2mat(nb, style="B")
+mydiag = rowSums(matrix4inla)
+matrix4inla <- -matrix4inla
+diag(matrix4inla) <- mydiag
+Besag_prec <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+
+#Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
+                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+
+#Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
+spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
+                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
+
+#Interaction hyperparameter and prior (Precision of interaction)
+interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+
+
+## Specify the base formula
+base_formula <- sampled_counts ~ 1 + f(time_id, 
+                                       model = 'bym2',
+                                       scale.model = T, 
+                                       constr = T, 
+                                       rankdef = 1,
+                                       graph = RW1_prec,
+                                       hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec,
+    hyper = spatial_hyper)
+
+ptm <- Sys.time()
+improper_noInt <- inla(base_formula, data = lambda.df, family = "poisson",
+                       E = E_it, 
+                       control.compute = list(config = TRUE, # To see constraints later
+                                              cpo = T,   # For model selection
+                                              waic = T)) # For model selection
+
+time_improper_noInt = Sys.time() - ptm
+print(c("Basic model fitted in: ", time_improper_noInt))
+
+plot(improper_noInt)
+
+## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
+regions = c(1, 50, 100,
+            150, 200, 250,
+            300, 350, 400)
+
+#region_time_series(true_risk = lambda.df, model = improper_noInt,
+#                   region = regions[6], n = nrow(germany_map_2), tT = tT)
+
+## Plot the fitted linear predictor vs the true values for the regions = regions
+select_regions_lin_pred_vs_true(true_risk = lambda.df,
+                                model = improper_noInt,
+                                regions = regions,
+                                n = nrow(germany_map),
+                                tT = tT)
+
+
+
+
+
+################################################################################
+
+
+#Get sum-to-zero constraints for type II interaction
+typeII_constraints = constraints_maker(type = "II", n = nrow(germany_map),
+                                       t = tT)
+
+#Scale precision matrix of RW model so the geometric mean of the marginal variances is one
+scaled_RW_prec <- inla.scale.model(RW1_prec,
+                                   list(A = matrix(1, 1, dim(RW1_prec)[1]),
+                                        e = 0))
+#Get precision matric for type II interaction by Kronecker product
+typeII_prec <- scaled_RW_prec %x% diag(nrow(germany_map))
+
+typeII_formula <- update(base_formula, ~. + f(space.time, 
+                                              model = "generic0", 
+                                              Cmatrix = typeII_prec, 
+                                              extraconstr = typeII_constraints, 
+                                              rankdef = nrow(germany_map), 
+                                              hyper = interaction_hyper))
+
+
+
+
+lambda.df$space.time = 1:(nrow(germany_map) * tT)
+
+
+
+ptm <- Sys.time()
+improper1_typeII <- inla(typeII_formula, data = lambda.df, family = "poisson",
+                        E = E_it, control.compute = list(config = TRUE,
+                                                                cpo = TRUE,
+                                                                waic = TRUE))
+time_RW1_ICAR_II = Sys.time() - ptm
+print(c("Type II model fitted in: ", time_RW1_ICAR_II))
+
+plot(improper1_typeII)
+
+select_regions_lin_pred_vs_true(true_risk = lambda.df,
+                                model = improper1_typeII,
+                                regions = regions,
+                                n = nrow(germany_map),
+                                tT = tT)
+
+################################################################################
+
+## Get constraints for type IV interactions
+typeIV_constraints <- constraints_maker(type = "IV", n = nrow(germany_map),
+                                        t = tT)
+
+
+# get scaled ICAR
+scaled_ICAR_prec <- INLA::inla.scale.model(Besag_prec, 
+                                           constr = list(A = matrix(1,1,dim(Besag_prec)[1]), e = 0))
+
+
+#Scale precision matrix of RW model so the geometric mean of the marginal variances is one
+scaled_RW_prec <- inla.scale.model(RW1_prec,
+                                   list(A = matrix(1, 1, dim(RW1_prec)[1]),
+                                        e = 0))
+
+
+#Get type IV interaction precision matrix
+typeIV_prec <- scaled_RW_prec %x% scaled_ICAR_prec
+
+#Get formula for type IV
+typeIV_formula <- update(base_formula, ~. + f(space.time, 
+                                              model = "generic0",
+                                              Cmatrix = typeIV_prec,
+                                              extraconstr = typeIV_constraints,
+                                              rankdef = (nrow(germany_map) + tT - 1), 
+                                              hyper = interaction_hyper))
+
+
+
+lambda.df$space.time = 1:(nrow(germany_map) * tT)
+
+ptm <- Sys.time()
+improper1_typeIV <- inla(typeIV_formula, data = lambda.df, family = "poisson",
+                         E = E_it, control.compute = list(config = TRUE, 
+                                                          cpo = TRUE,
+                                                          waic = TRUE))
+time_RW1_ICAR_IV = Sys.time() - ptm
+print(c("Type IV model fitted in: ", time_RW1_ICAR_IV))
+
+plot(improper1_typeIV)
+
+
+## Plot the fitted linear predictor vs the true values for the regions = regions
+select_regions_lin_pred_vs_true(true_risk = lambda.df,
+                                model = improper1_typeIV,
+                                regions = regions,
+                                n = nrow(germany_map),
+                                tT = tT)
 
 
 

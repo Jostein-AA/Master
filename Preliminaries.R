@@ -1,24 +1,3 @@
-#Load libraries
-library(tidyverse)
-library(spData)
-library(sf)
-library(spdep)
-library(ggplot2)
-library(pspline)
-library(readxl)
-library(OneR)
-library(mgcv)
-library(splines)
-library(ggfortify)
-library(crs)
-library(magick)
-library(INLA)
-library(bigDM)
-library(MASS)
-library(RColorBrewer)
-library(tmap)
-
-
 germany_map  <- read_sf('./Shapefiles/Germany')[,c('NAME_2', 'TYPE_2', 'ID_2', 'geometry')]
 germany_map_2 <- read_sf('./Shapefiles/Germany_first_level_unpacked/')[,c('NAME_1', 'TYPE_1', 'ID_1', 'geometry')]
 germany_border <- read_sf('./Shapefiles/Germany_border/')[, c('geometry')]
@@ -79,6 +58,8 @@ germany_map$Population[germany_map$NAME_2 == 'Sonneberg'] = Population_data$Pop[
 germany_map$Population[germany_map$NAME_2 == 'Suhl'] = 37000
 germany_map$Population[germany_map$NAME_2 == 'Wartburgkreis'] = Population_data$Pop[Population_data$NAME_2 == 'Wartburgkreis (NUTS 2021)']
 
+#Reset the ID as some rows have been removed
+germany_map$ID_2 = 1:nrow(germany_map)
 
 #Load in structures
 nb <- spdep::poly2nb(germany_map, queen = FALSE)
