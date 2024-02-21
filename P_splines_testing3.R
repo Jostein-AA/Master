@@ -299,8 +299,7 @@ ptm <- Sys.time()
 improper_noInt <- inla(base_formula, data = lambda.df, family = "poisson",
                        E = E_it, 
                        control.compute = list(config = TRUE, # To see constraints later
-                                              cpo = T,   # For model selection
-                                              waic = T)) # For model selection
+                                              cpo = T)) # For model selection
 
 time_improper_noInt = Sys.time() - ptm
 print(c("Basic model fitted in: ", time_improper_noInt))
