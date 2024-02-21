@@ -201,6 +201,7 @@ simulate_risk_surface <- function(Bst, Px, Py, Pt,
                                   Ix, Iy, It,
                                   tau_s, tau_t,
                                   intercept, temporal_trend = 1,
+                                  t_axis = NULL, beta1_t = NULL, beta2_t = NULL,
                                   n_sim = 1){
   #function that simulates true risk-surface
   n <- n_sim # number of simulations
@@ -224,7 +225,20 @@ simulate_risk_surface <- function(Bst, Px, Py, Pt,
   
   if(temporal_trend == 1){
     temporal_effect = rep(0, length(interactions))
-  }
+  } else if(temporal_trend == 2){
+    tmp_ = t_axis * beta1_t; temporal_effect = rep(0, length(interactions))
+    for(t in 1:length(t_axis)){
+      temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+      }
+    } else if(temporal_trend == 3){
+      tmp_ = ifelse(t_axis < 7, 
+                    beta1_t * t_axis, 
+                    beta1_t * 7 - beta2_t * (t_axis - 7))
+      temporal_effect = rep(0, length(interactions))
+      for(t in 1:length(t_axis)){
+        temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+      }
+    }
   
   ## Get the risk-field
   Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
