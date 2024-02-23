@@ -70,10 +70,10 @@ region_time_series <- function(true_risk,
                                tT){
   years <- 1:tT
   values.df <- data.frame(years = years, 
-                          true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)] * 1E5,
-                          fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4] * 1E5,
-                          lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3] * 1E5,
-                          upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5] * 1E5)
+                          true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)],
+                          fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4],
+                          lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3],
+                          upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5])
   
   plt <- ggplot(data = values.df, aes(x = years)) + 
     geom_ribbon(aes(x = years, ymin = lower_quant, ymax = upper_quant, col = "95% CI"), 
@@ -183,6 +183,39 @@ plots_for_GIF <- function(risk_surface.list,
     i = i + 1
   }
   return(files)
+}
+
+
+################################################################################
+#GIF functions
+
+make_GIF <- function(dir, gif_name){
+  files <- list.files(path = dir, pattern = "*.png")
+  for(i in 1:length(files)){
+    if(paste(toString(i), ".png", sep = "") %in% files){
+      if(i == 1){
+        img = c(image_read(paste(dir, 
+                                 paste(toString(i), ".png", sep = ""), 
+                                 sep = "")))
+      } else{
+        img = c(img, image_read(paste(dir, 
+                                      paste(toString(i), ".png", sep = ""), 
+                                      sep = "")))
+      }
+    } else{
+      print(paste("No such file:", paste(toString(i), ".png", sep = "")))
+    }
+  }
+  
+  image_append(image_scale(img, "x200"))
+  
+  my.animation <- image_animate(image_scale(img, 
+                                            "400x400"),
+                                fps = 1,
+                                dispose = "previous")
+  print("Writing")
+  image_write(my.animation, gif_name)
+  
 }
 
 
