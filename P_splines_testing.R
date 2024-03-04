@@ -86,13 +86,11 @@ for(i in 2:ncol(t_basis)){lines(t_basis[, i] ~ t_axis)}
 #Plot the structures
 
 #Plot geographical polygons and dependency structure of Germany
-par(mfrow = c(1, 2))
-plot(st_geometry(germany_map), border = "grey")
+plot(st_geometry(germany_map), border = "black")
 plot.nb(nb, st_geometry(germany_map), add = TRUE)
 
-plot(st_geometry(germany_map_2), border = "grey")
+plot(st_geometry(germany_map_2), border = "black")
 plot.nb(nb2, st_geometry(germany_map_2), add = TRUE)
-par(mfrow = c(1,1))
 
 #Plot heatmap of population of Germany
 scale_col = heat.colors(50, rev=TRUE) #Divide color gradient into 50 

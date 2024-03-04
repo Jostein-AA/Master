@@ -2,6 +2,82 @@
 ################################################################################
 #Plotting functions
 
+plot_fitted_temporal_trends <- function(model_on_first_level_20_knots,
+                                        model_on_first_level_10_knots,
+                                        model_on_second_level_20_knots,
+                                        model_on_second_level_10_knots,
+                                        tT){
+  time = 1:tT
+  
+  #Scale
+  scaling_factor1 <- sqrt(model_on_first_level_20_knots$summary.hyperpar$mean[2]) * 1/sqrt(model_on_first_level_20_knots$summary.hyperpar$mean[1])
+  
+  tmp1 <- data.frame(time = time)
+  tmp1$lower_quant <- model_on_first_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 4] * scaling_factor1
+  tmp1$median <- model_on_first_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 5] * scaling_factor1
+  tmp1$upper_quant <- model_on_first_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 6] * scaling_factor1
+  
+  plt1 <- ggplot(data = tmp1, aes(time, median)) + ggtitle("First-level 20 knots") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    geom_line() + 
+    geom_line(data = tmp1, aes(time, lower_quant), linetype = "dashed") + 
+    geom_line(data = tmp1, aes(time, upper_quant), linetype = "dashed") + 
+    xlab("t") + ylab(expression(alpha[t]))
+  
+  scaling_factor2 <- sqrt(model_on_first_level_10_knots$summary.hyperpar$mean[2]) * 1/sqrt(model_on_first_level_10_knots$summary.hyperpar$mean[1])
+  
+  tmp2 <- data.frame(time = time)
+  tmp2$lower_quant <- model_on_first_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 4] * scaling_factor2
+  tmp2$median <- model_on_first_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 5] * scaling_factor2
+  tmp2$upper_quant <- model_on_first_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 6] * scaling_factor2
+  
+  plt2 <- ggplot(data = tmp2, aes(time, median)) + ggtitle("First-level 10 knots") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    geom_line() + 
+    geom_line(data = tmp2, aes(time, lower_quant), linetype = "dashed") + 
+    geom_line(data = tmp2, aes(time, upper_quant), linetype = "dashed") + 
+    xlab("t") + ylab(expression(alpha[t]))
+  
+  scaling_factor3 <- sqrt(model_on_second_level_20_knots$summary.hyperpar$mean[2]) * 1/sqrt(model_on_second_level_20_knots$summary.hyperpar$mean[1])
+  
+  tmp3 <- data.frame(time = time)
+  tmp3$lower_quant <- model_on_second_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 4] * scaling_factor3
+  tmp3$median <- model_on_second_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 5] * scaling_factor3
+  tmp3$upper_quant <- model_on_second_level_20_knots$summary.random$time_id[(tT + 1):(2 * tT), 6] * scaling_factor3
+  
+  plt3 <- ggplot(data = tmp3, aes(time, median)) + ggtitle("Second-level 20 knots") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    geom_line() + 
+    geom_line(data = tmp3, aes(time, lower_quant), linetype = "dashed") + 
+    geom_line(data = tmp3, aes(time, upper_quant), linetype = "dashed") + 
+    xlab("t") + ylab(expression(alpha[t]))
+  
+  scaling_factor4 <- sqrt(model_on_second_level_10_knots$summary.hyperpar$mean[2]) * 1/sqrt(model_on_second_level_10_knots$summary.hyperpar$mean[1])
+  
+  tmp4 <- data.frame(time = time)
+  tmp4$lower_quant <- model_on_second_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 4] * scaling_factor4
+  tmp4$median <- model_on_second_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 5] * scaling_factor4
+  tmp4$upper_quant <- model_on_second_level_10_knots$summary.random$time_id[(tT + 1):(2 * tT), 6] * scaling_factor4
+  
+  plt4 <- ggplot(data = tmp4, aes(time, median)) + ggtitle("Second-level 10 knots") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    geom_line() + 
+    geom_line(data = tmp4, aes(time, lower_quant), linetype = "dashed") + 
+    geom_line(data = tmp4, aes(time, upper_quant), linetype = "dashed") + 
+    xlab("t") + ylab(expression(alpha[t]))
+  
+  ggarrange(plt1, plt2, 
+            plt3, plt4,
+            ncol = 2, nrow = 2)
+  
+}
+
+
+
 heatmap_areas <- function(map_w_values,
                           value,
                           scale_col = NULL,
@@ -22,7 +98,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 15),
+      theme(plot.title = element_text(size = 15, hjust = 0.5),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
             axis.ticks = element_blank(),
@@ -43,7 +119,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 15),
+      theme(plot.title = element_text(size = 15, hjust = 0.5),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
             axis.ticks = element_blank(),
@@ -63,6 +139,61 @@ heatmap_areas <- function(map_w_values,
     }
 }
 
+heatmap_points <- function(risk_surface.list, 
+                           polygons,
+                           t,
+                           title){
+  
+  ## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
+  tmp_ = data.frame(values = risk_surface.list$values, 
+                    t = risk_surface.list$t,
+                    polygon_id = risk_surface.list$polygon_id)
+  
+  tmp2_ = data.frame(polygon_id = polygons$polygon_id,
+                     geometry = polygons$x)
+  
+  tmp3_ = merge(tmp_, tmp2_)
+  
+  tmp_ = st_set_geometry(tmp3_[, c("t", "values", "polygon_id")], 
+                         tmp3_$geometry)
+  
+  
+  # Make it so that each heatmap is plotted on similar color scale 
+  scale_col = heat.colors(30, rev=TRUE)          #Divide color gradient into 30 
+  scale = scale_col[seq(3, 30, length.out = 15)] #Select color scale to be more red
+  risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
+  hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 15), 4)
+    
+  #Extract the values for time = t
+  tmp2_ = tmp_[tmp_$t == t, ]
+    
+  p <- ggplot(data = tmp2_) +  
+    geom_sf(aes(fill = values), 
+            alpha = 1,
+            color = NA) + ggtitle(title) + #"lightgrey"
+    theme(plot.title = element_text(size = 15, hjust = 0.5), 
+          axis.title.x = element_blank(), #Remove axis and background grid
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          panel.background = element_blank(),
+          plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+          legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+          legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+          panel.spacing = unit(1, 'lines')) +
+    guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
+    binned_scale( #Scaling the color
+      aesthetics = "fill",
+      scale_name = "gradientn",
+      palette = function(x) c(scale),
+      labels = function(x){x},
+      breaks = hardcoded_bins,
+      guide = "colorscale")
+    
+  return(p)
+}
+
+
+
 region_time_series <- function(true_risk,
                                model,
                                region,
@@ -71,21 +202,25 @@ region_time_series <- function(true_risk,
   years <- 1:tT
   values.df <- data.frame(years = years, 
                           true_risk = true_risk$lambda_it[seq(region, n * tT, by = n)],
+                          count_div_eit = true_risk$sampled_counts[seq(region, n * tT, by = n)] / 
+                                                true_risk$E_it[seq(region, n * tT, by = n)],
                           fitted_rate = model$summary.fitted.values[seq(region,n*tT,by=n), 4],
                           lower_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 3],
                           upper_quant = model$summary.fitted.values[seq(region,n*tT,by=n), 5])
   
-  plt <- ggplot(data = values.df, aes(x = years)) + 
+  plt <- ggplot(data = values.df, aes(x = years)) + ggtitle(paste("region: ", region)) +
     geom_ribbon(aes(x = years, ymin = lower_quant, ymax = upper_quant, col = "95% CI"), 
                 fill = "#F8766D", alpha = 0.6) +
     geom_line(aes(x = years, y = fitted_rate, col = "Posterior median risk")) +
     geom_point(aes(x = years, y = true_risk, col = "True risk")) + 
-    xlab(years) + ylab("") + 
+    geom_point((aes(x = years, y = count_div_eit, col = "sampled count/Eit"))) +
+    xlab("Time") + ylab("") + 
     labs(col = NULL) +
     theme_bw() + 
-    theme(axis.title=element_text(size=14))
+    theme(axis.title=element_text(size=9),
+          plot.title = element_text(size=10))
   
-  plt <- plt + scale_color_manual(values=c("#F8766D", "black", "#00BFC4"))
+  plt <- plt + scale_color_manual(values=c("#F8766D", "black", "#00BFC4", "blue"))
   return(plt)
 }
 
@@ -106,17 +241,19 @@ select_regions_lin_pred_vs_true <- function(true_risk,
   plt6 <- region_time_series(true_risk, model, regions[6], n, tT)
   plt7 <- region_time_series(true_risk, model, regions[7], n, tT)
   plt8 <- region_time_series(true_risk, model, regions[8], n, tT)
-  plt9 <- region_time_series(true_risk, model, regions[9], n, tT)
   
   
   ggarrange(plt1, plt2, plt3, 
             plt4, plt5, plt6,
-            plt7, plt8, plt9,
-            ncol = 3, nrow = 3, 
+            plt7, plt8,
+            ncol = 2, nrow = 4, 
             common.legend = TRUE, legend = "top")
   
   
 }
+
+
+
 
 
 plots_for_GIF <- function(risk_surface.list, 
@@ -230,53 +367,48 @@ row_wise_Kronecker <- function(X1, X2){
 }
 
 
-simulate_risk_surface <- function(Bst, Px, Py, Pt,
-                                  Ix, Iy, It,
-                                  tau_s, tau_t,
-                                  intercept, temporal_trend = 1,
+simulate_risk_surface <- function(Bst, 
+                                  Bs = NULL,
+                                  Sigma_st, 
+                                  kt,
+                                  ks, 
+                                  intercept, temporal_trend = 1, sig_st = 0.05,
                                   t_axis = NULL, beta1_t = NULL, beta2_t = NULL,
                                   n_sim = 1){
   #function that simulates true risk-surface
-  n <- n_sim # number of simulations
+
+  ## Draw the tensor product smooth parameters: Each row is one sample 
+  parameters <- mvrnorm(n = n_sim, rep(0, kt * ks), sig_st * Sigma_st) 
   
-  ## Create the precision matrix for the P-spline parameters
-  Pst <- tau_s *(It %x% Py %x% Ix + It %x% Iy %x% Px) + 
-    tau_t * (Pt %x% Iy %x% Ix)
+  ## For each row of parameter-samples get the calculated interactions
   
-  ## Dont know if needed, but I'll keep it (make it proper so that inla.qsample works)
-  Pst <- Pst + diag(x = 0.0001, nrow = ncol(Pst))
+  #### Like this each column is an interaction: Is it calculated the correct way?
+  #### Does the indices correspond now? It works for n_sim = 1 and w.o. transposing
+  interactions <- Bst %*% t(parameters)
   
-  #Sample the parameters according to the P-spline prec. matrix
-  sampled_theta_st = inla.qsample(n = n, Q = Pst)
+  ## Make the temporal trend
+  #if(temporal_trend == 1){
+  #  temporal_effect = rep(0, dim(parameters)[2])
+  #} else if(temporal_trend == 2){
+  #  tmp_ = t_axis * beta1_t; temporal_effect = rep(0, dim(parameters)[2])
+  #  for(t in 1:length(t_axis)){
+  #    temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+  #    }
+  #  } else if(temporal_trend == 3){
+  #    tmp_ = ifelse(t_axis < 7, 
+  #                  beta1_t * t_axis, 
+  #                  beta1_t * 7 - beta2_t * (t_axis - 7))
+  #    temporal_effect = rep(0, dim(parameters)[2])
+  #    for(t in 1:length(t_axis)){
+  #      temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+  #    }
+  #  }
   
-  ## Sum-to-zero (since IGMRF approx)
-  sampled_theta_st = sampled_theta_st - mean(sampled_theta_st)
-  rownames(sampled_theta_st) <- 1:nrow(sampled_theta_st)
+  ## Get the sampled risk-fields
+  #Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
+  #Lambda_st <- exp(as.matrix(intercept + temporal_effect + interactions))
   
-  ## Get the space-time interaction
-  interactions = Bst %*% sampled_theta_st[, 1]
-  
-  if(temporal_trend == 1){
-    temporal_effect = rep(0, length(interactions))
-  } else if(temporal_trend == 2){
-    tmp_ = t_axis * beta1_t; temporal_effect = rep(0, length(interactions))
-    for(t in 1:length(t_axis)){
-      temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
-      }
-    } else if(temporal_trend == 3){
-      tmp_ = ifelse(t_axis < 7, 
-                    beta1_t * t_axis, 
-                    beta1_t * 7 - beta2_t * (t_axis - 7))
-      temporal_effect = rep(0, length(interactions))
-      for(t in 1:length(t_axis)){
-        temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
-      }
-    }
-  
-  ## Get the risk-field
-  Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
-  
-  return(Lambda_st)
+  return(interactions)
 }
 
 ################################################################################
