@@ -355,10 +355,15 @@ risk_surface.list = risk_surface.list[within_germany_indices, ]
 indices_risk_surface.list = nrow(risk_surface.list)
 rownames(risk_surface.list) = 1:indices_risk_surface.list
 
+## Here is something valuable maybe
+#dim(risk_surface.list$values)
+
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(first_level_admin_map) * tT),
                         time_id = rep(0, nrow(first_level_admin_map) * tT),
-                        lambda_it = rep(0, nrow(first_level_admin_map) * tT),
+                        #lambda_it = rep(matrix(rep(0, dim(risk_surface.list$values)[2]),
+                        #                       nrow = 1), 
+                        #                nrow(first_level_admin_map) * tT),
                         E_it = rep(100, nrow(first_level_admin_map) * tT),
                         space.time = 1:(nrow(first_level_admin_map) * tT))
 
@@ -370,7 +375,11 @@ for(t in 1:tT){
     
     tmp_ = risk_surface.list[risk_surface.list$first_level_area_id_mapping == i &
                                risk_surface.list$time_id == t, ]
-    lambda.df[index, ]$lambda_it = mean(tmp_$values)
+    
+    
+    
+    
+    lambda.df[index, ]$lambda_it = colMeans(tmp_$values)
   }
 }
 

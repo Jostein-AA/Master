@@ -380,35 +380,32 @@ simulate_risk_surface <- function(Bst,
   ## Draw the tensor product smooth parameters: Each row is one sample 
   parameters <- mvrnorm(n = n_sim, rep(0, kt * ks), sig_st * Sigma_st) 
   
-  ## For each row of parameter-samples get the calculated interactions
-  
-  #### Like this each column is an interaction: Is it calculated the correct way?
-  #### Does the indices correspond now? It works for n_sim = 1 and w.o. transposing
+  ## Calculate interactions: Each column now represents a different data set
   interactions <- Bst %*% t(parameters)
   
   ## Make the temporal trend
-  #if(temporal_trend == 1){
-  #  temporal_effect = rep(0, dim(parameters)[2])
-  #} else if(temporal_trend == 2){
-  #  tmp_ = t_axis * beta1_t; temporal_effect = rep(0, dim(parameters)[2])
-  #  for(t in 1:length(t_axis)){
-  #    temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
-  #    }
-  #  } else if(temporal_trend == 3){
-  #    tmp_ = ifelse(t_axis < 7, 
-  #                  beta1_t * t_axis, 
-  #                  beta1_t * 7 - beta2_t * (t_axis - 7))
-  #    temporal_effect = rep(0, dim(parameters)[2])
-  #    for(t in 1:length(t_axis)){
-  #      temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
-  #    }
-  #  }
+  if(temporal_trend == 1){
+    temporal_effect = rep(0, dim(parameters)[2])
+  } else if(temporal_trend == 2){
+    tmp_ = t_axis * beta1_t; temporal_effect = rep(0, dim(parameters)[2])
+    for(t in 1:length(t_axis)){
+      temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+      }
+    } else if(temporal_trend == 3){
+      tmp_ = ifelse(t_axis < 7, 
+                    beta1_t * t_axis, 
+                    beta1_t * 7 - beta2_t * (t_axis - 7))
+      temporal_effect = rep(0, dim(parameters)[2])
+      for(t in 1:length(t_axis)){
+        temporal_effect[((t - 1) * (dim(Bs)[1]) + 1):(t * dim(Bs)[1])] = tmp_[t]
+      }
+    }
   
   ## Get the sampled risk-fields
   #Lambda_st <- exp(as.vector(intercept + temporal_effect + interactions))
-  #Lambda_st <- exp(as.matrix(intercept + temporal_effect + interactions))
+  Lambda_st <- exp(intercept + temporal_effect + interactions)
   
-  return(interactions)
+  return(Lambda_st)
 }
 
 ################################################################################
