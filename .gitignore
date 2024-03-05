@@ -6,9 +6,6 @@
 .RData
 .RDataTmp
 
-#Ignore pngs
-#*.png
-
 # User-specific files
 .Ruserdata
 
@@ -50,3 +47,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+#Ignore pngs
+#*.png
