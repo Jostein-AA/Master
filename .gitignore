@@ -50,3 +50,6 @@ rsconnect/
 
 #Ignore pngs
 *.png
+
+#Ignore everything within Plots folder
+Plots/
