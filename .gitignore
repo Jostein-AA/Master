@@ -49,4 +49,4 @@ po/*~
 rsconnect/
 
 #Ignore pngs
-#*.png
+*.png
