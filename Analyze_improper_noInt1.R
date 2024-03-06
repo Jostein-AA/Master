@@ -11,7 +11,8 @@ load("grids_and_mappings.RData")
 ## Need to have a csv-file tracking which data sets have been analyzed for each model considered
 
 
-### Should probably do a try-catch something for each fit, and also save eventual failures
+
+## Should probably do a try-catch something for each fit, and also save eventual failures
 tryCatch()
 
 
