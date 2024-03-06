@@ -293,7 +293,7 @@ plots_for_GIF <- function(risk_surface.list,
     p <- ggplot(data = tmp2_) +  
       geom_sf(aes(fill = values), 
               alpha = 1,
-              color="lightgrey") + ggtitle(round(t, 1)) + 
+              color = NA) + ggtitle(round(t, 1)) + 
       theme(plot.title = element_text(size = 15),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),

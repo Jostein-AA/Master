@@ -335,10 +335,10 @@ lambda.df$sampled_counts = sample_counts(lambda.df)
 print("Scenario_7_1")
 
 save(risk_surface.list, 
-     file = "./Simulated_risk_surfaces/sc7_risk_surface.RData")
+     file = "./Simulated_risk_surfaces/sc7_risk_surfaces.RData")
 
 save(lambda.df,
-     file = "./Simulated_data/sc7/sc7_data_2.RData")
+     file = "./Simulated_data/sc7/sc7_data.RData")
 
 ## Create a txt-file for sc7 stating how many data sets there are
 ## For the analysis of each model, a separate file stating which data sets they
