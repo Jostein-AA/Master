@@ -341,7 +341,7 @@ Lambda_st = simulate_risk_surface(Bst,
                                   kt,
                                   ks_10,
                                   intercept, temporal_trend = 1,
-                                  n_sim = 4)
+                                  n_sim = n_sim)
 
 
 ## add the risk-values to yxt_grid
@@ -356,7 +356,7 @@ indices_risk_surface.list = nrow(risk_surface.list)
 rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 ## Here is something valuable maybe
-#dim(risk_surface.list$values)
+dim(risk_surface.list$values)
 
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(first_level_admin_map) * tT),
@@ -366,6 +366,11 @@ lambda.df <- data.frame(area_id = rep(0, nrow(first_level_admin_map) * tT),
                         #                nrow(first_level_admin_map) * tT),
                         E_it = rep(100, nrow(first_level_admin_map) * tT),
                         space.time = 1:(nrow(first_level_admin_map) * tT))
+
+
+lambda_it = matrix(nrow = nrow(lambda.df), 
+                   ncol = dim(risk_surface.list$values)[2])
+
 
 for(t in 1:tT){
   print(t)
@@ -377,28 +382,39 @@ for(t in 1:tT){
                                risk_surface.list$time_id == t, ]
     
     
-    
-    
-    lambda.df[index, ]$lambda_it = colMeans(tmp_$values)
+    # Approximately the integral of the area and time continuous risk 
+    lambda_it[index, ] = colMeans(tmp_$values)
   }
 }
 
+## Insert the area and time specific rates
+lambda.df$lambda_it = lambda_it
+
+## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
-lambda.df$sampled_counts = apply(lambda.df, 
-                                 MARGIN = 1, 
-                                 FUN = function(row){return(rpois(1, row[5]))})
+## Sample counts
+lambda.df$sampled_counts = sample_counts(lambda.df)
 
 
 print("Scenario_7_1")
-
 
 save(risk_surface.list, 
      file = "./Simulated_risk_surfaces/sc7_risk_surface_2.RData")
 
 save(lambda.df,
-     file = "./Simulated_data/sc7_data_2.RData")
+     file = "./Simulated_data/sc7/sc7_data_2.RData")
 
+## Create a txt-file for sc7 stating how many data sets there are
+## For the analysis of each model, a separate file stating which data sets they
+## have analyzed will also be made
+## This way a full overview of what has been analyzed is available
+
+dir = "./Simulated_data/sc7/"
+overview.df = data.frame(data_sets_id = 1:dim(lambda.df$sampled_counts)[2])
+
+write.csv(overview.df, paste(dir, "data_sets_sc7.csv", sep = ""),
+          row.names = F)
 
 ################################################################################
 # Scenario 9: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),

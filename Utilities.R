@@ -408,6 +408,24 @@ simulate_risk_surface <- function(Bst,
   return(Lambda_st)
 }
 
+
+sample_counts <- function(lambda.df){
+  ## Draw from a Poisson distribution the simulated counts
+  
+  ## Extract matrix w. n_sim columns each corresponding to a data set to be simulated
+  Mu = lambda.df$mu
+  
+  ## Initialize a matrix to save the sampled counts to
+  sampled_counts = matrix(nrow = dim(Mu)[1], ncol = dim(Mu)[2])
+  
+  ## For each col (data set) sample from a poisson distribution
+  for(col_id in 1:dim(Mu)[2]){
+    sampled_counts[, col_id] = sapply(Mu[, col_id], FUN = function(x){return(rpois(1, x))})
+  }
+  
+  return(sampled_counts)
+}
+
 ################################################################################
 #Functions used for model fits
 
