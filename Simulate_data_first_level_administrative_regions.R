@@ -335,7 +335,7 @@ lambda.df$sampled_counts = sample_counts(lambda.df)
 print("Scenario_7_1")
 
 save(risk_surface.list, 
-     file = "./Simulated_risk_surfaces/sc7_risk_surface_2.RData")
+     file = "./Simulated_risk_surfaces/sc7_risk_surface.RData")
 
 save(lambda.df,
      file = "./Simulated_data/sc7/sc7_data_2.RData")
