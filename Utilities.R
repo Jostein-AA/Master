@@ -1,5 +1,41 @@
 
 ################################################################################
+# CSV-tracking files and functions
+
+initialize_csv_tracker <- function(model_name, 
+                                   scenario){
+  
+  filename = paste("./Simulated_data/", scenario, "/", 
+                   model_name, "_", scenario, "_tracker.csv", sep = "")
+  
+  df_ = data.frame(analyzed = rep(NA, 100), error = rep(NA, 100))
+  write.csv(df_, file = filename, row.names = F)
+}
+
+get_csv_tracker_filename <- function(model_name, scenario){
+  return(paste("./Simulated_data/", scenario, "/", 
+               model_name, "_", scenario, "_tracker.csv", sep = ""))
+}
+
+get_first_not_yet_analyzed <- function(model_name, scenario){
+  df_ = read.csv(get_csv_tracker_filename(model_name = model_name, 
+                                          scenario = scenario))
+  
+  
+  for(index in 1:nrow(df_)){
+    if(is.na(df_$analyzed[index])){
+      if(is.na(df_$error[index])){
+        break
+      }
+    }
+  }
+  
+  return(index)
+}
+
+
+
+################################################################################
 #Plotting functions
 
 plot_fitted_temporal_trends <- function(model_on_first_level_20_knots,
