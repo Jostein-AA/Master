@@ -202,7 +202,7 @@ Lambda_st = simulate_risk_surface(Bst_20,
                                   temporal_trend = 3, 
                                   beta1_t = 0.02, beta2_t = 0.015,
                                   t_axis = t_axis,
-                                  n_sim = 1)
+                                  n_sim = n_sim)
 
 
 ## Add risk-values to yxt_grid w. geoms
@@ -276,8 +276,8 @@ write.csv(overview.df, paste(dir, "data_sets_sc5.csv", sep = ""),
 # smaller spatial variation
 
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst, 
-                                  Bs,
+Lambda_st = simulate_risk_surface(Bst_10, 
+                                  Bs_10,
                                   Sigma_st_78,
                                   kt,
                                   ks_10,
@@ -364,7 +364,7 @@ Lambda_st = simulate_risk_surface(Bst_10,
                                   intercept, 
                                   temporal_trend = 2, beta1_t = 0.014, 
                                   t_axis = t_axis,
-                                  n_sim = 1)
+                                  n_sim = n_sim)
 
 
 ## Add risk-values to yxt_grid w. geoms
@@ -448,7 +448,7 @@ Lambda_st = simulate_risk_surface(Bst_10,
                                   temporal_trend = 3, 
                                   beta1_t = 0.02, beta2_t = 0.015,
                                   t_axis = t_axis,
-                                  n_sim = 1)
+                                  n_sim = n_sim)
 
 
 ## Add risk-values to yxt_grid w. geoms
