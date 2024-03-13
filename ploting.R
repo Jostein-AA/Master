@@ -5,6 +5,8 @@ rm(list = ls())
 source("libraries.R")
 source("Utilities.R")
 
+library("geofacet")
+library(ggh4x)
 library(latex2exp)
 
 load("maps_and_nb.RData")
@@ -18,62 +20,93 @@ load("improper1_typeIV_fitted.RData")
 
 ################################################################################
 #Load in simulation data (done stupidly, change!)
-load("./Simulated_data/sc1_data_2.RData")
+load("./Simulated_data/sc1/sc1_data.RData")
 lambda_sc1.df <- lambda.df
 lambda_sc1.df$space.time = 1:nrow(lambda_sc1.df)
 
-load("./Simulated_data/sc2_data_2.RData")
+load("./Simulated_data/sc2/sc2_data.RData")
 lambda_sc2.df <- lambda.df
 lambda_sc2.df$space.time = 1:nrow(lambda_sc2.df)
 
-load("./Simulated_data/sc3_data_2.RData")
+load("./Simulated_data/sc3/sc3_data.RData")
 lambda_sc3.df <- lambda.df
 lambda_sc3.df$space.time = 1:nrow(lambda_sc3.df)
 
-load("./Simulated_data/sc4_data_2.RData")
+load("./Simulated_data/sc4/sc4_data.RData")
 lambda_sc4.df <- lambda.df
 lambda_sc4.df$space.time = 1:nrow(lambda_sc4.df)
 
-load("./Simulated_data/sc5_data_2.RData")
+load("./Simulated_data/sc5/sc5_data.RData")
 lambda_sc5.df <- lambda.df
 lambda_sc5.df$space.time = 1:nrow(lambda_sc5.df)
 
-load("./Simulated_data/sc6_data_2.RData")
+load("./Simulated_data/sc6/sc6_data.RData")
 lambda_sc6.df <- lambda.df
 lambda_sc6.df$space.time = 1:nrow(lambda_sc6.df)
 
-load("./Simulated_data/sc7_data_2.RData")
+load("./Simulated_data/sc7/sc7_data.RData")
 lambda_sc7.df <- lambda.df
 lambda_sc7.df$space.time = 1:nrow(lambda_sc7.df)
 
-load("./Simulated_data/sc8_data_2.RData")
+load("./Simulated_data/sc8/sc8_data.RData")
 lambda_sc8.df <- lambda.df
 lambda_sc8.df$space.time = 1:nrow(lambda_sc8.df)
 
-load("./Simulated_data/sc9_data_2.RData")
+load("./Simulated_data/sc9/sc9_data.RData")
 lambda_sc9.df <- lambda.df
 lambda_sc9.df$space.time = 1:nrow(lambda_sc9.df)
 
-load("./Simulated_data/sc10_data_2.RData")
+load("./Simulated_data/sc10/sc10_data.RData")
 lambda_sc10.df <- lambda.df
 lambda_sc10.df$space.time = 1:nrow(lambda_sc10.df)
 
-load("./Simulated_data/sc11_data_2.RData")
+load("./Simulated_data/sc11/sc11_data.RData")
 lambda_sc11.df <- lambda.df
 lambda_sc11.df$space.time = 1:nrow(lambda_sc11.df)
 
-load("./Simulated_data/sc12_data_2.RData")
+load("./Simulated_data/sc12/sc12_data.RData")
 lambda_sc12.df <- lambda.df
 lambda_sc12.df$space.time = 1:nrow(lambda_sc12.df)
 
 ################################################################################
 # Plot the maps themselves
-plt_first_level <- ggplot(data = first_level_admin_map) + 
-  geom_sf(aes(), 
+
+exceptonial_areas_adm1_names = c("Bremen",
+                                 "Hamburg",
+                                 "Berlin",
+                                 "Saarland",
+                                 "Niedersachsen",
+                                 "Brandenburg")
+
+plt_first_level <- ggplot() + 
+  geom_sf(data = first_level_admin_map,
+          aes(), 
           alpha = 1,
-          color="black") + ggtitle("First-level administrative areas") + 
+          color="black") + 
+  #geom_sf_label(data = first_level_admin_map[!(first_level_admin_map$NAME_1 %in%
+  #                                               exceptonial_areas_adm1_names), ],
+  #              aes(label = NAME_1), colour = "black", size = 2) + 
+  #ggrepel::geom_label_repel(
+  #  data = first_level_admin_map[first_level_admin_map$NAME_1 %in%
+  #                                   exceptonial_areas_adm1_names, ],
+  #  aes(label = NAME_1, geometry = geometry),
+  #  stat = "sf_coordinates",
+  #  min.segment.length = 0,
+  #  colour = "black",
+  #  segment.colour = "black",
+  #  size = 2) + 
+  ggrepel::geom_label_repel(
+    data = first_level_admin_map,
+    aes(label = NAME_1, geometry = geometry),
+    stat = "sf_coordinates",
+    min.segment.length = 0.3,
+    colour = "black",
+    segment.colour = "black",
+    size = 2) + 
+  
   theme(plot.title = element_text(size = 15,  hjust = 0.5),
         axis.title.x = element_blank(), #Remove axis and background grid
+        axis.title.y = element_blank(),
         axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.background = element_blank(),
@@ -83,10 +116,13 @@ plt_first_level <- ggplot(data = first_level_admin_map) +
         panel.spacing = unit(1, 'lines')) +
   guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right"))
 
+plt_first_level
+
+
 plt_second_level <- ggplot(data = second_level_admin_map) + 
   geom_sf(aes(), 
           alpha = 1,
-          color="black") + ggtitle("Second-level administrative areas") + 
+          color="black") +  
   theme(plot.title = element_text(size = 15,  hjust = 0.5),
         axis.title.x = element_blank(), #Remove axis and background grid
         axis.text = element_blank(),
@@ -104,20 +140,38 @@ ggarrange(plt_first_level, NULL, plt_second_level,
 
 ################################################################################
 # Plot two continuous risk surfaces at similar times w. different amount of knots
-load("./Data/Simulated_risk_surfaces/sc3_risk_surface_2.RData")
-risk_surface.list_sc3 = risk_surface.list
+load("./Data/Simulated_risk_surfaces/sc3_risk_surfaces.RData")
+risk_surface.list_sc3 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
+                                              "unique_id", "time_id", 
+                                              "first_level_area_id_mapping", 
+                                              "second_level_area_id_mapping")]
 
-load("./Data/Simulated_risk_surfaces/sc9_risk_surface_2.RData")
-risk_surface.list_sc9 = risk_surface.list
+risk_surface.list_sc3$values = risk_surface.list$values[, 1]
+
+rm(risk_surface.list)
+gc()
+
+load("./Data/Simulated_risk_surfaces/sc9_risk_surfaces.RData")
+risk_surface.list_sc9 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
+                                              "unique_id", "time_id", 
+                                              "first_level_area_id_mapping", 
+                                              "second_level_area_id_mapping")]
+
+risk_surface.list_sc9$values = risk_surface.list$values[, 1]
+
+rm(risk_surface.list)
+gc()
 
 plt_sc3 <- heatmap_points(risk_surface.list_sc3,
                           polygon_grid2,
+                          admin_map = germany_border,
                           t_axis[1],
                           title = "20 X 20 Knots")
 
 
 plt_sc9 <- heatmap_points(risk_surface.list_sc9,
                           polygon_grid2,
+                          admin_map = germany_border,
                           t_axis[1],
                           title = "10 X 10 Knots")
 
@@ -157,12 +211,16 @@ plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc5,
 
 plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
                                             time_interval, t_axis,
+                                            admin_map,
                                             polygon_grid2){
   
   ## Load in a specific scenario
   filename = paste(dir, risk_surface_filename, sep = "")
   load(filename)
-  tmp_ = risk_surface.list
+  col_names <- colnames(risk_surface.list)[colnames(risk_surface.list) != "values"]
+  tmp_ = risk_surface.list[, col_names]
+  tmp_$values = risk_surface.list$values[, 1]
+  rm(risk_surface.list)
   
   ## get the times
   t_axis_indices = which(time_interval - 1 < t_axis & 
@@ -173,18 +231,21 @@ plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
     ### Plot the continuous true risk surface for times within time_interval
     plt_1 <- heatmap_points(tmp_,
                             polygon_grid2,
+                            admin_map,
                             t_axis[t_axis_indices[1]],
                             title = paste("time: ", 
                                           round(t_axis[t_axis_indices[1]], 1)))
     
     plt_2 <- heatmap_points(tmp_,
                             polygon_grid2,
+                            admin_map,
                             t_axis[t_axis_indices[2]],
                             title = paste("time: ", 
                                           round(t_axis[t_axis_indices[2]], 1)))
     
     plt_3 <- heatmap_points(tmp_,
                             polygon_grid2,
+                            admin_map,
                             t_axis[t_axis_indices[3]],
                             title = paste("time: ", 
                                           round(t_axis[t_axis_indices[3]], 1)))
@@ -206,23 +267,25 @@ dir = "./Data/Simulated_risk_surfaces/"
 
 ##########
 plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc1_risk_surface_2.RData",
+                                risk_surface_filename = "sc1_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                first_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc2_risk_surfaces.RData",
                                 time_interval = 1, t_axis = t_axis,
                                 polygon_grid2 = polygon_grid2)
 plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc2_risk_surface_2.RData",
+                                risk_surface_filename = "sc3_risk_surfaces.RData",
                                 time_interval = 1, t_axis = t_axis,
                                 polygon_grid2 = polygon_grid2)
 plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc3_risk_surface_2.RData",
+                                risk_surface_filename = "sc4_risk_surfaces.RData",
                                 time_interval = 1, t_axis = t_axis,
                                 polygon_grid2 = polygon_grid2)
 plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc4_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc5_risk_surface_2.RData",
+                                risk_surface_filename = "sc5_risk_surfaces.RData",
                                 time_interval = 1, t_axis = t_axis,
                                 polygon_grid2 = polygon_grid2)
 # Save as 15 by 6 name: continuous_scenario_6_time_1
@@ -230,6 +293,7 @@ plt_cont_risk_one_time_interval(dir = dir,
                                 risk_surface_filename = "sc6_risk_surface_2.RData",
                                 time_interval = 1, t_axis = t_axis,
                                 polygon_grid2 = polygon_grid2)
+
 plt_cont_risk_one_time_interval(dir = dir,
                                 risk_surface_filename = "sc7_risk_surface_2.RData",
                                 time_interval = 1, t_axis = t_axis,
@@ -337,7 +401,8 @@ plt_cont_risk_one_time_interval(dir = dir,
 ## Plot the discrete rate and the sampled-count/E_it for first-level
 tmp_ = lambda_sc9.df[lambda_sc9.df$time_id == 1, ]
 tmp_map_ = first_level_admin_map
-tmp_map_$lambda = tmp_$lambda_it; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts
+
+tmp_map_$lambda = tmp_$lambda_it[, 1]; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts[, 1]
 
 plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
 plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))
@@ -350,7 +415,7 @@ ggarrange(plt_lambda, NULL, plt_count_div_e_it,
 ## Plot the discrete rate and the sampled-count/E_it for first-level
 tmp_ = lambda_sc9.df[lambda_sc9.df$time_id == 12, ]
 tmp_map_ = first_level_admin_map
-tmp_map_$lambda = tmp_$lambda_it; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts
+tmp_map_$lambda = tmp_$lambda_it[, 1]; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts[, 1]
 
 plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
 plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))

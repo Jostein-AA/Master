@@ -177,6 +177,7 @@ heatmap_areas <- function(map_w_values,
 
 heatmap_points <- function(risk_surface.list, 
                            polygons,
+                           admin_map,
                            t,
                            title){
   
@@ -204,6 +205,7 @@ heatmap_points <- function(risk_surface.list,
   tmp2_ = tmp_[tmp_$t == t, ]
     
   p <- ggplot(data = tmp2_) +  
+    
     geom_sf(aes(fill = values), 
             alpha = 1,
             color = NA) + ggtitle(title) + #"lightgrey"
@@ -223,7 +225,11 @@ heatmap_points <- function(risk_surface.list,
       palette = function(x) c(scale),
       labels = function(x){x},
       breaks = hardcoded_bins,
-      guide = "colorscale")
+      guide = "colorscale") + 
+    geom_sf(data = admin_map,
+            aes(), 
+            alpha = 0,
+            color="black")
     
   return(p)
 }

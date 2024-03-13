@@ -258,13 +258,13 @@ bdeg = 3
 #########################################
 ## Make the temporal B-spline basis functions
 
-## Specify number of knots in time
-n_knots_t = 6
+## Specify number of intervals in time (knots - 1)
+n_intervals_t = 5
 
 ## Find distance between knots
-dist <- (max(xt) - min(xt)) / n_knots_t
+dist <- (max(xt) - min(xt)) / n_intervals_t
 xtl <- min(xt) - dist * 0.05; xtr <- max(xt) + dist * 0.05
-dxt <- (xtr - xtl) / n_knots_t
+dxt <- (xtr - xtl) / n_intervals_t
 
 ## Define knot locations in time
 knots <- seq(xtl - bdeg * dxt, xtr + bdeg * dxt, by = dxt)
@@ -273,25 +273,27 @@ knots <- seq(xtl - bdeg * dxt, xtr + bdeg * dxt, by = dxt)
 Bt <- spline.des(knots, xt, bdeg + 1)$design
 kt <- ncol(Bt)
 
+
+
 save(Bt, kt,
      file = "temporal_B_spline.RData")
 
 #########################################
 ## 20 knots in latitude and longitude directions
 
-## Define number of knots in the spatial directions 
-n_knots_s = 20 
+## Define number of intervals in each of the spatial directions (knots - 1) 
+n_intervals_s = 19 
 
 # Specify the knot locations and create the B-spline basis design matrices
 ## Find the distance between each knot in x- and y-directions
-disx <- (max(x) - min(x)) / n_knots_s; disy <- (max(y) - min(y)) / n_knots_s
+disx <- (max(x) - min(x)) / n_intervals_s; disy <- (max(y) - min(y)) / n_intervals_s
 
 ## Find the left (l) and right (r) end and a bitmore spline not 0 at ends!
 xl <- min(x) - disx * 0.05; yl <- min(y) - disy * 0.05
 xr <- max(x) + disx * 0.05; yr <- max(y) + disy * 0.05
 
 ## This is distance between each knot?
-dx <- (xr - xl) / n_knots_s; dy <- (yr - yl) / n_knots_s
+dx <- (xr - xl) / n_intervals_s; dy <- (yr - yl) / n_intervals_s
 
 ## Specify the knot locations in x1 and x2 direction
 knotsx <- seq(xl - bdeg * dx, xr + bdeg * dx, by = dx)
@@ -310,19 +312,19 @@ kx_20 <- dim(Bx_20)[2]; ky_20 <- dim(By_20)[2]; ks_20 <- dim(Bs_20)[2]
 #########################################
 ## 10 knots in latitude and longitude directions
 
-## Define number of knots in the spatial directions 
-n_knots_s = 10 
+## Define number of intervals in each of the spatial directions (knots - 1)  
+n_intervals_s = 9 
 
 # Specify the knot locations and create the B-spline basis design matrices
 ## Find the distance between each knot in x- and y-directions
-disx <- (max(x) - min(x)) / n_knots_s; disy <- (max(y) - min(y)) / n_knots_s
+disx <- (max(x) - min(x)) / n_intervals_s; disy <- (max(y) - min(y)) / n_intervals_s
 
 ## Find the left (l) and right (r) end and a bitmore spline not 0 at ends!
 xl <- min(x) - disx * 0.05; yl <- min(y) - disy * 0.05
 xr <- max(x) + disx * 0.05; yr <- max(y) + disy * 0.05
 
 ## This is distance between each knot?
-dx <- (xr - xl) / n_knots_s; dy <- (yr - yl) / n_knots_s
+dx <- (xr - xl) / n_intervals_s; dy <- (yr - yl) / n_intervals_s
 
 ## Specify the knot locations in x1 and x2 direction
 knotsx <- seq(xl - bdeg * dx, xr + bdeg * dx, by = dx)
@@ -385,22 +387,22 @@ Ix_10 <- diag(kx_10); Iy_10 <- diag(ky_10)
 ## Make the covariance matrix using generalized inverse
 
 ### Scenario 1 and 2
-tau_s = 15; tau_t = 35 #1) spatial and 2) temporal smoothness parameters
+tau_s = 20; tau_t = 40 #1) spatial and 2) temporal smoothness parameters
 Pst_sc_12 <- tau_s *(It %x% Py_20 %x% Ix_20 + It %x% Iy_20 %x% Px_20) + 
   tau_t * (Pt %x% Iy_20 %x% Ix_20)
 
 ### Scenario 3, 4, 5, and 6
-tau_s = 15; tau_t = 65 #1) spatial and 2) temporal smoothness parameters
+tau_s = 20; tau_t = 80 #1) spatial and 2) temporal smoothness parameters
 Pst_sc_3456 <- tau_s *(It %x% Py_20 %x% Ix_20 + It %x% Iy_20 %x% Px_20) + 
   tau_t * (Pt %x% Iy_20 %x% Ix_20)
 
 ### Scenario 7 and 8
-tau_s = 15; tau_t = 35 #1) spatial and 2) temporal smoothness parameters
+tau_s = 20; tau_t = 40 #1) spatial and 2) temporal smoothness parameters
 Pst_sc_78 <- tau_s *(It %x% Py_10 %x% Ix_10 + It %x% Iy_10 %x% Px_10) + 
   tau_t * (Pt %x% Iy_10 %x% Ix_10)
 
 ### Scenario 9, 10, 11, and 12
-tau_s = 15; tau_t = 65 #1) spatial and 2) temporal smoothness parameters
+tau_s = 20; tau_t = 80 #1) spatial and 2) temporal smoothness parameters
 Pst_sc_9101112 <- tau_s *(It %x% Py_10 %x% Ix_10 + It %x% Iy_10 %x% Px_10) + 
                   tau_t * (Pt %x% Iy_10 %x% Ix_10)
 

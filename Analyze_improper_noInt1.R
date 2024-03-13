@@ -13,6 +13,9 @@ load("grids_and_mappings.RData")
 ## Should probably do a try-catch something for each fit, and also save eventual failures
 tryCatch()
 
+### For every successful analysis - must update the corresponding tracker-csv
+### For an unsuccessful analysis - also update
+
 
 
 

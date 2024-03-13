@@ -11,8 +11,6 @@ source("Utilities.R")
 ## The data set index is added to the data frame and that is written as the
 ## new csv! If an error occurs, that is also written into the data frame.
 
-
-
 #get_csv_tracker_filename(model_name = "Improper1_noInt", 
 #                         scenario = "sc1")
 
