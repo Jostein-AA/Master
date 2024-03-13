@@ -18,6 +18,12 @@ load("improper1_typeII_fitted.RData")
 load("improper1_typeIII_fitted.RData")
 load("improper1_typeIV_fitted.RData")
 
+
+#Save as B_spline_basis_for_time 7.5 by 3.5
+plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
+     xlab = "t'")
+for(i in 2:dim(Bt)[2]){lines(Bt[, i] ~ xt)}
+
 ################################################################################
 #Load in simulation data (done stupidly, change!)
 load("./Simulated_data/sc1/sc1_data.RData")
@@ -137,6 +143,27 @@ plt_second_level <- ggplot(data = second_level_admin_map) +
 ## Save as 10 by 6, name: germany_maps
 ggarrange(plt_first_level, NULL, plt_second_level,
           ncol = 3, nrow = 1, widths = c(1, 0.05, 1))
+
+
+
+
+plt_polygon_grid <- ggplot(data = polygon_grid2) + 
+  geom_sf(aes(), 
+          alpha = 1,
+          color="black") +  
+  theme(plot.title = element_text(size = 15,  hjust = 0.5),
+        axis.title.x = element_blank(), #Remove axis and background grid
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank(),
+        plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+        legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        panel.spacing = unit(1, 'lines')) +
+  guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right"))
+
+#Save as polygon_grid 7.5 by 3.5
+plt_polygon_grid
 
 ################################################################################
 # Plot two continuous risk surfaces at similar times w. different amount of knots
