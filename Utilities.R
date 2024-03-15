@@ -409,7 +409,8 @@ row_wise_Kronecker <- function(X1, X2){
 }
 
 
-simulate_risk_surface <- function(Bst, 
+simulate_risk_surface <- function(seed,
+                                  Bst, 
                                   Bs = NULL,
                                   Sigma_st, 
                                   kt,
@@ -418,6 +419,9 @@ simulate_risk_surface <- function(Bst,
                                   t_axis = NULL, beta1_t = NULL, beta2_t = NULL,
                                   n_sim = 1){
   #function that simulates true risk-surface
+  
+  # Set seed
+  set.seed(seed)
 
   ## Draw the tensor product smooth parameters: Each row is one sample 
   parameters <- mvrnorm(n = n_sim, rep(0, kt * ks), sig_st * Sigma_st) 
@@ -451,7 +455,8 @@ simulate_risk_surface <- function(Bst,
 }
 
 
-sample_counts <- function(lambda.df){
+sample_counts <- function(seed,
+                          lambda.df){
   ## Draw from a Poisson distribution the simulated counts
   
   ## Extract matrix w. n_sim columns each corresponding to a data set to be simulated
@@ -459,6 +464,9 @@ sample_counts <- function(lambda.df){
   
   ## Initialize a matrix to save the sampled counts to
   sampled_counts = matrix(nrow = dim(Mu)[1], ncol = dim(Mu)[2])
+  
+  ## Set seed
+  set.seed(seed)
   
   ## For each col (data set) sample from a poisson distribution
   for(col_id in 1:dim(Mu)[2]){

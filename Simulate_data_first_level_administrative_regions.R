@@ -20,12 +20,19 @@ intercept = log(0.1)
 # Define the number of simulated data sets per scenario
 n_sim = 100
 
+# Seed
+seed = 134563
+
 ################################################################################
 # Scenario 1: first-level admin map, const. temporal trend (w. greater temporal variation),
 # greater spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_20, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
                                   Bs_20,
                                   Sigma_st_12,
                                   kt,
@@ -79,8 +86,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_1")
@@ -108,8 +118,12 @@ write.csv(overview.df, paste(dir, "data_sets_sc1.csv", sep = ""),
 # Scenario 3: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
 # greater spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_20, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
                                   Bs_20,
                                   Sigma_st_3456,
                                   kt,
@@ -164,8 +178,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_3")
@@ -192,8 +209,12 @@ write.csv(overview.df, paste(dir, "data_sets_sc3.csv", sep = ""),
 # Scenario 5: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
 # greater spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_20, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
                                   Bs_20,
                                   Sigma_st_3456,
                                   kt,
@@ -248,8 +269,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_5")
@@ -275,8 +299,12 @@ write.csv(overview.df, paste(dir, "data_sets_sc5.csv", sep = ""),
 # Scenario 7: second_level_admin_map, const. temporal trend (w. greater temporal variation),
 # smaller spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_10, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
                                   Bs_10,
                                   Sigma_st_78,
                                   kt,
@@ -328,8 +356,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_7_1")
@@ -355,8 +386,12 @@ write.csv(overview.df, paste(dir, "data_sets_sc7.csv", sep = ""),
 # Scenario 9: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
 # smaller spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_10, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
                                   Bs_10,
                                   Sigma_st_9101112,
                                   kt,
@@ -411,8 +446,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_9")
@@ -438,8 +476,12 @@ write.csv(overview.df, paste(dir, "data_sets_sc9.csv", sep = ""),
 # Scenario 11: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
 # smaller spatial variation
 
+# Update seed
+seed = seed + 1
+
 ## Get the risk-field
-Lambda_st = simulate_risk_surface(Bst_10, 
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
                                   Bs_10,
                                   Sigma_st_9101112,
                                   kt,
@@ -495,8 +537,11 @@ lambda.df$lambda_it = lambda_it
 ## Calculate the area and time specific expected number of counts
 lambda.df$mu = lambda.df$E_it * lambda.df$lambda_it
 
+# Update seed
+seed = seed + 1
+
 ## Sample counts
-lambda.df$sampled_counts = sample_counts(lambda.df)
+lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
 print("Scenario_11")
