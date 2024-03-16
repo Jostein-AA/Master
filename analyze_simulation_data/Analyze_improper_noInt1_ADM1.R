@@ -58,7 +58,6 @@ base_formula_first_level <- sampled_counts ~ 1 + f(time_id,
 ## Should probably do a try-catch something for each fit, and also save eventual failures
 tryCatch_inla <- function(data,
                           data_set_id,
-                          tracker.df,
                           csv_tracker_filename,
                           model_name, scenario_name) {
   tryCatch(
@@ -80,9 +79,6 @@ tryCatch_inla <- function(data,
                                 model_name, "_", scenario_name, "_", toString(data_set_id), ".RData", 
                                 sep = "")
       
-      
-      
-      
       marginals = tmp_$marginals.fitted.values 
       cpo = tmp_$cpo$cpo
       
@@ -92,21 +88,35 @@ tryCatch_inla <- function(data,
     },
     error = function(cond) {
       print("!Error!")
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
       tracker.df[data_set_id, ]$error = data_set_id
+      write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
       # Choose a return value in case of error
       -1
     },
     warning = function(cond) {
       print("!warning!")
       print(cond)
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
       tracker.df[data_set_id, ]$warning = data_set_id
+      write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
       print("---")
     },
     finally = {
       print(paste("[_/(^::^)--|", model_name, scenario_name, 
                   toString(data_set_id), sep = " "))
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
       tracker.df[data_set_id, ]$analyzed = data_set_id
       write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
     }
   )
 }
@@ -154,7 +164,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
   
@@ -204,7 +213,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }
@@ -253,7 +261,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }
@@ -302,7 +309,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }
@@ -351,7 +357,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }
@@ -400,7 +405,6 @@ while(not_finished){
   ## Do tryCatch
   fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
                                    data_set_id,
-                                   tracker.df,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }

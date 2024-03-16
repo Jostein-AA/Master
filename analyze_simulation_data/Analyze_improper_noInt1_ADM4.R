@@ -8,6 +8,8 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
+n_ADM4 <- nrow(second_level_admin_map)
+
 ################################################################################
 # Create formulas
 
@@ -59,7 +61,6 @@ base_formula_second_level <- sampled_counts ~ 1 + f(time_id,
 ## Should probably do a try-catch something for each fit, and also save eventual failures
 tryCatch_inla <- function(data,
                           data_set_id,
-                          tracker.df,
                           csv_tracker_filename,
                           model_name, scenario_name) {
   tryCatch(
@@ -68,18 +69,22 @@ tryCatch_inla <- function(data,
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
-                  control.predictor = list(compute = TRUE),       #For predictions
+                  control.predictor = list(compute = TRUE,
+                                           link = 1),       #For predictions
+                  #control.family = list(control.link = list(model = "log")),
                   control.compute = list(config = TRUE, # To see constraints later
                                          cpo = T,       # For model selection
                                          return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
       
       
       ### Save the linear predictor-marginal distribution and the CPO-values
-      filename_to_save <- paste("./Simulated_data/", scenario_name, "/", 
+      filename_to_save <- paste("./results/", model_name, "/", scenario_name, "/", 
                                 model_name, "_", scenario_name, "_", toString(data_set_id), ".RData", 
                                 sep = "")
       
-      marginals = tmp_$marginals.fitted.values 
+      
+      # Extract the marginals of the values predicted on
+      marginals = tmp_$marginals.fitted.values[(n_ADM4 * 10 + 1):(n_ADM4 * 13)] 
       cpo = tmp_$cpo$cpo
       
       save(marginals, 
@@ -88,19 +93,35 @@ tryCatch_inla <- function(data,
     },
     error = function(cond) {
       print("!Error!")
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
       tracker.df[data_set_id, ]$error = data_set_id
+      write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
       # Choose a return value in case of error
       -1
     },
     warning = function(cond) {
       print("!warning!")
       print(cond)
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
+      tracker.df[data_set_id, ]$warning = data_set_id
+      write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
       print("---")
     },
     finally = {
-      print(c("[_/(^::^)--| ", toString(data_set_id)))
+      print(paste("[_/(^::^)--|", model_name, scenario_name, 
+                  toString(data_set_id), sep = " "))
+      
+      # Update tracker
+      tracker.df <- read.csv(csv_tracker_filename)
       tracker.df[data_set_id, ]$analyzed = data_set_id
       write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      
     }
   )
 }
@@ -132,21 +153,258 @@ while(not_finished){
     }
   }
   
-  ### Load in sc1 simulated data
+  ### Load in sc2 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
                                  "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
-                                   data_set_id,
-                                   tracker.df,
-                                   csv_tracker_filename,
-                                   model_name, scenario_name)
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                                data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
 }
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+
+################################################################################
+# SC4
+model_name = "Improper1_noInt"
+scenario_name = "sc4"
+
+## Get the tracker-filename
+csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+not_finished = T
+while(not_finished){
+  ## Load in newest data set
+  ### Start by evaluating the tracker
+  data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  tracker.df = read.csv(csv_tracker_filename)
+  
+  ## If all the data sets have been analyzed for this scenario, move on!
+  if(data_set_id == nrow(tracker.df)){
+    if(is.na(tracker.df[nrow(tracker.df), ]$analyzed)){
+      print("last")
+    } else{
+      not_finished = F
+      print("Finished")
+      break
+    }
+  }
+  
+  ### Load in simulated data
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                                "space.time")]
+  
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  
+  ## Set the last three years counts to NA for the fit
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Do tryCatch
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                               data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
+}
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+
+################################################################################
+# SC6
+model_name = "Improper1_noInt"
+scenario_name = "sc6"
+
+## Get the tracker-filename
+csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+not_finished = T
+while(not_finished){
+  ## Load in newest data set
+  ### Start by evaluating the tracker
+  data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  tracker.df = read.csv(csv_tracker_filename)
+  
+  ## If all the data sets have been analyzed for this scenario, move on!
+  if(data_set_id == nrow(tracker.df)){
+    if(is.na(tracker.df[nrow(tracker.df), ]$analyzed)){
+      print("last")
+    } else{
+      not_finished = F
+      print("Finished")
+      break
+    }
+  }
+  
+  ### Load in simulated data
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                                "space.time")]
+  
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  
+  ## Set the last three years counts to NA for the fit
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Do tryCatch
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                               data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
+}
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+
+################################################################################
+# SC8
+model_name = "Improper1_noInt"
+scenario_name = "sc8"
+
+## Get the tracker-filename
+csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+not_finished = T
+while(not_finished){
+  ## Load in newest data set
+  ### Start by evaluating the tracker
+  data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  tracker.df = read.csv(csv_tracker_filename)
+  
+  ## If all the data sets have been analyzed for this scenario, move on!
+  if(data_set_id == nrow(tracker.df)){
+    if(is.na(tracker.df[nrow(tracker.df), ]$analyzed)){
+      print("last")
+    } else{
+      not_finished = F
+      print("Finished")
+      break
+    }
+  }
+  
+  ### Load in simulated data
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                                "space.time")]
+  
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  
+  ## Set the last three years counts to NA for the fit
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Do tryCatch
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                               data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
+}
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+
+################################################################################
+# SC10
+model_name = "Improper1_noInt"
+scenario_name = "sc10"
+
+## Get the tracker-filename
+csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+not_finished = T
+while(not_finished){
+  ## Load in newest data set
+  ### Start by evaluating the tracker
+  data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  tracker.df = read.csv(csv_tracker_filename)
+  
+  ## If all the data sets have been analyzed for this scenario, move on!
+  if(data_set_id == nrow(tracker.df)){
+    if(is.na(tracker.df[nrow(tracker.df), ]$analyzed)){
+      print("last")
+    } else{
+      not_finished = F
+      print("Finished")
+      break
+    }
+  }
+  
+  ### Load in simulated data
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                                "space.time")]
+  
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  
+  ## Set the last three years counts to NA for the fit
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Do tryCatch
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                               data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
+}
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+
+################################################################################
+# SC12
+model_name = "Improper1_noInt"
+scenario_name = "sc12"
+
+## Get the tracker-filename
+csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+not_finished = T
+while(not_finished){
+  ## Load in newest data set
+  ### Start by evaluating the tracker
+  data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  tracker.df = read.csv(csv_tracker_filename)
+  
+  ## If all the data sets have been analyzed for this scenario, move on!
+  if(data_set_id == nrow(tracker.df)){
+    if(is.na(tracker.df[nrow(tracker.df), ]$analyzed)){
+      print("last")
+    } else{
+      not_finished = F
+      print("Finished")
+      break
+    }
+  }
+  
+  ### Load in simulated data
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+  lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                                "space.time")]
+  
+  lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  
+  ## Set the last three years counts to NA for the fit
+  lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Do tryCatch
+  fitted_inla <- tryCatch_inla(lambda_sc.df,
+                               data_set_id,
+                               csv_tracker_filename,
+                               model_name, scenario_name)
+}
+
+tracker.df = read.csv(csv_tracker_filename)
+print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
