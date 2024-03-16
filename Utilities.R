@@ -4,11 +4,15 @@
 
 initialize_csv_tracker <- function(model_name, 
                                    scenario){
-  
+  #Function that creates a data frame in a csv that tracks which files have
+  # been analyzed, potential errors and warnings!
   filename = paste("./Simulated_data/", scenario, "/", 
                    model_name, "_", scenario, "_tracker.csv", sep = "")
   
-  df_ = data.frame(analyzed = rep(NA, 100), error = rep(NA, 100))
+  df_ = data.frame(analyzed = rep(NA, 100), 
+                   error = rep(NA, 100),
+                   warning = rep(NA, 100))
+  
   write.csv(df_, file = filename, row.names = F)
 }
 

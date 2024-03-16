@@ -12,17 +12,17 @@ library(latex2exp)
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
-load("improper1_noInt_fitted.RData")
-load("improper1_typeI_fitted.RData")
-load("improper1_typeII_fitted.RData")
-load("improper1_typeIII_fitted.RData")
-load("improper1_typeIV_fitted.RData")
+#load("improper1_noInt_fitted.RData")
+#load("improper1_typeI_fitted.RData")
+#load("improper1_typeII_fitted.RData")
+#load("improper1_typeIII_fitted.RData")
+#load("improper1_typeIV_fitted.RData")
 
 
 #Save as B_spline_basis_for_time 7.5 by 3.5
-plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
-     xlab = "t'")
-for(i in 2:dim(Bt)[2]){lines(Bt[, i] ~ xt)}
+#plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
+#     xlab = "t'")
+#for(i in 2:dim(Bt)[2]){lines(Bt[, i] ~ xt)}
 
 ################################################################################
 #Load in simulation data (done stupidly, change!)

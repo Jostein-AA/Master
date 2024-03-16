@@ -29,16 +29,16 @@ RW1_prec <- INLA:::inla.rw(n = tT, order = 1,
                            scale.model = FALSE, sparse = TRUE)
 
 ### Make precision matrix for Besag on ADM1
-matrix4inla <- nb2mat(nb_first_level, style="B")
+matrix4inla <- nb2mat(nb_second_level, style="B")
 mydiag = rowSums(matrix4inla)
 matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
-Besag_prec_first_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 #---
 
 ## Specify base-formula on ADM1
-base_formula_first_level <- sampled_counts ~ 1 + f(time_id, 
+base_formula_second_level <- sampled_counts ~ 1 + f(time_id, 
                                                    model = 'bym2',
                                                    scale.model = T, 
                                                    constr = T, 
@@ -50,13 +50,11 @@ base_formula_first_level <- sampled_counts ~ 1 + f(time_id,
     scale.model = T,
     constr = T,
     rankdef = 1,
-    graph = Besag_prec_first_level,
+    graph = Besag_prec_second_level,
     hyper = spatial_hyper)
 
 
 ################################################################################
-# Try-catch system
-
 
 ## Should probably do a try-catch something for each fit, and also save eventual failures
 tryCatch_inla <- function(data,
@@ -66,7 +64,7 @@ tryCatch_inla <- function(data,
                           model_name, scenario_name) {
   tryCatch(
     {
-      tmp_ = inla(base_formula_first_level, 
+      tmp_ = inla(base_formula_second_level, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -107,10 +105,11 @@ tryCatch_inla <- function(data,
   )
 }
 
+
 ################################################################################
-# SC1
+# SC2
 model_name = "Improper1_noInt"
-scenario_name = "sc1"
+scenario_name = "sc2"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -151,13 +150,3 @@ while(not_finished){
                                    csv_tracker_filename,
                                    model_name, scenario_name)
 }
-
-
-
-
-
-
-
-
-
-
