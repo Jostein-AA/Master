@@ -143,7 +143,7 @@ scaled_besag_prec_second_level <- INLA::inla.scale.model(Besag_prec_second_level
                                              constr = list(A = matrix(1,1,dim(Besag_prec_second_level)[1]),
                                                            e = 0))
 
-#Get precision matric for type II interaction by Kronecker product
+#Get precision matric for type III interaction by Kronecker product
 typeIII_prec_first_level <- diag(tT) %x% scaled_besag_prec_first_level
 typeIII_prec_second_level <- diag(tT) %x% scaled_besag_prec_second_level
 

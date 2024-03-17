@@ -55,20 +55,27 @@ count_mean_mse_one_dataset <- function(sampled_counts, lambda_marginals, n_ADM,
   
   ## For each year calculate the mse that year
   for(year in years_pred_on){
-    one_year_margs <- marginals[((year - 1) * n_ADM + 1):(year * n_ADM1)]
+    one_year_margs <- marginals[((year - 1) * n_ADM + 1):(year * n_ADM)]
     
     mse[year - years_pred_on[1] + 1] = count_mse_one_year_one_dataset(
-      sampled_counts, one_year_margs, E_it)
+      sampled_counts[((year - 1) * n_ADM + 1):(year * n_ADM)], one_year_margs, E_it)
   }
   
   mse[length(mse)] = mean(mse[1:(length(mse) - 1)])
   
   return(mse)
+}
+
+rate_mse_one_year_one_dataset <- function(){
+  
+}
+
+rate_mean_mse_one_dataset <- function(){
   
 }
 
 ## Testing
-#count_mean_mse_one_dataset(lambda.df$sampled_counts[1],marginals,n_ADM1)
+#count_mean_mse_one_dataset(lambda.df$sampled_counts[, 1],marginals,n_ADM1)
 
 find_ul_quants_counts_single_pred <- function(lambda_marginal,
                                               E_it){
@@ -95,13 +102,14 @@ find_ul_quants_counts_single_pred <- function(lambda_marginal,
 
 #Interval-scores
 find_IS_one_obs <- function(l, u, true_value){
-  return((u - l) + 
-        2/0.05 * (l - true_value) * (true_value < l) + 
-        2/0.05 * (true_value - u) * (true_value > u))
+  IS_score = (u - l) + 
+              2/0.05 * (l - true_value) * (true_value < l) + 
+              2/0.05 * (true_value - u) * (true_value > u) 
+  return(IS_score)
 }
 
 
-count_IS_one_year_one_dataset <- function(sampled_counts,
+count_IS_one_year_one_dataset <- function(sampled_counts_one_year,
                                           lambda_marginals_one_year,
                                           E_it){
   
@@ -112,36 +120,57 @@ count_IS_one_year_one_dataset <- function(sampled_counts,
                           })
   
   ## Find the IS for each singular instance in a year
+  ### Initialize space for IS 
+  IS_each_instance = rep(0, length(lambda_marginals_one_year))
   
+  ### Calculate IS each area
+  for(i in 1:length(lambda_marginals_one_year)){
+    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year[[i]]$l, ul_each_one_year[[i]]$u, 
+                                          sampled_counts_one_year[i])
+  }
   
   ## Find the average IS this year
-  IS_this_year <- -1
+  IS_this_year <- mean(IS_each_instance)
   
-  return(ul_each_one_year)
+  return(IS_this_year)
 }
 
-test = marginals[(10 * n_ADM1 + 1):(11 * n_ADM1)]
-test2 <- count_IS_one_year_one_dataset(lambda.df$sampled_counts[(10 * n_ADM1 + 1):(11 * n_ADM1), 1],
-                                       test, 100)
-
-#lapply(test, FUN = function(x){print("----")
-#                               print(x)
-#                               return(0)})
+## Test of count_IS_one_year_one_dataset
+#test2 <- count_IS_one_year_one_dataset(lambda.df$sampled_counts[(10 * n_ADM1 + 1):(11 * n_ADM1), 1], marginals[(10 * n_ADM1 + 1):(11 * n_ADM1)], 100)
 
 
-test2 <- test[4]
 
-count_mean_IS_one_dataset <- function(){
+count_mean_IS_one_dataset <- function(sampled_counts,
+                                      lambda_marginals,
+                                      n_ADM,
+                                      E_it){
+  
+  ## Take the years predicted on
+  years_pred_on <- 11:13
+  
+  ## Initialize memory for mse
+  IS = rep(-1, length(years_pred_on) + 1)
+  
+  ## For each year calculate the mse that year
+  for(year in years_pred_on){
+    one_year_margs <- lambda_marginals[((year - 1) * n_ADM + 1):(year * n_ADM)]
+    
+    IS[year - years_pred_on[1] + 1] = count_IS_one_year_one_dataset(
+                                      sampled_counts[((year - 1) * n_ADM + 1):(year * n_ADM)], 
+                                      one_year_margs, 
+                                      E_it)
+  }
+  
+  IS[length(IS)] = mean(IS[1:(length(IS) - 1)])
+  
+  return(IS)
   
 }
+## Testing
+#test = count_mean_IS_one_dataset(lambda.df$sampled_counts[, 1], marginals, n_ADM1, 100)
 
-rate_mse_one_year_one_dataset <- function(){
-  
-}
 
-rate_mean_mse_one_dataset <- function(){
-  
-}
+
 
 rate_IS_one_year_one_dataset <- function(){
   
