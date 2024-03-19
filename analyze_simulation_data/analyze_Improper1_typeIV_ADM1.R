@@ -64,7 +64,7 @@ typeIV_constraints_first_level = constraints_maker(type = "IV",
 
 
 #Scale precision matrix of RW model so the geometric mean of the marginal variances is one
-scaled_RW_prec <- inla.scale.model(RW2_prec,
+scaled_RW_prec <- inla.scale.model(RW1_prec,
                                    list(A = matrix(1, 1, dim(RW1_prec)[1]),
                                         e = 0))
 
@@ -73,7 +73,7 @@ scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level,
                                                         constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
                                                                       e = 0))
 #Get type IV interaction precision matrix
-typeIV_prec_first_level <- scaled_RW_prec%x% scaled_besag_prec_first_level
+typeIV_prec_first_level <- scaled_RW_prec %x% scaled_besag_prec_first_level
 
 #Get formula for type IV
 typeIV_formula_first_level <- update(base_formula_first_level,

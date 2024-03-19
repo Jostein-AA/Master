@@ -13,7 +13,7 @@ load("grids_and_mappings.RData")
 
 ## Specify priors for hyperparameters of improper models
 #---
-### Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+### Temporal hyperparameters (Precision of iid and precision of RW2) w. corresponding priors: penalized constraint 
 temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
                       phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
 
@@ -27,7 +27,7 @@ interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
 
 ## Specify precision matrices
 #---
-### Specify the RW1 precision matrix
+### Specify the RW2 precision matrix
 RW2_prec <- INLA:::inla.rw(n = tT, order = 2, 
                            scale.model = FALSE, sparse = TRUE)
 
@@ -76,6 +76,7 @@ typeIII_formula_first_level <- update(base_formula_first_level,
                                              model = "generic0", 
                                              Cmatrix = typeIII_prec_first_level, 
                                              extraconstr = typeIII_constraints_first_level, 
+                                             rankdef = tT,
                                              hyper = interaction_hyper))
 
 
@@ -99,6 +100,20 @@ tryCatch_inla <- function(data,
                   control.compute = list(config = TRUE, # To see constraints later
                                          cpo = T,       # For model selection
                                          return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+      
+      if(tmp_$ok == FALSE){ ## INLA has crashed
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$error = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
+      
+      if(tmp_$mode$mode.status > 0){ ## Potentially something weird with the mode of hyperparameters
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$warning = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
       
       
       ### Save the linear predictor-marginal distribution and the CPO-values

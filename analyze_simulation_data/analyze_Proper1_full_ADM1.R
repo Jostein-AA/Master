@@ -11,26 +11,23 @@ load("grids_and_mappings.RData")
 ################################################################################
 # Create formulas
 
-## Specify priors for hyperparameters of improper models
+## Specify priors for hyperparameters of proper models
 #---
-### Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
-temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
+ar1_hyper = list(prec = list(prior = 'pc.prec', 
+                             param = c(1, 0.01)), 
+                 rho = list(prior = 'pc.cor1', 
+                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
 
-### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
-spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
-                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
 
-### Interaction hyperparameter and prior (Precision of interaction)
-interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
+spatial_hyper = list(prec= list(prior = 'pc.prec', 
+                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+
 #---
 
 ## Specify precision matrices
 #---
-### Specify the RW1 precision matrix
-RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
-                           scale.model = FALSE, sparse = TRUE)
-
 ### Make precision matrix for Besag on ADM1
 matrix4inla <- nb2mat(nb_first_level, style="B")
 mydiag = rowSums(matrix4inla)
@@ -38,47 +35,32 @@ matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
 Besag_prec_first_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
+
+# get scaled Besag
+#scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level, 
+#                                                        constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
+#                                                                      e = 0))
 #---
 
-## Specify base-formula on ADM1
-base_formula_first_level <- sampled_counts ~ 1 + f(time_id, 
-                                                   model = 'bym2',
-                                                   scale.model = T, 
-                                                   constr = T, 
-                                                   rankdef = 1,
-                                                   graph = RW1_prec,
-                                                   hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_first_level,
-    hyper = spatial_hyper)
 
 
-#Get sum-to-zero constraints for type II interaction
-typeII_constraints_first_level = constraints_maker(type = "II", 
-                                                   n = nrow(first_level_admin_map), 
-                                                   t = tT)
+#Define a model with interceot, fixed temporal effect, proper random effects, and proper interaction
+proper_full_formula_first_level <- sampled_counts ~ 1 + time_id + 
+                                  f(time_id.copy,
+                                    model = "ar1",
+                                    hyper = ar1_hyper) +
+                                  f(area_id, 
+                                    model = "besagproper2",
+                                    graph = Besag_prec_first_level,
+                                    hyper = spatial_hyper) + 
+                                  f(area_id.copy, 
+                                    model = "besagproper2",
+                                    graph = Besag_prec_first_level,
+                                    hyper = spatial_hyper,
+                                    group = time_id, 
+                                    control.group = list(model = "ar1"))  
 
 
-#Scale precision matrix of RW model so the geometric mean of the marginal variances is one
-scaled_RW_prec <- inla.scale.model(RW1_prec,
-                                   list(A = matrix(1, 1, dim(RW1_prec)[1]),
-                                        e = 0))
-
-#Get precision matric for type II interaction by Kronecker product
-typeII_prec_first_level <- scaled_RW_prec %x% diag(nrow(first_level_admin_map))
-
-# Get typeII formula
-typeII_formula_first_level <- update(base_formula_first_level, 
-                                     ~. + f(space.time, 
-                                    model = "generic0", 
-                                    Cmatrix = typeII_prec_first_level, 
-                                    extraconstr = typeII_constraints_first_level, 
-                                    rankdef = nrow(first_level_admin_map), 
-                                    hyper = interaction_hyper))
 
 ################################################################################
 
@@ -89,7 +71,10 @@ tryCatch_inla <- function(data,
                           model_name, scenario_name) {
   tryCatch(
     {
-      tmp_ = inla(typeII_formula_first_level, 
+      ## Set an upper-time limit for inla before a timeout
+      inla.setOption(inla.timeout = 600) # Set to 600 sec (10 minutes!)
+      
+      tmp_ = inla(proper_full_formula_first_level, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -166,7 +151,7 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC1
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc1"
 
 ## Get the tracker-filename
@@ -193,29 +178,39 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
   
 }
 
+
 tracker.df = read.csv(csv_tracker_filename)
 print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC3
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc3"
 
 ## Get the tracker-filename
@@ -242,17 +237,24 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
   
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
@@ -263,7 +265,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC5
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc5"
 
 ## Get the tracker-filename
@@ -290,17 +292,25 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
@@ -311,7 +321,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC7
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc7"
 
 ## Get the tracker-filename
@@ -338,17 +348,25 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
@@ -359,7 +377,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC9
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc9"
 
 ## Get the tracker-filename
@@ -386,17 +404,25 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
@@ -407,7 +433,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC11
-model_name = "Improper1_typeII"
+model_name = "proper1_full"
 scenario_name = "sc11"
 
 ## Get the tracker-filename
@@ -434,20 +460,29 @@ while(not_finished){
   
   ### Load in sc1 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
-  lambda_sc1.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+  lambda_df <- lambda.df[, c("area_id", "time_id", "E_it", 
+                             "space.time")]
   
-  lambda_sc1.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
   ## Set the last three years counts to NA for the fit
-  lambda_sc1.df[lambda_sc1.df$time_id %in% 11:13, ]$sampled_counts = NA
+  lambda_df[lambda_df$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  ## Reorder due to change in space.time interaction
+  lambda_df <- lambda_df[order(lambda_df$area_id, decreasing = F), ]
+  rownames(lambda_df) <- 1:nrow(lambda_df)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda_df$area_id.copy <- lambda_df$area_id
+  lambda_df$time_id.copy <- lambda_df$time_id
   
   
   ## Do tryCatch
-  fitted_inla_sc1 <- tryCatch_inla(lambda_sc1.df,
+  fitted_inla_sc1 <- tryCatch_inla(lambda_df,
                                    data_set_id,
                                    csv_tracker_filename,
                                    model_name, scenario_name)
+  
 }
 
 tracker.df = read.csv(csv_tracker_filename)

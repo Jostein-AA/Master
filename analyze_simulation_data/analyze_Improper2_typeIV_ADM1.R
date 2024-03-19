@@ -13,7 +13,7 @@ load("grids_and_mappings.RData")
 
 ## Specify priors for hyperparameters of improper models
 #---
-### Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+### Temporal hyperparameters (Precision of iid and precision of RW2) w. corresponding priors: penalized constraint 
 temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
                       phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
 
@@ -27,7 +27,7 @@ interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
 
 ## Specify precision matrices
 #---
-### Specify the RW1 precision matrix
+### Specify the RW2 precision matrix
 RW2_prec <- INLA:::inla.rw(n = tT, order = 2, 
                            scale.model = FALSE, sparse = TRUE)
 
@@ -56,15 +56,9 @@ base_formula_first_level <- sampled_counts ~ 1 + f(time_id,
     hyper = spatial_hyper)
 
 
-#Get sum-to-zero constraints for type IV interaction
-typeIV_constraints_first_level = constraints_maker(type = "IV", 
-                                                   n = nrow(first_level_admin_map), 
-                                                   t = tT)
-
-
 #Scale precision matrix of RW model so the geometric mean of the marginal variances is one
-scaled_RW_prec <- inla.scale.model(RW1_prec,
-                                   list(A = matrix(1, 1, dim(RW1_prec)[1]),
+scaled_RW_prec <- inla.scale.model(RW2_prec,
+                                   list(A = matrix(1, 1, dim(RW2_prec)[1]),
                                         e = 0))
 
 # get scaled Besag
@@ -73,6 +67,15 @@ scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level,
                                                                       e = 0))
 #Get type IV interaction precision matrix
 typeIV_prec_first_level <- scaled_RW_prec%x% scaled_besag_prec_first_level
+
+
+#Get sum-to-zero constraints for type IV interaction
+typeIV_constraints_first_level = constraints_maker(type = "IV", 
+                                                   n = nrow(first_level_admin_map), 
+                                                   t = tT,
+                                                   rw = "RW2",
+                                                   prec_matrix = typeIV_prec_first_level)
+
 
 #Get formula for type IV
 typeIV_formula_first_level <- update(base_formula_first_level,
@@ -103,6 +106,20 @@ tryCatch_inla <- function(data,
                   control.compute = list(config = TRUE, # To see constraints later
                                          cpo = T,       # For model selection
                                          return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+      
+      if(tmp_$ok == FALSE){ ## INLA has crashed
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$error = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
+      
+      if(tmp_$mode$mode.status > 0){ ## Potentially something weird with the mode of hyperparameters
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$warning = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
       
       
       ### Save the linear predictor-marginal distribution and the CPO-values

@@ -73,6 +73,21 @@ tryCatch_inla <- function(data,
                                          return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
       
       
+      if(tmp_$ok == FALSE){ ## INLA has crashed
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$error = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
+      
+      if(tmp_$mode$mode.status > 0){ ## Potentially something weird with the mode of hyperparameters
+        # Update tracker
+        tracker.df <- read.csv(csv_tracker_filename)
+        tracker.df[data_set_id, ]$warning = data_set_id
+        write.csv(tracker.df, file = csv_tracker_filename, row.names = F)
+      }
+      
+      
       ### Save the linear predictor-marginal distribution and the CPO-values
       filename_to_save <- paste("./results/", model_name, "/", scenario_name, "/", 
                                 model_name, "_", scenario_name, "_", toString(data_set_id), ".RData", 
@@ -84,6 +99,7 @@ tryCatch_inla <- function(data,
       save(marginals, 
            cpo,
            file = filename_to_save)
+      
     },
     error = function(cond) {
       print("!Error!")

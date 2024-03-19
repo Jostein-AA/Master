@@ -18,8 +18,8 @@ n_ADM4 <- nrow(second_level_admin_map)
 ################################################################################
 # Functions for calculating MSE, IS,...
 
-file_path <- "results/Improper1_noInt/sc1/"
-load(paste(file_path, "Improper1_noInt_sc1_2.RData", sep = ""))
+file_path <- "results/proper1_noInt/sc1/"
+load(paste(file_path, "proper1_noInt_sc1_2.RData", sep = ""))
 load("./Simulated_data/sc1/sc1_data.RData")
 
 
