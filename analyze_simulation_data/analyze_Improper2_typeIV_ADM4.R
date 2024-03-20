@@ -22,12 +22,15 @@ temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)),
 ### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
                      phi = list(prior = 'pc', param = c(0.5, 0.5)))
+
+### Interaction hyperparameter and prior (Precision of interaction)
+interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
 #---
 
 ## Specify precision matrices
 #---
 ### Specify the RW1 precision matrix
-RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
+RW2_prec <- INLA:::inla.rw(n = tT, order = 2, 
                            scale.model = FALSE, sparse = TRUE)
 
 ### Make precision matrix for Besag on ADM1
@@ -41,12 +44,11 @@ Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 ## Specify base-formula on ADM1
 base_formula_second_level <- sampled_counts ~ 1 + f(time_id, 
-                                                   model = 'bym2',
-                                                   scale.model = T, 
-                                                   constr = T, 
-                                                   rankdef = 1,
-                                                   graph = RW1_prec,
-                                                   hyper = temporal_hyper) + 
+                                                    model = 'bym2',
+                                                    scale.model = T, 
+                                                    constr = T, 
+                                                    graph = RW2_prec,
+                                                    hyper = temporal_hyper) + 
   f(area_id, 
     model = 'bym2',
     scale.model = T,
@@ -54,6 +56,35 @@ base_formula_second_level <- sampled_counts ~ 1 + f(time_id,
     rankdef = 1,
     graph = Besag_prec_second_level,
     hyper = spatial_hyper)
+
+#Scale precision matrix of RW model so the geometric mean of the marginal variances is one
+scaled_RW_prec <- inla.scale.model(RW2_prec,
+                                   list(A = matrix(1, 1, dim(RW2_prec)[1]),
+                                        e = 0))
+
+# get scaled Besag
+scaled_besag_prec_second_level <- INLA::inla.scale.model(Besag_prec_second_level, 
+                                                        constr = list(A = matrix(1,1,dim(Besag_prec_second_level)[1]), 
+                                                                      e = 0))
+#Get type IV interaction precision matrix
+typeIV_prec_second_level <- scaled_RW_prec%x% scaled_besag_prec_second_level
+
+
+#Get sum-to-zero constraints for type IV interaction
+typeIV_constraints_second_level = constraints_maker(type = "IV", 
+                                                   n = nrow(second_level_admin_map), 
+                                                   t = tT,
+                                                   rw = "RW2",
+                                                   prec_matrix = typeIV_prec_second_level)
+
+
+#Get formula for type IV
+typeIV_formula_second_level <- update(base_formula_second_level,
+                                     ~. + f(space.time, 
+                                            model = "generic0",
+                                            Cmatrix = typeIV_prec_second_level,
+                                            extraconstr = typeIV_constraints_second_level,
+                                            hyper = interaction_hyper))
 
 
 ################################################################################
@@ -67,7 +98,7 @@ tryCatch_inla <- function(data,
     {
       inla.setOption(inla.timeout = 750) # Set upper-time limit to 750 sec (12.5 minutes) 
       
-      tmp_ = inla(base_formula_second_level, 
+      tmp_ = inla(typeIV_formula_second_level, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -145,7 +176,7 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC2
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc2"
 
 ## Get the tracker-filename
@@ -172,7 +203,7 @@ while(not_finished){
   ### Load in sc2 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
   lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+                                "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
@@ -182,7 +213,7 @@ while(not_finished){
   
   ## Do tryCatch
   fitted_inla <- tryCatch_inla(lambda_sc.df,
-                                data_set_id,
+                               data_set_id,
                                csv_tracker_filename,
                                model_name, scenario_name)
 }
@@ -192,7 +223,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC4
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc4"
 
 ## Get the tracker-filename
@@ -239,7 +270,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC6
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc6"
 
 ## Get the tracker-filename
@@ -286,7 +317,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC8
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc8"
 
 ## Get the tracker-filename
@@ -333,7 +364,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC10
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc10"
 
 ## Get the tracker-filename
@@ -380,7 +411,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC12
-model_name = "Improper1_noInt"
+model_name = "Improper2_typeIV"
 scenario_name = "sc12"
 
 ## Get the tracker-filename
@@ -424,3 +455,4 @@ while(not_finished){
 
 tracker.df = read.csv(csv_tracker_filename)
 print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
+

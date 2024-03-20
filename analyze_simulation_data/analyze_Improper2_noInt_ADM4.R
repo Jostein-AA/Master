@@ -27,7 +27,7 @@ spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)),
 ## Specify precision matrices
 #---
 ### Specify the RW1 precision matrix
-RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
+RW2_prec <- INLA:::inla.rw(n = tT, order = 2, 
                            scale.model = FALSE, sparse = TRUE)
 
 ### Make precision matrix for Besag on ADM1
@@ -41,20 +41,18 @@ Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 ## Specify base-formula on ADM1
 base_formula_second_level <- sampled_counts ~ 1 + f(time_id, 
-                                                   model = 'bym2',
-                                                   scale.model = T, 
-                                                   constr = T, 
-                                                   rankdef = 1,
-                                                   graph = RW1_prec,
-                                                   hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_second_level,
-    hyper = spatial_hyper)
-
+                                                    model = 'bym2',
+                                                    scale.model = T, 
+                                                    constr = T, 
+                                                    graph = RW2_prec,
+                                                    hyper = temporal_hyper) + 
+                                                  f(area_id, 
+                                                    model = 'bym2',
+                                                    scale.model = T,
+                                                    constr = T,
+                                                    rankdef = 1,
+                                                    graph = Besag_prec_second_level,
+                                                    hyper = spatial_hyper)
 
 ################################################################################
 
@@ -145,7 +143,7 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC2
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc2"
 
 ## Get the tracker-filename
@@ -172,7 +170,7 @@ while(not_finished){
   ### Load in sc2 simulated data
   load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
   lambda_sc.df <- lambda.df[, c("area_id", "time_id", "E_it", 
-                                 "space.time")]
+                                "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
   
@@ -182,7 +180,7 @@ while(not_finished){
   
   ## Do tryCatch
   fitted_inla <- tryCatch_inla(lambda_sc.df,
-                                data_set_id,
+                               data_set_id,
                                csv_tracker_filename,
                                model_name, scenario_name)
 }
@@ -192,7 +190,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC4
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc4"
 
 ## Get the tracker-filename
@@ -239,7 +237,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC6
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc6"
 
 ## Get the tracker-filename
@@ -286,7 +284,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC8
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc8"
 
 ## Get the tracker-filename
@@ -333,7 +331,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC10
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc10"
 
 ## Get the tracker-filename
@@ -380,7 +378,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC12
-model_name = "Improper1_noInt"
+model_name = "Improper2_noInt"
 scenario_name = "sc12"
 
 ## Get the tracker-filename
