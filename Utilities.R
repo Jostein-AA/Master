@@ -483,6 +483,15 @@ sample_counts <- function(seed,
 ################################################################################
 #Functions used for model fits
 
+### Function needed to sort the proper-models back again
+sort_proper_fitted <- function(proper_fitted, n, tT){
+  sorted_proper_fitted <- proper_fitted
+  for(t in 1:tT){
+    sorted_proper_fitted[((t-1)*n + 1):(t*n)] =  proper_fitted[seq(t, n*tT, by = tT)]
+  }
+  return(sorted_proper_fitted)
+}
+
 ## Constraint maker function
 constraints_maker <- function(type = NULL, n = NULL, t = NULL,
                               rw = "RW1", prec_matrix = NULL){
