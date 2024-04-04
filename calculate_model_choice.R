@@ -378,79 +378,215 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
                 "proper1_noInt", "proper1_onlyInt", "proper1_full",
                 "proper2_noInt", "proper2_onlyInt", "proper2_full")
 
+
 scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
 
 
 ### Iterate over each model for each scenario on ADM1 to calculate the model choice data frames
-for(model_name in model_names){
-  for(scenario_name in scenario_names_ADM1){
+#for(model_name in model_names){
+#  for(scenario_name in scenario_names_ADM1){
     ## Calculate the model choice
-    calc_mse_is_count_one_model_one_scenario_ADM1(model_name = model_name,
-                                       scenario_name = scenario_name,
-                                       n_sim)
-  }
-}
+#    calc_mse_is_count_one_model_one_scenario_ADM1(model_name = model_name,
+#                                       scenario_name = scenario_name,
+#                                       n_sim)
+#  }
+#}
 
 ### Iterate over each model for each scenario on ADM4 to calculate the model choice data frames
-for(model_name in model_names){
-  for(scenario_name in scenario_names_ADM4){
-    calc_mse_is_count_one_model_one_scenario_ADM4(model_name = model_name,
-                                                  scenario_name = scenario_name,
-                                                  n_sim)
-  }
-}
+#for(model_name in model_names){
+#  for(scenario_name in scenario_names_ADM4){
+#    calc_mse_is_count_one_model_one_scenario_ADM4(model_name = model_name,
+#                                                  scenario_name = scenario_name,
+#                                                  n_sim)
+#  }
+#}
 
 
+################################################################################
+# Calculate the totals and make a table for better vieweng of results
 
-#######
-count_mean_mse_one_dataset <- function(sampled_counts, lambda_marginals, n_ADM,
-                                       E_it = 100){
+#####
+# ADM1 results
+#load("./results/model_choice/model_choice_Improper1_noInt_sc1.RData")
+#tmp_ <- model_choice
+
+#test <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[1:3])))})
+
+#tmp_$total_mse <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[1:3])))})
+#tmp_$total_IS <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[4:6])))})
+
+#tmp_ <- na.omit(tmp_)
+#tmp2_ <- colMeans(tmp_)
+
+library(latex2exp)
+library(tables)
+
+
+for(scenario_name in scenario_names_ADM1){
+  print(scenario_name)
   
-  ## Take the years predicted on
-  years_pred_on <- 11:13
+  model_choice.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                              "Improper1_typeI",
+                                              "Improper1_typeII",
+                                              "Improper1_typeIII",
+                                              "Improper1_typeIV",
+                                              "Improper2_noInt",
+                                              "Improper2_typeI",
+                                              "Improper2_typeII",
+                                              "Improper2_typeIII",
+                                              "Improper2_typeIV",
+                                              "proper1_noInt",
+                                              "proper1_onlyInt",
+                                              "proper1_full",
+                                              "proper2_noInt",
+                                              "proper2_onlyInt",
+                                              "proper2_full"), 8),
+                                model_choice = c(rep(1, 16),rep(2, 16),
+                                                 rep(3, 16),rep(4, 16),
+                                                 rep(5, 16),rep(6, 16),
+                                                 rep(7, 16),rep(8, 16)),
+                                value = 1:(8 * 16))
   
-  ## Initialize memory for mse
-  mse = rep(-1, length(years_pred_on) + 1)
+  the proper models needs to be sorted
   
-  ## For each year calculate the mse that year
-  for(year in years_pred_on){
-    one_year_margs <- marginals[((year - 1) * n_ADM + 1):(year * n_ADM)]
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice
     
-    mse[year - years_pred_on[1] + 1] = count_mse_one_year_one_dataset(
-      sampled_counts[((year - 1) * n_ADM + 1):(year * n_ADM)], one_year_margs, E_it)
+    #Calculate the overall mse and IS for each data set
+    tmp_$total_mse <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[1:3])))})
+    tmp_$total_IS <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[4:6])))})
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    #Insert values into the model_choice.df
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 8, ]$value = tmp2_[8]
+    
   }
   
-  mse[length(mse)] = mean(mse[1:(length(mse) - 1)])
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
   
-  return(mse)
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)",
+                                      "IS (1)", "IS (2)", "IS (3)",
+                                      "MSE (total)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice.df),
+    caption = caption,
+    label = label
+  )
+  
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_", scenario_name, ".tex", sep = ""))
 }
 
-count_mean_IS_one_dataset <- function(sampled_counts,
-                                      lambda_marginals,
-                                      n_ADM,
-                                      E_it){
+#####
+# ADM4 results
+
+model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+                "Improper1_typeIII", "Improper1_typeIV",
+                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+                "Improper2_typeIII", "Improper2_typeIV",
+                "proper1_noInt", "proper1_onlyInt", "proper1_full",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+
+for(scenario_name in scenario_names_ADM4){
+  print(scenario_name)
   
-  ## Take the years predicted on
-  years_pred_on <- 11:13
+  model_choice.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                              "Improper1_typeI",
+                                              "Improper1_typeII",
+                                              "Improper1_typeIII",
+                                              "Improper1_typeIV",
+                                              "Improper2_noInt",
+                                              "Improper2_typeI",
+                                              "Improper2_typeII",
+                                              "Improper2_typeIII",
+                                              "Improper2_typeIV",
+                                              "proper1_noInt",
+                                              "proper1_onlyInt",
+                                              "proper1_full",
+                                              "proper2_noInt",
+                                              "proper2_onlyInt",
+                                              "proper2_full"), 8),
+                                model_choice = c(rep(1, 16),rep(2, 16),
+                                                 rep(3, 16),rep(4, 16),
+                                                 rep(5, 16),rep(6, 16),
+                                                 rep(7, 16),rep(8, 16)),
+                                value = 1:(8 * 16))
   
-  ## Initialize memory for mse
-  IS = rep(-1, length(years_pred_on) + 1)
   
-  ## For each year calculate the mse that year
-  for(year in years_pred_on){
-    one_year_margs <- lambda_marginals[((year - 1) * n_ADM + 1):(year * n_ADM)]
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = " "))
+    tmp_ <- model_choice
     
-    IS[year - years_pred_on[1] + 1] = count_IS_one_year_one_dataset(
-      sampled_counts[((year - 1) * n_ADM + 1):(year * n_ADM)], 
-      one_year_margs, 
-      E_it)
+    #Calculate the overall mse and IS for each data set
+    tmp_$total_mse <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[1:3])))})
+    tmp_$total_IS <- apply(tmp_, MARGIN = 1, FUN = function(x){return(mean(as.numeric(x[4:6])))})
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    #Insert values into the model_choice.df
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice.df[model_choice.df$Model == model_name & model_choice.df$model_choice == 8, ]$value = tmp2_[8]
+    
   }
   
-  IS[length(IS)] = mean(IS[1:(length(IS) - 1)])
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
   
-  return(IS)
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)",
+                                      "IS (1)", "IS (2)", "IS (3)",
+                                      "MSE (total)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice.df),
+    caption = caption,
+    label = label
+  )
   
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_", scenario_name, ".tex", sep = ""))
 }
-## Testing
-#test = count_mean_IS_one_dataset(lambda.df$sampled_counts[, 1], marginals, n_ADM1, 100)
+
+
+
