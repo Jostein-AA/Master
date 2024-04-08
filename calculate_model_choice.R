@@ -17,122 +17,6 @@ n_ADM4 <- nrow(second_level_admin_map)
 
 
 ################################################################################
-# Functions for calculating MSE, IS,...
-
-count_mse_one_year_one_dataset <- function(sampled_counts_one_year, 
-                                           lambda_marginals_one_year,
-                                           E_it){
-  
-  ## For each area find the expected predicted count (i.e. point prediction)
-  pred_count <- 100 * as.numeric(sapply(lambda_marginals_one_year, 
-                          FUN = function(x){return(mean(x[, 1]))}))
-  
-  ## Calculate the MSE
-  mse_one_year <- mean((sampled_counts_one_year - pred_count)**2)
-  
-  # Return the MSE of that year
-  return(mse_one_year)
-}
-
-## Testing
-#one_year_margs <- marginals[(11 * n_ADM1 + 1):(12 * n_ADM1)]
-#count_mse_one_year_one_dataset(lambda.df$sampled_counts[1],one_year_margs,100)
-
-
-
-
-rate_mse_one_year_one_dataset <- function(){
-  
-}
-
-rate_mean_mse_one_dataset <- function(){
-  
-}
-
-## Testing
-#count_mean_mse_one_dataset(lambda.df$sampled_counts[, 1],marginals,n_ADM1)
-
-find_ul_quants_counts_single_pred <- function(lambda_marginal,
-                                              E_it){
-  # Function to calculate upper (u) and lower (l) quantiles for a single
-  # count prediction
-  
-  ## Sample lambda and scale w. E_it to get an instance of Poisson
-  poisson_param_sample <- E_it * inla.rmarginal(5000, lambda_marginal) #[[1]]
-  
-  ## Sample from Poisson
-  count_sample <- sapply(poisson_param_sample, 
-                         FUN = function(x){return(rpois(1, x))})
-  
-  ## Calculate upper and lower quantile (and median)
-  u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
-  median = as.numeric(quantile(count_sample, 0.5))
-  
-  return(list(l = l, u = u, median = median))
-  
-}
-
-## Test for find_ul_quants_counts_single_pred
-#find_ul_quants_counts_single_pred(marginals[12 * n_ADM1 + 1], 100)
-
-#Interval-scores
-find_IS_one_obs <- function(l, u, true_value){
-  IS_score = (u - l) + 
-              2/0.05 * (l - true_value) * (true_value < l) + 
-              2/0.05 * (true_value - u) * (true_value > u) 
-  return(IS_score)
-}
-
-
-count_IS_one_year_one_dataset <- function(sampled_counts_one_year,
-                                          lambda_marginals_one_year,
-                                          E_it){
-  
-  ## Find the l and u for each singular instance in a year
-  ul_each_one_year <- lapply(lambda_marginals_one_year, 
-                        FUN = function(x){
-                          return(find_ul_quants_counts_single_pred(x, 100))
-                          })
-  
-  ## Find the IS for each singular instance in a year
-  ### Initialize space for IS 
-  IS_each_instance = rep(0, length(lambda_marginals_one_year))
-  
-  ### Calculate IS each area
-  for(i in 1:length(lambda_marginals_one_year)){
-    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year[[i]]$l, ul_each_one_year[[i]]$u, 
-                                          sampled_counts_one_year[i])
-  }
-  
-  ## Find the average IS this year
-  IS_this_year <- mean(IS_each_instance)
-  
-  return(IS_this_year)
-}
-
-## Test of count_IS_one_year_one_dataset
-#test2 <- count_IS_one_year_one_dataset(lambda.df$sampled_counts[(10 * n_ADM1 + 1):(11 * n_ADM1), 1], marginals[(10 * n_ADM1 + 1):(11 * n_ADM1)], 100)
-
-
-
-
-
-
-
-
-rate_IS_one_year_one_dataset <- function(){
-  
-}
-
-rate_mean_IS_one_dataset <- function(){
-  
-}
-###########################################
-
-
-
-
-################################################################################
 # load in data and start calculating
 
 ## Support function for trying to read a file
@@ -218,6 +102,10 @@ calc_mse_is_count_one_model_one_scenario_ADM1 <- function(model_name,
     if(is.null(marginals)){
       next
     }
+    
+    ### For the proper models on the ADM1, the marginals must be sorted
+    ### This was done by hardcoding this in for only the proper models
+    # marginals = sort_proper_fitted(marginals, n_ADM1, tT)
     
     ### If not failure: count it as successfully opened!
     successes = successes + 1
@@ -448,7 +336,6 @@ for(scenario_name in scenario_names_ADM1){
                                                  rep(7, 16),rep(8, 16)),
                                 value = 1:(8 * 16))
   
-  the proper models needs to be sorted
   
   for(model_name in model_names){
     #Load in the model_choice data

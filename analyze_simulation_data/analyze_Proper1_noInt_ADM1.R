@@ -16,13 +16,18 @@ load("grids_and_mappings.RData")
 ### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
 ar1_hyper = list(prec = list(prior = 'pc.prec', 
                              param = c(1, 0.01)), 
-                 rho = list(prior = 'pc.cor1', 
-                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+                 rho = list(prior = 'pc', ## Is this the issue?
+                            param = c(0.5, 0.5)),
+                 mean = list(prior = 'normal', ## Potentially remove
+                             param = c(0, 1),
+                             fixed = TRUE)) 
 
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
-                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+                                param = c(1, 0.01)), 
+                     lambda = list(prior = 'pc', 
+                                   param = c(0.5, 0.5))) 
 
 #---
 
@@ -37,9 +42,9 @@ Besag_prec_first_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 
 # get scaled Besag
-#scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level, 
-#                                                        constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
-#                                                                      e = 0))
+scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level, 
+                                                        constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
+                                                                      e = 0))
 #---
 
 
@@ -49,7 +54,7 @@ proper_base_formula_first_level <- sampled_counts ~ 1 + time_id +
                                                       hyper = ar1_hyper) + 
                                                     f(area_id, 
                                                       model = "besagproper2",
-                                                      graph = Besag_prec_first_level,
+                                                      graph = scaled_besag_prec_first_level,
                                                       hyper = spatial_hyper)
 
 
@@ -63,13 +68,11 @@ tryCatch_inla <- function(data,
                           model_name, scenario_name) {
   tryCatch(
     {
-      ## Set an upper-time limit for inla before a timeout
-      inla.setOption(inla.timeout = 480) # Set to 480 sec (8 minutes!)
-      
       tmp_ = inla(proper_base_formula_first_level, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
+                  verbose = T,
                   control.predictor = list(compute = TRUE,
                                            link = 1),       #For predictions
                   #control.family = list(control.link = list(model = "log")),
@@ -196,6 +199,7 @@ while(not_finished){
   
 }
 
+print("Do not run as is on Markov ya bastard")
 
 tracker.df = read.csv(csv_tracker_filename)
 print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
