@@ -507,10 +507,10 @@ proper_2_full_formula_second_level <- sampled_counts ~ 1 + time_id +
 
 
 #####
-# Fit the Improper models
+# Fit the models on the first-level map
 
 scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
-scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+
 
 for(scenario_name in scenario_names_ADM1){
   print(paste("---", scenario_name, "---"))
@@ -677,6 +677,11 @@ for(scenario_name in scenario_names_ADM1){
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 
+#####
+# Fit the models on the second-level map
+scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+
+
 for(scenario_name in scenario_names_ADM4){
   print(paste("---", scenario_name, "---"))
   #Load in a singular data set
@@ -698,12 +703,16 @@ for(scenario_name in scenario_names_ADM4){
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("1")
+  
   base_2_second_level <- inla(base_formula_2_second_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("2")
   
   
   typeI_1_second_level <- inla(typeI_1_formula_second_level, 
@@ -713,12 +722,16 @@ for(scenario_name in scenario_names_ADM4){
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("3")
+  
   typeI_2_second_level <- inla(typeI_2_formula_second_level, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("4")
   
   typeII_1_second_level <- inla(typeII_1_formula_second_level, 
                                data = lambda, 
@@ -727,12 +740,16 @@ for(scenario_name in scenario_names_ADM4){
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("5")
+  
   typeII_2_second_level <- inla(typeII_2_formula_second_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("6")
   
   typeIII_1_second_level <- inla(typeIII_1_formula_second_level, 
                                 data = lambda, 
@@ -741,12 +758,16 @@ for(scenario_name in scenario_names_ADM4){
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("7")
+  
   typeIII_2_second_level <- inla(typeIII_2_formula_second_level, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("8")
   
   
   
@@ -755,7 +776,9 @@ for(scenario_name in scenario_names_ADM4){
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.margina
+  
+  print("9")
   
   typeIV_2_second_level <- inla(typeIV_2_formula_second_level, 
                                data = lambda, 
@@ -763,6 +786,8 @@ for(scenario_name in scenario_names_ADM4){
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("10")
   
   print(paste("Improper models done for", scenario_name))
   
@@ -784,12 +809,16 @@ for(scenario_name in scenario_names_ADM4){
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("11")
+  
   proper2_noInt_second_level <- inla(proper_base_2_formula_second_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("12")
   
   proper1_onlyInt_second_level <- inla(proper_1_onlyInt_formula_second_level, 
                           data = lambda, 
@@ -798,12 +827,16 @@ for(scenario_name in scenario_names_ADM4){
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("13")
+  
   proper2_onlyInt_second_level <- inla(proper_2_onlyInt_formula_second_level, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("14")
   
   proper1_full_second_level <- inla(proper_1_full_formula_second_level, 
                        data = lambda, 
@@ -812,12 +845,16 @@ for(scenario_name in scenario_names_ADM4){
                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print("15")
+  
   proper2_full_second_level <- inla(proper_2_full_formula_second_level, 
                        data = lambda, 
                        family = "poisson",
                        E = E_it, #E_it
                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("16")
   
   
   

@@ -107,6 +107,9 @@ select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
 
 
 ################################################################################
+## ADM1
+
+################################################
 # Just plot the straight up fitted rates n stuff
 
 scenario_name = "sc3"
@@ -145,8 +148,7 @@ select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
 
 
 
-################################################################################
-
+################################################
 ### Do the same but use the marginals to make plots on the observational level
 
 scenario_name = "sc11"
@@ -191,6 +193,130 @@ for(i in 1:nrow(pred_to_plot)){
 }
 
 select_regions_lin_pred_vs_true_2(ADM1_grid, pred_to_plot, title)
+
+################################################################################
+
+# Plot some of the ADM4
+
+## Make a geofacet grid to plot onto
+ADM4_grid <- data.frame(
+  code = c("1", "50", "100", "150", "200", "250", "300", "350", "400"),
+  name = c("Alb-Donau-Kreis",
+           "Ansbach",
+           "Munchen",
+           "Oberhavel",
+           "Celle",
+           "Dusseldorf",
+           "Bad Kreuznach",
+           "Stendal",
+           "Wartburgkreis"),
+  row = c(1, 1, 1, 2, 2, 2, 3, 3, 3),
+  col = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
+  stringsAsFactors = FALSE)
+
+
+geofacet::grid_preview(ADM4_grid)
+
+
+##################################
+# Rate as it is
+
+scenario_name = "sc2"
+title = TeX(r'(ADM4$_{const, short}$)')
+
+### Load in simulated data for that scenario
+load(paste("./Simulated_data/", scenario_name, "/", 
+           scenario_name, "_data.RData", sep = ""))
+
+lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
+lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+
+#### Remove unessecary data
+rm(lambda.df)
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+rm(proper1_full_second_level, proper2_full_second_level)
+
+model = typeIV_1_second_level
+
+# Must sort the proper ones
+
+
+#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
+
+pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                           time_id = lambda_$time_id,
+                           median = model$summary.fitted.values$'0.5quant',#sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM4, tT), # 
+                           quantile_0.025 = model$summary.fitted.values$'0.025quant',#sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM4, tT), # 
+                           quantile_0.975 = model$summary.fitted.values$'0.975quant',#sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM4, tT), # 
+                           sampled_counts = lambda_$sampled_counts,
+                           lambda_it = lambda_$lambda_it,
+                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+
+select_regions_lin_pred_vs_true(ADM4_grid, pred_to_plot, title)
+
+
+
+##################################
+# Counts
+
+select_regions_lin_pred_vs_true_2()
+
+
+
+scenario_name = "sc2"
+title = TeX(r'(ADM4$_{const, short}$)')
+
+### Load in simulated data for that scenario
+load(paste("./Simulated_data/", scenario_name, "/", 
+           scenario_name, "_data.RData", sep = ""))
+
+lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
+lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+
+#### Remove unessecary data
+rm(lambda.df)
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+model = base_1_first_level
+
+ul_each <- lapply(model$marginals.fitted.values, 
+                  FUN = function(x){
+                    return(find_ul_quants_counts_single_pred(x, 100))
+                  })
+
+### Must sort the proper ones
+#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
+
+pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                           time_id = lambda_$time_id,
+                           median = rep(NA, nrow(lambda_)),
+                           quantile_0.025 = rep(NA, nrow(lambda_)),
+                           quantile_0.975 = rep(NA, nrow(lambda_)),
+                           sampled_counts = lambda_$sampled_counts,
+                           lambda_it = lambda_$lambda_it * lambda_$E_it,
+                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+
+for(i in 1:nrow(pred_to_plot)){
+  pred_to_plot[i, ]$median = ul_each[[i]]$median
+  pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
+  pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
+}
+
+select_regions_lin_pred_vs_true_2(ADM1_grid, pred_to_plot, title)
+
+
+
+
+
+
+
+
+
 
 
 
