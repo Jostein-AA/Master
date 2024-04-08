@@ -40,11 +40,6 @@ matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
 Besag_prec_first_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
-
-# get scaled Besag
-scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level, 
-                                                        constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
-                                                                      e = 0))
 #---
 
 
@@ -54,7 +49,7 @@ proper_base_formula_first_level <- sampled_counts ~ 1 + time_id +
                                                       hyper = ar1_hyper) + 
                                                     f(area_id, 
                                                       model = "besagproper2",
-                                                      graph = scaled_besag_prec_first_level,
+                                                      graph = Besag_prec_first_level,
                                                       hyper = spatial_hyper)
 
 

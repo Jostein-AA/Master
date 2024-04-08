@@ -6,6 +6,7 @@ source("libraries.R")
 source("Utilities.R")
 
 library("geofacet")
+library(latex2exp)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
@@ -23,43 +24,9 @@ n_ADM4 <- nrow(second_level_admin_map)
 
 
 ### state a scenario name
-# scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
-# scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 
-scenario_name = "sc3"
-
-
-### Load in simulated data for that scenario
-load(paste("./Simulated_data/", scenario_name, "/", 
-           scenario_name, "_data.RData", sep = ""))
-
-lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-lambda_$sampled_counts <- lambda.df$sampled_counts[, 2]
-lambda_$lambda_it <- lambda.df$lambda_it[, 2]
-
-#### Remove unessecary data
-rm(lambda.df)
-
-### Load in the models for that scenario
-load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
-model = typeIV_1_first_level
-
-# Plot the 95% CIs over all the 13 years (also for those predicted on) for areas
-
-### Extract the first 10 years directly
-pred_to_plot <- data.frame(area_id = lambda_$area_id,
-                          time_id = lambda_$time_id,
-                          median = model$summary.fitted.values$'0.5quant',
-                          quantile_0.025 = model$summary.fitted.values$'0.025quant',
-                          quantile_0.975 = model$summary.fitted.values$'0.975quant',
-                          sampled_counts = lambda_$sampled_counts,
-                          lambda_it = lambda_$lambda_it,
-                          count_div_pop = lambda_$sampled_counts/lambda_$E_it)
-
-
-### Plot
-#grid_design()
-
+## Make a geofacet grid to plot onto
 ADM1_grid <- data.frame(
   code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
   name = c(" Schleswig-Holstein ", 
@@ -80,158 +47,153 @@ ADM1_grid <- data.frame(
            " Baden-Wurttemberg "),
   row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
   col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
-  stringsAsFactors = FALSE
-)
+  stringsAsFactors = FALSE)
 
 geofacet::grid_preview(ADM1_grid)
 
-
 select_regions_lin_pred_vs_true <- function(geofacet_grid,
-                                            pred_to_plot){
+                                            pred_to_plot,
+                                            title){
   # Function that plots for select regions the fitted linear predictor of
   # the provided model along w. corresponding 95% CI's
   # against the true risk
-
+  
   plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
-    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = "95% CI"), 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
                 fill = "#F8766D", alpha = 0.6) +
     geom_point(aes(x = time_id, y = lambda_it, col = "True rate")) + 
     geom_point((aes(x = time_id, y = count_div_pop, col = "sampled count/Eit"))) +
     geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
     facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
-    scale_x_continuous(labels = function(x) paste0("'", substr(x, 3, 4))) +
-    labs(x = "Year",
+    labs(title = title,
+         x = "Year",
          y = "Rate",
          col = NULL) +
     theme_bw() + 
-    theme(axis.title=element_text(size=9),
-          plot.title = element_text(size=10),
+    theme(axis.title=element_text(size=11),
+          plot.title = element_text(size=11),
           strip.text.x = element_text(size = 9))
   
   plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
   return(plt)
-  
 }
-select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot)
 
+select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
+                                            pred_to_plot,
+                                            title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+    geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
+    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate",
+         col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=11),
+          plot.title = element_text(size=11),
+          strip.text.x = element_text(size = 9))
+  
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
+  return(plt)
+}
+
+
+################################################################################
+# Just plot the straight up fitted rates n stuff
+
+scenario_name = "sc3"
+title = TeX(r'(ADM1$_{const, short}$)')
+
+### Load in simulated data for that scenario
+load(paste("./Simulated_data/", scenario_name, "/", 
+           scenario_name, "_data.RData", sep = ""))
+
+lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
+lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+
+#### Remove unessecary data
+rm(lambda.df)
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+model = proper2_onlyInt
+
+# Must sort the proper ones
+
+
+#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
+
+pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                           time_id = lambda_$time_id,
+                           median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM1, tT), # model$summary.fitted.values$'0.5quant',
+                           quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM1, tT),# model$summary.fitted.values$'0.025quant',
+                           quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM1, tT), #model$summary.fitted.values$'0.975quant',
+                           sampled_counts = lambda_$sampled_counts,
+                           lambda_it = lambda_$lambda_it,
+                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
 
 
 
 ################################################################################
 
-load("improper1_noInt_fitted.RData")
-load("improper1_typeI_fitted.RData")
+### Do the same but use the marginals to make plots on the observational level
 
-#Load in simulation data (done stupidly, change!)
-load("./Simulated_data/sc1_data_1.RData")
-lambda_sc1.df <- lambda.df
-lambda_sc1.df$space.time = 1:nrow(lambda_sc1.df)
+scenario_name = "sc11"
+title = TeX(r'(ADM1$_{cp, long}$)')
 
-load("./Simulated_data/sc2_data_1.RData")
-lambda_sc2.df <- lambda.df
-lambda_sc2.df$space.time = 1:nrow(lambda_sc2.df)
+### Load in simulated data for that scenario
+load(paste("./Simulated_data/", scenario_name, "/", 
+           scenario_name, "_data.RData", sep = ""))
 
-load("./Simulated_data/sc3_data_1.RData")
-lambda_sc3.df <- lambda.df
-lambda_sc3.df$space.time = 1:nrow(lambda_sc3.df)
+lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
+lambda_$lambda_it <- lambda.df$lambda_it[, 3]
 
-load("./Simulated_data/sc4_data_1.RData")
-lambda_sc4.df <- lambda.df
-lambda_sc4.df$space.time = 1:nrow(lambda_sc4.df)
+#### Remove unessecary data
+rm(lambda.df)
 
-load("./Simulated_data/sc5_data_1.RData")
-lambda_sc5.df <- lambda.df
-lambda_sc5.df$space.time = 1:nrow(lambda_sc5.df)
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+model = base_1_first_level
 
-load("./Simulated_data/sc6_data_1.RData")
-lambda_sc6.df <- lambda.df
-lambda_sc6.df$space.time = 1:nrow(lambda_sc6.df)
+ul_each <- lapply(model$marginals.fitted.values, 
+                   FUN = function(x){
+                     return(find_ul_quants_counts_single_pred(x, 100))
+                   })
 
-load("./Simulated_data/sc7_data_1.RData")
-lambda_sc7.df <- lambda.df
-lambda_sc7.df$space.time = 1:nrow(lambda_sc7.df)
+### Must sort the proper ones
+#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
 
-load("./Simulated_data/sc8_data_1.RData")
-lambda_sc8.df <- lambda.df
-lambda_sc8.df$space.time = 1:nrow(lambda_sc8.df)
+pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                           time_id = lambda_$time_id,
+                           median = rep(NA, nrow(lambda_)),
+                           quantile_0.025 = rep(NA, nrow(lambda_)),
+                           quantile_0.975 = rep(NA, nrow(lambda_)),
+                           sampled_counts = lambda_$sampled_counts,
+                           lambda_it = lambda_$lambda_it * lambda_$E_it,
+                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
 
-load("./Simulated_data/sc9_data_1.RData")
-lambda_sc9.df <- lambda.df
-lambda_sc9.df$space.time = 1:nrow(lambda_sc9.df)
+for(i in 1:nrow(pred_to_plot)){
+  pred_to_plot[i, ]$median = ul_each[[i]]$median
+  pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
+  pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
+}
 
-load("./Simulated_data/sc10_data_1.RData")
-lambda_sc10.df <- lambda.df
-lambda_sc10.df$space.time = 1:nrow(lambda_sc10.df)
-
-load("./Simulated_data/sc11_data_1.RData")
-lambda_sc11.df <- lambda.df
-lambda_sc11.df$space.time = 1:nrow(lambda_sc11.df)
-
-load("./Simulated_data/sc12_data_1.RData")
-lambda_sc12.df <- lambda.df
-lambda_sc12.df$space.time = 1:nrow(lambda_sc12.df)
+select_regions_lin_pred_vs_true_2(ADM1_grid, pred_to_plot, title)
 
 
 
-################################################################################
-
-# Just plot the fits directly and see
-plot(improper_noInt_sc1)
-plot(improper_noInt_sc2)
-plot(improper_noInt_sc3)
-plot(improper_noInt_sc4)
-plot(improper_noInt_sc5)
-plot(improper_noInt_sc6)
-plot(improper_noInt_sc7)
-plot(improper_noInt_sc8)
-plot(improper_noInt_sc9)
-plot(improper_noInt_sc10)
-plot(improper_noInt_sc11)
-plot(improper_noInt_sc12)
-
-plot(improper_typeI_sc1)
-plot(improper_typeI_sc2)
-plot(improper_typeI_sc3)
-plot(improper_typeI_sc4)
-plot(improper_typeI_sc5)
-plot(improper_typeI_sc6)
-plot(improper_typeI_sc7)
-plot(improper_typeI_sc8)
-plot(improper_typeI_sc9)
-plot(improper_typeI_sc10)
-plot(improper_typeI_sc11)
-plot(improper_typeI_sc12)
-
-## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
-regions = c(1, 3, 5,
-            7, 9, 10,
-            12, 14, 16)
-
-#region_time_series(true_risk = lambda.df, model = improper_noInt,
-#                   region = regions[6], n = nrow(germany_map_2), tT = tT)
-
-## Plot the fitted linear predictor vs the true values for the regions = regions
-select_regions_lin_pred_vs_true(true_risk = lambda_sc1.df,
-                                model = improper_typeI_sc1,
-                                regions = regions,
-                                n = nrow(germany_map_2),
-                                tT = tT)
 
 
-plot(improper_noInt_sc4)
-
-## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
-regions = c(1, 50, 100,
-            150, 200, 250,
-            300, 350, 400)
-
-#region_time_series(true_risk = lambda.df, model = improper_noInt,
-#                   region = regions[6], n = nrow(germany_map_2), tT = tT)
-
-## Plot the fitted linear predictor vs the true values for the regions = regions
-select_regions_lin_pred_vs_true(true_risk = lambda_sc4.df,
-                                model = improper_noInt_sc4,
-                                regions = regions,
-                                n = nrow(germany_map),
-                                tT = tT)
 

@@ -8,21 +8,38 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
+dataset_id = 3
+
 ################################################################################
 # Create formulas for the Improper models
 
 ## Specify priors for hyperparameters of improper models
 #---
-### Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
+### Temporal hyperparameters (Precision of iid and precision of RW1 and RW2) w. corresponding priors: penalized constraint 
 temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
                       phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+
+### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
+ar1_hyper = list(prec = list(prior = 'pc.prec', 
+                             param = c(1, 0.01)), 
+                 rho = list(prior = 'pc.cor1', 
+                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+
+ar_hyper = list(prec = list(prior = 'pc.prec', 
+                            param = c(1, 0.01))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+
 
 ### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
                      phi = list(prior = 'pc', param = c(0.5, 0.5)))
 
+### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
+spatial_hyper_proper = list(prec= list(prior = 'pc.prec', 
+                                       param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+
 ### Interaction hyperparameter and prior (Precision of interaction)
 interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+
 #---
 
 ## Specify precision matrices
@@ -348,6 +365,147 @@ typeIV_2_formula_second_level <- update(base_formula_2_second_level,
                                               hyper = interaction_hyper))
 
 
+
+proper_base_1_formula_first_level <- sampled_counts ~ 1 + time_id +
+                                                          f(time_id.copy,
+                                                            model = "ar1",
+                                                            hyper = ar1_hyper) + 
+                                                          f(area_id, 
+                                                            model = "besagproper2",
+                                                            graph = Besag_prec_first_level,
+                                                            hyper = spatial_hyper_proper)
+
+proper_base_1_formula_second_level <- sampled_counts ~ 1 + time_id +
+                                                          f(time_id.copy,
+                                                            model = "ar1",
+                                                            hyper = ar1_hyper) + 
+                                                          f(area_id, 
+                                                            model = "besagproper2",
+                                                            graph = Besag_prec_second_level,
+                                                            hyper = spatial_hyper_proper)
+
+proper_1_onlyInt_formula_first_level <- sampled_counts ~ 1 + time_id + 
+                                                      f(area_id, 
+                                                        model = "besagproper2",
+                                                        graph = Besag_prec_first_level,
+                                                        hyper = spatial_hyper_proper,
+                                                        group = time_id, 
+                                                        control.group = list(model = "ar1"))
+
+proper_1_onlyInt_formula_second_level <- sampled_counts ~ 1 + time_id + 
+                                                  f(area_id, 
+                                                    model = "besagproper2",
+                                                    graph = Besag_prec_second_level,
+                                                    hyper = spatial_hyper_proper,
+                                                    group = time_id, 
+                                                    control.group = list(model = "ar1"))
+
+proper_1_full_formula_first_level <- sampled_counts ~ 1 + time_id + 
+                                              f(time_id.copy,
+                                                model = "ar1",
+                                                hyper = ar1_hyper) +
+                                              f(area_id, 
+                                                model = "besagproper2",
+                                                graph = Besag_prec_first_level,
+                                                hyper = spatial_hyper_proper) + 
+                                              f(area_id.copy, 
+                                                model = "besagproper2",
+                                                graph = Besag_prec_first_level,
+                                                hyper = spatial_hyper_proper,
+                                                group = time_id, 
+                                                control.group = list(model = "ar1")) 
+
+proper_1_full_formula_second_level <- sampled_counts ~ 1 + time_id + 
+                                                        f(time_id.copy,
+                                                          model = "ar1",
+                                                          hyper = ar1_hyper) +
+                                                        f(area_id, 
+                                                          model = "besagproper2",
+                                                          graph = Besag_prec_second_level,
+                                                          hyper = spatial_hyper_proper) + 
+                                                        f(area_id.copy, 
+                                                          model = "besagproper2",
+                                                          graph = Besag_prec_second_level,
+                                                          hyper = spatial_hyper_proper,
+                                                          group = time_id, 
+                                                          control.group = list(model = "ar1")) 
+
+
+proper_base_2_formula_first_level <- sampled_counts ~ 1 + time_id +
+                                                      f(time_id.copy,
+                                                        model = "ar",
+                                                        order = 2,
+                                                        hyper = ar_hyper) + 
+                                                      f(area_id, 
+                                                        model = "besagproper2",
+                                                        graph = Besag_prec_first_level,
+                                                        hyper = spatial_hyper_proper)
+
+proper_base_2_formula_second_level <- sampled_counts ~ 1 + time_id +
+                                                      f(time_id.copy,
+                                                        model = "ar",
+                                                        order = 2,
+                                                        hyper = ar_hyper) + 
+                                                      f(area_id, 
+                                                        model = "besagproper2",
+                                                        graph = Besag_prec_second_level,
+                                                        hyper = spatial_hyper_proper)
+
+proper_2_onlyInt_formula_first_level <- sampled_counts ~ 1 + time_id + 
+                                            f(area_id, 
+                                              model = "besagproper2",
+                                              graph = Besag_prec_first_level,
+                                              hyper = spatial_hyper_proper,
+                                              group = time_id, 
+                                              control.group = list(model = "ar", 
+                                                                   order = 2))
+
+proper_2_onlyInt_formula_second_level <- sampled_counts ~ 1 + time_id + 
+                                                  f(area_id, 
+                                                    model = "besagproper2",
+                                                    graph = Besag_prec_second_level,
+                                                    hyper = spatial_hyper_proper,
+                                                    group = time_id, 
+                                                    control.group = list(model = "ar", 
+                                                                         order = 2))
+
+proper_2_full_formula_first_level <- sampled_counts ~ 1 + time_id +
+                                                    f(time_id.copy,
+                                                      model = "ar",
+                                                      order = 2,
+                                                      hyper = ar_hyper) + 
+                                                    f(area_id, 
+                                                      model = "besagproper2",
+                                                      graph = Besag_prec_first_level,
+                                                      hyper = spatial_hyper_proper) + 
+                                                    f(area_id.copy, 
+                                                      model = "besagproper2",
+                                                      graph = Besag_prec_first_level,
+                                                      hyper = spatial_hyper_proper,
+                                                      group = time_id, 
+                                                      control.group = list(model = "ar", 
+                                                                           order = 2))
+
+
+proper_2_full_formula_second_level <- sampled_counts ~ 1 + time_id +
+                                                  f(time_id.copy,
+                                                    model = "ar",
+                                                    order = 2,
+                                                    hyper = ar_hyper) + 
+                                                  f(area_id, 
+                                                    model = "besagproper2",
+                                                    graph = Besag_prec_second_level,
+                                                    hyper = spatial_hyper_proper) + 
+                                                  f(area_id.copy, 
+                                                    model = "besagproper2",
+                                                    graph = Besag_prec_second_level,
+                                                    hyper = spatial_hyper_proper,
+                                                    group = time_id, 
+                                                    control.group = list(model = "ar", 
+                                                                         order = 2))
+
+
+
 #####
 # Fit the Improper models
 
@@ -361,7 +519,7 @@ for(scenario_name in scenario_names_ADM1){
              scenario_name, '_data.RData',sep = ""))
   
   lambda <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-  lambda$sampled_counts = lambda.df$sampled_counts[, 2] #Just a chosen data set
+  lambda$sampled_counts = lambda.df$sampled_counts[, dataset_id] #Just a chosen data set
   
   # Set the last three years to unkown
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
@@ -441,6 +599,63 @@ for(scenario_name in scenario_names_ADM1){
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print(paste("Improper models done for", scenario_name))
+  
+  # Resort the data for the proper models
+  ## Reorder due to change in space.time interaction
+  lambda <- lambda[order(lambda$area_id, decreasing = F), ]
+  rownames(lambda) <- 1:nrow(lambda)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda$area_id.copy <- lambda$area_id
+  lambda$time_id.copy <- lambda$time_id
+  
+  print("reordering of lambda done")
+  
+  proper1_noInt <- inla(proper_base_1_formula_first_level, 
+                         data = lambda, 
+                         family = "poisson",
+                         E = E_it, #E_it
+                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_noInt <- inla(proper_base_2_formula_first_level, 
+                        data = lambda, 
+                        family = "poisson",
+                        E = E_it, #E_it
+                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper1_onlyInt <- inla(proper_1_onlyInt_formula_first_level, 
+                        data = lambda, 
+                        family = "poisson",
+                        E = E_it, #E_it
+                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_onlyInt <- inla(proper_2_onlyInt_formula_first_level, 
+                        data = lambda, 
+                        family = "poisson",
+                        E = E_it, #E_it
+                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper1_full <- inla(proper_1_full_formula_first_level, 
+                          data = lambda, 
+                          family = "poisson",
+                          E = E_it, #E_it
+                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_full <- inla(proper_2_full_formula_first_level, 
+                          data = lambda, 
+                          family = "poisson",
+                          E = E_it, #E_it
+                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+                          
+  
+  
   
   # Save the INLA-objects
   save(base_1_first_level,
@@ -453,6 +668,12 @@ for(scenario_name in scenario_names_ADM1){
        typeIII_2_first_level,
        typeIV_1_first_level,
        typeIV_2_first_level,
+       proper1_noInt,
+       proper2_noInt,
+       proper1_onlyInt,
+       proper2_onlyInt,
+       proper1_full,
+       proper2_full,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 
@@ -463,7 +684,7 @@ for(scenario_name in scenario_names_ADM4){
              scenario_name, '_data.RData',sep = ""))
   
   lambda <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-  lambda$sampled_counts = lambda.df$sampled_counts[, 2] #Just a chosen data set
+  lambda$sampled_counts = lambda.df$sampled_counts[, dataset_id] #Just a chosen data set
   
   # Set the last three years to unkown
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
@@ -543,6 +764,63 @@ for(scenario_name in scenario_names_ADM4){
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
+  print(paste("Improper models done for", scenario_name))
+  
+  # Resort the data for the proper models
+  ## Reorder due to change in space.time interaction
+  lambda <- lambda[order(lambda$area_id, decreasing = F), ]
+  rownames(lambda) <- 1:nrow(lambda)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda$area_id.copy <- lambda$area_id
+  lambda$time_id.copy <- lambda$time_id
+  
+  print("reordering of lambda done")
+  
+  proper1_noInt_second_level <- inla(proper_base_1_formula_second_level, 
+                        data = lambda, 
+                        family = "poisson",
+                        E = E_it, #E_it
+                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_noInt_second_level <- inla(proper_base_2_formula_second_level, 
+                        data = lambda, 
+                        family = "poisson",
+                        E = E_it, #E_it
+                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper1_onlyInt_second_level <- inla(proper_1_onlyInt_formula_second_level, 
+                          data = lambda, 
+                          family = "poisson",
+                          E = E_it, #E_it
+                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_onlyInt_second_level <- inla(proper_2_onlyInt_formula_second_level, 
+                          data = lambda, 
+                          family = "poisson",
+                          E = E_it, #E_it
+                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper1_full_second_level <- inla(proper_1_full_formula_second_level, 
+                       data = lambda, 
+                       family = "poisson",
+                       E = E_it, #E_it
+                       control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                       control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_full_second_level <- inla(proper_2_full_formula_second_level, 
+                       data = lambda, 
+                       family = "poisson",
+                       E = E_it, #E_it
+                       control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                       control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  
   
   # Save the INLA-objects
   save(base_1_second_level,
@@ -555,22 +833,15 @@ for(scenario_name in scenario_names_ADM4){
        typeIII_2_second_level,
        typeIV_1_second_level,
        typeIV_2_second_level,
+       proper1_noInt_second_level,
+       proper2_noInt_second_level,
+       proper1_onlyInt_second_level,
+       proper2_onlyInt_second_level,
+       proper1_full_second_level,
+       proper2_full_second_level,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 
 
-################################################################################
-# Specify the formulas for the Proper models
-
-### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
-ar1_hyper = list(prec = list(prior = 'pc.prec', 
-                             param = c(1, 0.01)), 
-                 rho = list(prior = 'pc.cor1', 
-                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
-
-
-### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
-spatial_hyper = list(prec= list(prior = 'pc.prec', 
-                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
 
 
