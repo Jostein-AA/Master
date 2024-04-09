@@ -7,10 +7,17 @@ source("Utilities.R")
 
 library("geofacet")
 library(ggh4x)
+library(ggridges)
 library(latex2exp)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
+
+tT = 13
+n_sim = 100
+E_it = 100
+n_ADM1 <- nrow(first_level_admin_map)
+n_ADM4 <- nrow(second_level_admin_map)
 
 #load("improper1_noInt_fitted.RData")
 #load("improper1_typeI_fitted.RData")
@@ -580,10 +587,143 @@ select_regions_lin_pred_vs_true(true_risk = lambda_sc6.df,
 
 
 ################################################################################
-# 
+# Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
+
+
+#model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+#                "Improper1_typeIII", "Improper1_typeIV",
+#                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+#                "Improper2_typeIII", "Improper2_typeIV",
+#                "proper1_noInt", "proper1_onlyInt", "proper1_full",
+#                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+
+model_names = c("Improper1_noInt", "Improper1_typeIII", "Improper2_noInt",
+                "proper1_noInt")
+
+scenario_name = "sc3"
 
 
 
+#########
+# Based on counts
+model_name = model_names[1]
+load(paste("./results/model_choice/model_choice_", 
+           model_name, "_", 
+           scenario_name, ".RData",
+           sep = ""))
+
+tmp_ <- model_choice_for_counts
+
+to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                              IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                              IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                              IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                              IS_tot = tmp_$total_IS)
+
+
+for(model_name in model_names[2:length(model_names)]){
+  ### Load in Model choice data
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_counts
+  
+  tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                      IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                      IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                      IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                      IS_tot = tmp_$total_IS)
+  
+  to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
+  
+}
+
+
+
+
+ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+
+#########
+# Based on rates
+model_name = model_names[1]
+load(paste("./results/model_choice/model_choice_", 
+           model_name, "_", 
+           scenario_name, ".RData",
+           sep = ""))
+
+tmp_ <- model_choice_for_rates
+
+to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                               IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                               IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                               IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                               IS_tot = tmp_$total_IS)
+
+
+for(model_name in model_names[2:length(model_names)]){
+  ### Load in Model choice data
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_rates
+  
+  tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                      IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                      IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                      IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                      IS_tot = tmp_$total_IS)
+  
+  to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
+  
+}
+
+
+
+
+ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
+
+ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
+                             y = model_name, 
+                             fill = model_name)) +
+  geom_density_ridges() +
+  theme_ridges() + 
+  theme(legend.position = "none")
 
 
 

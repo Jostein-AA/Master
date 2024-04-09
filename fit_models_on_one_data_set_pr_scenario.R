@@ -525,79 +525,95 @@ for(scenario_name in scenario_names_ADM1){
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
   
   # Fit each model to the data set
-  
+  time_ = Sys.time()
   base_1_first_level <- inla(base_formula_1_first_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_noInt_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   base_2_first_level <- inla(base_formula_2_first_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-    
+  time_Improper2_noInt_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()  
   typeI_1_first_level <- inla(typeI_1_formula_first_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeI_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   typeI_2_first_level <- inla(typeI_2_formula_first_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeI_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   typeII_1_first_level <- inla(typeII_1_formula_first_level, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeII_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   typeII_2_first_level <- inla(typeII_2_formula_first_level, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-    
+  time_Improper2_typeII_ADM1 <- Sys.time() - time_ 
+  
+  time_ = Sys.time()  
   typeIII_1_first_level <- inla(typeIII_1_formula_first_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeIII_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   typeIII_2_first_level <- inla(typeIII_2_formula_first_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-
+  time_Improper2_typeIII_ADM1 <- Sys.time() - time_ 
   
-  
+  time_ = Sys.time()
   typeIV_1_first_level <- inla(typeIV_1_formula_first_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeIV_ADM1 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   typeIV_2_first_level <- inla(typeIV_2_formula_first_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeIV_ADM1 <- Sys.time() - time_ 
   
   print(paste("Improper models done for", scenario_name))
   
@@ -612,49 +628,93 @@ for(scenario_name in scenario_names_ADM1){
   
   print("reordering of lambda done")
   
+  time_ = Sys.time()
   proper1_noInt <- inla(proper_base_1_formula_first_level, 
                          data = lambda, 
                          family = "poisson",
                          E = E_it, #E_it
                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_noInt_ADM1 <- Sys.time() - time_
   
+  time_ = Sys.time()
   proper2_noInt <- inla(proper_base_2_formula_first_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper2_noInt_ADM1 <- Sys.time() - time_
   
+  time_ = Sys.time()
   proper1_onlyInt <- inla(proper_1_onlyInt_formula_first_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_onlyInt_ADM1 <- Sys.time() - time_
   
+  time_ = Sys.time()
   proper2_onlyInt <- inla(proper_2_onlyInt_formula_first_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper2_onlyInt_ADM1 <- Sys.time() - time_
   
+  time_ = Sys.time()
   proper1_full <- inla(proper_1_full_formula_first_level, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_full_ADM1 <- Sys.time() - time_
   
+  time_ = Sys.time()
   proper2_full <- inla(proper_2_full_formula_first_level, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-                          
+  time_proper2_full_ADM1 <- Sys.time() - time_ 
   
+  # Get timecomplexity into dataframe to save
+  time_complexity_ADM1 <- data.frame(model_name = c("Improper1_noInt",
+                                                    "Improper1_typeI",
+                                                    "Improper1_typeII",
+                                                    "Improper1_typeIII",
+                                                    "Improper1_typeIV",
+                                                    "Improper2_noInt",
+                                                    "Improper2_typeI",
+                                                    "Improper2_typeII",
+                                                    "Improper2_typeIII",
+                                                    "Improper2_typeIV",
+                                                    "proper1_noInt",
+                                                    "proper1_onlyInt",
+                                                    "proper1_full",
+                                                    "proper2_noInt",
+                                                    "proper2_onlyInt",
+                                                    "proper2_full"),
+                                    time = c(time_Improper1_noInt_ADM1,
+                                             time_Improper2_noInt_ADM1,
+                                             time_Improper1_typeI_ADM1,
+                                             time_Improper2_typeI_ADM1,
+                                             time_Improper1_typeII_ADM1,
+                                             time_Improper2_typeII_ADM1,
+                                             time_Improper1_typeIII_ADM1,
+                                             time_Improper2_typeIII_ADM1,
+                                             time_Improper1_typeIV_ADM1,
+                                             time_Improper2_typeIV_ADM1,
+                                             time_proper1_noInt_ADM1,
+                                             time_proper2_noInt_ADM1,
+                                             time_proper1_onlyInt_ADM1,
+                                             time_proper2_onlyInt_ADM1,
+                                             time_proper1_full_ADM1,
+                                             time_proper2_full_ADM1))
   
   
   # Save the INLA-objects
@@ -674,6 +734,7 @@ for(scenario_name in scenario_names_ADM1){
        proper2_onlyInt,
        proper1_full,
        proper2_full,
+       time_complexity_ADM1,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 
@@ -695,98 +756,107 @@ for(scenario_name in scenario_names_ADM4){
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
   
   # Fit each model to the data set
-  
+  time_ = Sys.time()
   base_1_second_level <- inla(base_formula_1_second_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_noInt_ADM4 <- Sys.time() - time_ 
+  
+  time_ = Sys.time()
   
   print("1")
-  
   base_2_second_level <- inla(base_formula_2_second_level, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_noInt_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("2")
-  
-  
   typeI_1_second_level <- inla(typeI_1_formula_second_level, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeI_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("3")
-  
   typeI_2_second_level <- inla(typeI_2_formula_second_level, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeI_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("4")
-  
   typeII_1_second_level <- inla(typeII_1_formula_second_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeII_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("5")
-  
   typeII_2_second_level <- inla(typeII_2_formula_second_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeII_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("6")
-  
   typeIII_1_second_level <- inla(typeIII_1_formula_second_level, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper1_typeIII_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("7")
-  
   typeIII_2_second_level <- inla(typeIII_2_formula_second_level, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeIII_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("8")
-  
-  
-  
   typeIV_1_second_level <- inla(typeIV_1_formula_second_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.margina
+  time_Improper1_typeIV_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("9")
-  
   typeIV_2_second_level <- inla(typeIV_2_formula_second_level, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_Improper2_typeIV_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("10")
   
   print(paste("Improper models done for", scenario_name))
@@ -802,60 +872,101 @@ for(scenario_name in scenario_names_ADM4){
   
   print("reordering of lambda done")
   
+  time_ = Sys.time()
   proper1_noInt_second_level <- inla(proper_base_1_formula_second_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_noInt_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("11")
-  
   proper2_noInt_second_level <- inla(proper_base_2_formula_second_level, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper2_noInt_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("12")
-  
   proper1_onlyInt_second_level <- inla(proper_1_onlyInt_formula_second_level, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_onlyInt_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("13")
-  
   proper2_onlyInt_second_level <- inla(proper_2_onlyInt_formula_second_level, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper2_onlyInt_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("14")
-  
   proper1_full_second_level <- inla(proper_1_full_formula_second_level, 
                        data = lambda, 
                        family = "poisson",
                        E = E_it, #E_it
                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper1_full_ADM4 <- Sys.time() - time_ 
   
+  time_ = Sys.time()
   print("15")
-  
   proper2_full_second_level <- inla(proper_2_full_formula_second_level, 
                        data = lambda, 
                        family = "poisson",
                        E = E_it, #E_it
                        control.predictor = list(compute = TRUE, link = 1),       #For predictions
                        control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  time_proper2_full_ADM4 <- Sys.time() - time_ 
   
   print("16")
   
+  
+  # Get timecomplexity into dataframe to save
+  time_complexity_ADM4 <- data.frame(model_name = c("Improper1_noInt",
+                                                   "Improper1_typeI",
+                                                   "Improper1_typeII",
+                                                   "Improper1_typeIII",
+                                                   "Improper1_typeIV",
+                                                   "Improper2_noInt",
+                                                   "Improper2_typeI",
+                                                   "Improper2_typeII",
+                                                   "Improper2_typeIII",
+                                                   "Improper2_typeIV",
+                                                   "proper1_noInt",
+                                                   "proper1_onlyInt",
+                                                   "proper1_full",
+                                                   "proper2_noInt",
+                                                   "proper2_onlyInt",
+                                                   "proper2_full"),
+                                    time = c(time_Improper1_noInt_ADM4,
+                                             time_Improper2_noInt_ADM4,
+                                             time_Improper1_typeI_ADM4,
+                                             time_Improper2_typeI_ADM4,
+                                             time_Improper1_typeII_ADM4,
+                                             time_Improper2_typeII_ADM4,
+                                             time_Improper1_typeIII_ADM4,
+                                             time_Improper2_typeIII_ADM4,
+                                             time_Improper1_typeIV_ADM4,
+                                             time_Improper2_typeIV_ADM4,
+                                             time_proper1_noInt_ADM4,
+                                             time_proper2_noInt_ADM4,
+                                             time_proper1_onlyInt_ADM4,
+                                             time_proper2_onlyInt_ADM4,
+                                             time_proper1_full_ADM4,
+                                             time_proper2_full_ADM4))
   
   
   
@@ -876,6 +987,7 @@ for(scenario_name in scenario_names_ADM4){
        proper2_onlyInt_second_level,
        proper1_full_second_level,
        proper2_full_second_level,
+       time_complexity_ADM4,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 

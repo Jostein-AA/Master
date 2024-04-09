@@ -152,16 +152,16 @@ calc_mse_is_count_one_model_one_scenario_ADM1 <- function(model_name,
     }
     
     #Get the total MSE for count
-    model_choice_for_counts[i, 4] = mean(model_choice_for_counts[i, 1:3])
+    model_choice_for_counts[i, 4] = mean(as.numeric(model_choice_for_counts[i, 1:3]))
     
     #Get the total MSE for rate
-    model_choice_for_rates[i, 4] = mean(model_choice_for_rates[i, 1:3])
+    model_choice_for_rates[i, 4] = mean(as.numeric(model_choice_for_rates[i, 1:3]))
     
     #Get the total IS for count
-    model_choice_for_counts[i, 8] = mean(model_choice_for_counts[i, 5:7])
+    model_choice_for_counts[i, 8] = mean(as.numeric(model_choice_for_counts[i, 5:7]))
     
     #Get the total IS for rate
-    model_choice_for_rates[i, 8] = mean(model_choice_for_rates[i, 5:7])
+    model_choice_for_rates[i, 8] = mean(as.numeric(model_choice_for_rates[i, 5:7]))
     
     ## Update progressbar
     setTxtProgressBar(pb, i)
@@ -177,7 +177,7 @@ calc_mse_is_count_one_model_one_scenario_ADM1 <- function(model_name,
   }
   
   filename = paste("./results/model_choice/", "model_choice_", model_name, "_", 
-                   scenario_name, ".RData")
+                   scenario_name, ".RData", sep = "")
   
   save(model_choice_for_counts,
        model_choice_for_rates,
@@ -279,16 +279,16 @@ calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
     }
     
     #Get the total MSE for count
-    model_choice_for_counts[i, 4] = mean(model_choice_for_counts[i, 1:3])
+    model_choice_for_counts[i, 4] = mean(as.numeric(model_choice_for_counts[i, 1:3]))
     
     #Get the total MSE for rate
-    model_choice_for_rates[i, 4] = mean(model_choice_for_rates[i, 1:3])
+    model_choice_for_rates[i, 4] = mean(as.numeric(model_choice_for_rates[i, 1:3]))
     
     #Get the total IS for count
-    model_choice_for_counts[i, 8] = mean(model_choice_for_counts[i, 5:7])
+    model_choice_for_counts[i, 8] = mean(as.numeric(model_choice_for_counts[i, 5:7]))
     
     #Get the total IS for rate
-    model_choice_for_rates[i, 8] = mean(model_choice_for_rates[i, 5:7])
+    model_choice_for_rates[i, 8] = mean(as.numeric(model_choice_for_rates[i, 5:7]))
     
     ## Update progressbar
     setTxtProgressBar(pb, i)
@@ -304,7 +304,7 @@ calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
   }
   
   filename = paste("./results/model_choice/", "model_choice_", model_name, "_", 
-                   scenario_name, ".RData")
+                   scenario_name, ".RData", sep = "")
   
   save(model_choice_for_counts,
        model_choice_for_rates,
@@ -660,6 +660,313 @@ for(scenario_name in scenario_names_ADM4){
 
 ################################################################################
 # Get a table for a singular dataset for each scenario, to better see maybe?
+
+#####
+# ADM1 results
+
+# The count results
+for(scenario_name in scenario_names_ADM1){
+  print(scenario_name)
+  
+  model_choice_counts.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                     "Improper1_typeI",
+                                                     "Improper1_typeII",
+                                                     "Improper1_typeIII",
+                                                     "Improper1_typeIV",
+                                                     "Improper2_noInt",
+                                                     "Improper2_typeI",
+                                                     "Improper2_typeII",
+                                                     "Improper2_typeIII",
+                                                     "Improper2_typeIV",
+                                                     "proper1_noInt",
+                                                     "proper1_onlyInt",
+                                                     "proper1_full",
+                                                     "proper2_noInt",
+                                                     "proper2_onlyInt",
+                                                     "proper2_full"), 8),
+                                       model_choice = c(rep(1, 16),rep(2, 16),
+                                                        rep(3, 16),rep(4, 16),
+                                                        rep(5, 16),rep(6, 16),
+                                                        rep(7, 16),rep(8, 16)),
+                                       value = 1:(8 * 16))
+  
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_counts
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    # Extract first data set
+    tmp2_ = tmp_[1, ]
+    
+    #Insert values into the model_choice_counts.df
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 8, ]$value = tmp2_[8]
+    
+  }
+  
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
+  
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (total)",
+                                      "IS (1)", "IS (2)", "IS (3)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice_counts.df),
+    caption = caption,
+    label = label
+  )
+  
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_counts_singular_dataset_", scenario_name, ".tex", sep = ""))
+}
+
+# The rate results
+for(scenario_name in scenario_names_ADM1){
+  print(scenario_name)
+  
+  model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                    "Improper1_typeI",
+                                                    "Improper1_typeII",
+                                                    "Improper1_typeIII",
+                                                    "Improper1_typeIV",
+                                                    "Improper2_noInt",
+                                                    "Improper2_typeI",
+                                                    "Improper2_typeII",
+                                                    "Improper2_typeIII",
+                                                    "Improper2_typeIV",
+                                                    "proper1_noInt",
+                                                    "proper1_onlyInt",
+                                                    "proper1_full",
+                                                    "proper2_noInt",
+                                                    "proper2_onlyInt",
+                                                    "proper2_full"), 8),
+                                      model_choice = c(rep(1, 16),rep(2, 16),
+                                                       rep(3, 16),rep(4, 16),
+                                                       rep(5, 16),rep(6, 16),
+                                                       rep(7, 16),rep(8, 16)),
+                                      value = 1:(8 * 16))
+  
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_rates
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Extract first data set
+    tmp2_ <- tmp_[1, ]
+    
+    #Insert values into the model_choice_rates.df
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 8, ]$value = tmp2_[8]
+    
+  }
+  
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
+  
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (total)",
+                                      "IS (1)", "IS (2)", "IS (3)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice_rates.df),
+    caption = caption,
+    label = label
+  )
+  
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_rates_singular_dataset_", scenario_name, ".tex", sep = ""))
+}
+
+
+#####
+# ADM4 results
+
+model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+                "Improper1_typeIII", "Improper1_typeIV",
+                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+                "Improper2_typeIII", "Improper2_typeIV",
+                "proper1_noInt", "proper1_onlyInt", "proper1_full",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+
+# For counts
+for(scenario_name in scenario_names_ADM4){
+  print(scenario_name)
+  
+  model_choice_counts.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                     "Improper1_typeI",
+                                                     "Improper1_typeII",
+                                                     "Improper1_typeIII",
+                                                     "Improper1_typeIV",
+                                                     "Improper2_noInt",
+                                                     "Improper2_typeI",
+                                                     "Improper2_typeII",
+                                                     "Improper2_typeIII",
+                                                     "Improper2_typeIV",
+                                                     "proper1_noInt",
+                                                     "proper1_onlyInt",
+                                                     "proper1_full",
+                                                     "proper2_noInt",
+                                                     "proper2_onlyInt",
+                                                     "proper2_full"), 8),
+                                       model_choice = c(rep(1, 16),rep(2, 16),
+                                                        rep(3, 16),rep(4, 16),
+                                                        rep(5, 16),rep(6, 16),
+                                                        rep(7, 16),rep(8, 16)),
+                                       value = 1:(8 * 16))
+  
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = " "))
+    tmp_ <- model_choice_for_counts
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Extract first dataset
+    tmp2_ <- tmp_[1, ]
+    
+    #Insert values into the model_choice_counts.df
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 8, ]$value = tmp2_[8]
+    
+  }
+  
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
+  
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (total)",
+                                      "IS (1)", "IS (2)", "IS (3)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice_counts.df),
+    caption = caption,
+    label = label
+  )
+  
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_counts_singular_dataset_", scenario_name, ".tex", sep = ""))
+}
+
+# For rates
+for(scenario_name in scenario_names_ADM4){
+  print(scenario_name)
+  
+  model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                    "Improper1_typeI",
+                                                    "Improper1_typeII",
+                                                    "Improper1_typeIII",
+                                                    "Improper1_typeIV",
+                                                    "Improper2_noInt",
+                                                    "Improper2_typeI",
+                                                    "Improper2_typeII",
+                                                    "Improper2_typeIII",
+                                                    "Improper2_typeIV",
+                                                    "proper1_noInt",
+                                                    "proper1_onlyInt",
+                                                    "proper1_full",
+                                                    "proper2_noInt",
+                                                    "proper2_onlyInt",
+                                                    "proper2_full"), 8),
+                                      model_choice = c(rep(1, 16),rep(2, 16),
+                                                       rep(3, 16),rep(4, 16),
+                                                       rep(5, 16),rep(6, 16),
+                                                       rep(7, 16),rep(8, 16)),
+                                      value = 1:(8 * 16))
+  
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = " "))
+    tmp_ <- model_choice_for_rates
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Extract first data set
+    tmp2_ <- tmp_[1, ]
+    
+    #Insert values into the model_choice_rates.df
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 1, ]$value = tmp2_[1]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 2, ]$value = tmp2_[2]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 3, ]$value = tmp2_[3]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 4, ]$value = tmp2_[4]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 5, ]$value = tmp2_[5]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 6, ]$value = tmp2_[6]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 7, ]$value = tmp2_[7]
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 8, ]$value = tmp2_[8]
+    
+  }
+  
+  #Make caption and label for latex table
+  caption = "HEIHEI"
+  label = paste("model-choice-", scenario_name, sep = "")
+  
+  #Make latex table
+  latex_tabular <- latexTable(tabular(
+    Heading("Model")*RowFactor(Model, 
+                               nopagebreak = "\\hline",
+                               spacing = 0)~
+      Heading()*Factor(model_choice, 
+                       levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (total)",
+                                      "IS (1)", "IS (2)", "IS (3)", "IS (total)"))*
+      Heading()*value*Heading()*identity,
+    data = model_choice_rates.df),
+    caption = caption,
+    label = label
+  )
+  
+  #Save latex table
+  cat(latex_tabular, file =paste("./results/model_choice/table_rates_singular_dataset_", scenario_name, ".tex", sep = ""))
+}
+
 
 
 
