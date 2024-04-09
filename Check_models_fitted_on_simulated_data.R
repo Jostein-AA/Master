@@ -17,39 +17,13 @@ n_sim = 100
 E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
+dataset_id = 3
+
+scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 
 
 ###
-
-
-
-### state a scenario name
-scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
-
-## Make a geofacet grid to plot onto
-ADM1_grid <- data.frame(
-  code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
-  name = c(" Schleswig-Holstein ", 
-           " Mecklenburg-Vorpommern ", 
-           " Hamburg", 
-           " Berlin ", 
-           " Bremen ", 
-           " Niedersachsen", 
-           " Brandenburg", 
-           " Sachsen-Anhalt", 
-           " Nordrhein-Westfalen", 
-           " Sachsen", 
-           " Thuringen", 
-           " Hessen ", 
-           " Rheinland-Pfalz ", 
-           " Saarland", 
-           " Bayern", 
-           " Baden-Wurttemberg "),
-  row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
-  col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
-  stringsAsFactors = FALSE)
-
-geofacet::grid_preview(ADM1_grid)
+# Functions used for plotting
 
 select_regions_lin_pred_vs_true <- function(geofacet_grid,
                                             pred_to_plot,
@@ -83,7 +57,7 @@ select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
                                             title){
   # Function that plots for select regions the fitted linear predictor of
   # the provided model along w. corresponding 95% CI's
-  # against the true risk
+  # against the true counts
   
   plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
     geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
@@ -108,9 +82,33 @@ select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
 
 ################################################################################
 ## ADM1
+## Make a geofacet grid to plot onto
+ADM1_grid <- data.frame(
+  code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
+  name = c(" Schleswig-Holstein ", 
+           " Mecklenburg-Vorpommern ", 
+           " Hamburg", 
+           " Berlin ", 
+           " Bremen ", 
+           " Niedersachsen", 
+           " Brandenburg", 
+           " Sachsen-Anhalt", 
+           " Nordrhein-Westfalen", 
+           " Sachsen", 
+           " Thuringen", 
+           " Hessen ", 
+           " Rheinland-Pfalz ", 
+           " Saarland", 
+           " Bayern", 
+           " Baden-Wurttemberg "),
+  row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
+  col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
+  stringsAsFactors = FALSE)
+
+geofacet::grid_preview(ADM1_grid)
 
 ################################################
-# Just plot the straight up fitted rates n stuff
+### Plot the rates
 
 scenario_name = "sc3"
 title = TeX(r'(ADM1$_{const, short}$)')
@@ -120,8 +118,8 @@ load(paste("./Simulated_data/", scenario_name, "/",
            scenario_name, "_data.RData", sep = ""))
 
 lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
-lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
 
 #### Remove unessecary data
 rm(lambda.df)
@@ -130,10 +128,9 @@ rm(lambda.df)
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 model = proper2_onlyInt
 
-# Must sort the proper ones
+### NB: Must sort the proper ones
 
 
-#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
 
 pred_to_plot <- data.frame(area_id = lambda_$area_id,
                            time_id = lambda_$time_id,
@@ -151,31 +148,30 @@ select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
 ################################################
 ### Do the same but use the marginals to make plots on the observational level
 
-scenario_name = "sc11"
-title = TeX(r'(ADM1$_{cp, long}$)')
+scenario_name = "sc3"
+title = TeX(r'(ADM1$_{conts, short}$)')
 
 ### Load in simulated data for that scenario
 load(paste("./Simulated_data/", scenario_name, "/", 
            scenario_name, "_data.RData", sep = ""))
 
 lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
-lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
 
 #### Remove unessecary data
 rm(lambda.df)
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
-model = base_1_first_level
+model = typeIV_1_first_level
 
 ul_each <- lapply(model$marginals.fitted.values, 
                    FUN = function(x){
                      return(find_ul_quants_counts_single_pred(x, 100))
                    })
 
-### Must sort the proper ones
-#proper_summary_fitted_values = sort_proper_fitted(model$summary.fitted.values, n_ADM1, tT)
+### NB: Must sort the proper models
 
 pred_to_plot <- data.frame(area_id = lambda_$area_id,
                            time_id = lambda_$time_id,
@@ -229,8 +225,8 @@ load(paste("./Simulated_data/", scenario_name, "/",
            scenario_name, "_data.RData", sep = ""))
 
 lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
-lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
 
 #### Remove unessecary data
 rm(lambda.df)
@@ -262,10 +258,6 @@ select_regions_lin_pred_vs_true(ADM4_grid, pred_to_plot, title)
 ##################################
 # Counts
 
-select_regions_lin_pred_vs_true_2()
-
-
-
 scenario_name = "sc2"
 title = TeX(r'(ADM4$_{const, short}$)')
 
@@ -274,15 +266,17 @@ load(paste("./Simulated_data/", scenario_name, "/",
            scenario_name, "_data.RData", sep = ""))
 
 lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-lambda_$sampled_counts <- lambda.df$sampled_counts[, 3]
-lambda_$lambda_it <- lambda.df$lambda_it[, 3]
+lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
 
 #### Remove unessecary data
 rm(lambda.df)
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
-model = base_1_first_level
+rm(proper1_full_second_level, proper2_full_second_level)
+
+model = proper1_onlyInt_second_level
 
 ul_each <- lapply(model$marginals.fitted.values, 
                   FUN = function(x){
@@ -307,7 +301,7 @@ for(i in 1:nrow(pred_to_plot)){
   pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
 }
 
-select_regions_lin_pred_vs_true_2(ADM1_grid, pred_to_plot, title)
+select_regions_lin_pred_vs_true_2(ADM4_grid, pred_to_plot, title)
 
 
 

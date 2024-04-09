@@ -23,13 +23,21 @@ count_mse_one_year_one_dataset <- function(sampled_counts_one_year,
 
 
 
-rate_mse_one_year_one_dataset <- function(){
+rate_mse_one_year_one_dataset <- function(sampled_rates_one_year, 
+                                          lambda_marginals_one_year){
   
+  ## For each area find the expected predicted count (i.e. point prediction)
+  pred_count <- as.numeric(sapply(lambda_marginals_one_year, 
+                                  FUN = function(x){return(mean(x[, 1]))}))
+  
+  ## Calculate the MSE
+  mse_one_year <- mean((sampled_rates_one_year - pred_count)**2)
+  
+  # Return the MSE of that year
+  return(mse_one_year)
 }
 
-rate_mean_mse_one_dataset <- function(){
-  
-}
+
 
 ## Testing
 #count_mean_mse_one_dataset(lambda.df$sampled_counts[, 1],marginals,n_ADM1)
@@ -96,19 +104,51 @@ count_IS_one_year_one_dataset <- function(sampled_counts_one_year,
 #test2 <- count_IS_one_year_one_dataset(lambda.df$sampled_counts[(10 * n_ADM1 + 1):(11 * n_ADM1), 1], marginals[(10 * n_ADM1 + 1):(11 * n_ADM1)], 100)
 
 
-
-
-
-
-
-
-rate_IS_one_year_one_dataset <- function(){
+find_ul_quants_rate_single_pred <- function(lambda_marginal){
+  # Function to calculate upper (u) and lower (l) quantiles for a single
+  # rate prediction
+  
+  ## Sample lambda and scale w. E_it to get an instance of Poisson
+  rate_sample <- inla.rmarginal(5000, lambda_marginal) #[[1]]
+  
+  ## Calculate upper and lower quantile (and median)
+  u = as.numeric(quantile(rate_sample, 0.975)); l = as.numeric(quantile(rate_sample, 0.025))
+  median = as.numeric(quantile(rate_sample, 0.5))
+  
+  return(list(l = l, u = u, median = median))
   
 }
 
-rate_mean_IS_one_dataset <- function(){
+
+
+
+
+rate_IS_one_year_one_dataset <- function(sampled_rates_one_year,
+                                         lambda_marginals_one_year){
   
+  ## Find the l and u for each singular instance in a year
+  ul_each_one_year <- lapply(lambda_marginals_one_year, 
+                             FUN = function(x){
+                               return(find_ul_quants_rate_single_pred(x))
+                             })
+  
+  ## Find the IS for each singular instance in a year
+  ### Initialize space for IS 
+  IS_each_instance = rep(0, length(lambda_marginals_one_year))
+  
+  ### Calculate IS each area
+  for(i in 1:length(lambda_marginals_one_year)){
+    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year[[i]]$l, ul_each_one_year[[i]]$u, 
+                                          sampled_rates_one_year[i])
+  }
+  
+  ## Find the average IS this year
+  IS_this_year <- mean(IS_each_instance)
+  
+  return(IS_this_year)
 }
+
+
 
 
 

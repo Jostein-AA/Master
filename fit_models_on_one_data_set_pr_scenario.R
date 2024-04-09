@@ -13,7 +13,7 @@ dataset_id = 3
 ################################################################################
 # Create formulas for the Improper models
 
-## Specify priors for hyperparameters of improper models
+## Specify priors for hyperparameters
 #---
 ### Temporal hyperparameters (Precision of iid and precision of RW1 and RW2) w. corresponding priors: penalized constraint 
 temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
