@@ -21,8 +21,8 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
                 "Improper1_typeIII", "Improper1_typeIV",
                 "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
                 "Improper2_typeIII", "Improper2_typeIV",
-                "proper1_noInt", "proper1_onlyInt", "proper1_full",
-                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
 
 scenario_names = c("sc1", "sc2", "sc3", "sc4",
                    "sc5", "sc6", "sc7", "sc8",

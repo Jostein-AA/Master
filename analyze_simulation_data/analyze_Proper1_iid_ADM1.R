@@ -16,18 +16,13 @@ load("grids_and_mappings.RData")
 ### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
 ar1_hyper = list(prec = list(prior = 'pc.prec', 
                              param = c(1, 0.01)), 
-                 rho = list(prior = 'pc', ## Is this the issue?
-                            param = c(0.5, 0.5)),
-                 mean = list(prior = 'normal', ## Potentially remove
-                             param = c(0, 1),
-                             fixed = TRUE)) 
+                 rho = list(prior = 'pc.cor1', 
+                            param = c(0.5, 0.5 + 1E-2)))
 
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
-                                param = c(1, 0.01)), 
-                     lambda = list(prior = 'pc', 
-                                   param = c(0.5, 0.5)))
+                                param = c(1, 0.01)))
 
 ### Interaction hyperparameter and prior (Precision of interaction)
 interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))

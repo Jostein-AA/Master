@@ -19,12 +19,16 @@ n_ADM4 <- nrow(second_level_admin_map)
 ar1_hyper = list(prec = list(prior = 'pc.prec', 
                              param = c(1, 0.01)), 
                  rho = list(prior = 'pc.cor1', 
-                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+                            param = c(0.5, 0.5 + 1E-2))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
 
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
                                 param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+
+### Group hyper
+group_hyper = list(rho = list(prior = 'pc.cor1', 
+                              param = c(0.5, 0.5 + 1E-2)))
 
 #---
 
@@ -54,7 +58,8 @@ proper_full_formula_second_level <- sampled_counts ~ 1 + time_id +
                                         graph = Besag_prec_second_level,
                                         hyper = spatial_hyper,
                                         group = time_id, 
-                                        control.group = list(model = "ar1"))  
+                                        control.group = list(model = "ar1",
+                                                             hyper = group_hyper))  
                                     
 
 

@@ -11,7 +11,7 @@ load("grids_and_mappings.RData")
 dataset_id = 3
 
 ################################################################################
-# Create formulas for the Improper models
+# Create formulas for the models
 
 ## Specify priors for hyperparameters
 #---
@@ -23,11 +23,25 @@ temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)),
 ar1_hyper = list(prec = list(prior = 'pc.prec', 
                              param = c(1, 0.01)), 
                  rho = list(prior = 'pc.cor1', 
-                            param = c(0.5, 0.5 + 1E-6))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+                            param = c(0.5, 0.5 + 1E-2))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
 
-ar_hyper = list(prec = list(prior = 'pc.prec', 
-                            param = c(1, 0.01))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+### Temporal hyperparameters (prec. of AR2 and AR2's autocorrelation param) w. corresponding priors: penalized constraint 
+ar2_hyper = list(prec = list(prior = 'pc.prec', 
+                            param = c(1, 0.01)),
+                pacf1 = list(prior = 'pc.cor1', 
+                             param = c(0.5, 0.5 + 1E-2)),
+                pacf2 = list(prior = 'pc.cor0',
+                             param = c(0.5, 0.5)))
 
+### Group hyper
+group_hyper_ar1 = list(rho = list(prior = 'pc.cor1', 
+                              param = c(0.5, 0.5 + 1E-2)))
+
+### group hyper for proper models
+group_hyper_ar2 = list(pacf1 = list(prior = 'pc.cor1', 
+                                param = c(0.5, 0.5 + 1E-2)),
+                   pacf2 = list(prior = 'pc.cor0',
+                                param = c(0.5, 0.5)))
 
 ### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 

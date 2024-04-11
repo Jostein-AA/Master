@@ -15,9 +15,13 @@ n_ADM4 <- nrow(second_level_admin_map)
 
 ## Specify priors for hyperparameters of proper models
 #---
-### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
+### Temporal hyperparameters (prec. of AR2 and AR2's autocorrelation param) w. corresponding priors: penalized constraint 
 ar_hyper = list(prec = list(prior = 'pc.prec', 
-                            param = c(1, 0.01))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
+                            param = c(1, 0.01)),
+                pacf1 = list(prior = 'pc.cor1', 
+                             param = c(0.5, 0.5 + 1E-2)),
+                pacf2 = list(prior = 'pc.cor0',
+                             param = c(0.5, 0.5)))
 
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
