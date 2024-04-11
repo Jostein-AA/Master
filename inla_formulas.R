@@ -1,4 +1,4 @@
-source("Utilities.R")
+#source("Utilities.R")
 
 load("maps_and_nb.RData")
 
@@ -96,76 +96,7 @@ scaled_besag_prec_second_level <- INLA::inla.scale.model(Besag_prec_second_level
                                                                        e = 0))
 
 
-
-################################################################################
-
-## Specify base-formula on ADM1
-### w. RW1
-base_formula_1_first_level <- sampled_counts ~ 1 + f(time_id, 
-                                                     model = 'bym2',
-                                                     scale.model = T, 
-                                                     constr = T, 
-                                                     rankdef = 1,
-                                                     graph = RW1_prec,
-                                                     hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_first_level,
-    hyper = spatial_hyper)
-
-### w. RW2
-base_formula_2_first_level <- sampled_counts ~ 1 + f(time_id, 
-                                                     model = 'bym2',
-                                                     scale.model = T, 
-                                                     constr = T, 
-                                                     graph = RW2_prec,
-                                                     hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_first_level,
-    hyper = spatial_hyper)
-
-## Specify base-formula on ADM4
-### w. RW1
-base_formula_1_second_level <- sampled_counts ~ 1 + f(time_id, 
-                                                      model = 'bym2',
-                                                      scale.model = T, 
-                                                      constr = T, 
-                                                      rankdef = 1,
-                                                      graph = RW1_prec,
-                                                      hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_second_level,
-    hyper = spatial_hyper)
-
-### w. RW2
-base_formula_2_second_level <- sampled_counts ~ 1 + f(time_id, 
-                                                      model = 'bym2',
-                                                      scale.model = T, 
-                                                      constr = T, 
-                                                      graph = RW2_prec,
-                                                      hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_second_level,
-    hyper = spatial_hyper)
-
-#----
-## Specify all the constraints and the precision matrices of the interactions
-
+# For interactions
 #Get precision matric for type II interaction by Kronecker product
 ### w. RW1
 typeII_prec_1_first_level <- scaled_RW1_prec %x% diag(nrow(first_level_admin_map))
@@ -191,6 +122,12 @@ typeIV_prec_1_second_level <- scaled_RW1_prec %x% scaled_besag_prec_second_level
 ### w. RW2
 typeIV_prec_2_first_level <- scaled_RW2_prec %x% scaled_besag_prec_first_level
 typeIV_prec_2_second_level <- scaled_RW2_prec %x% scaled_besag_prec_second_level
+
+
+################################################################################
+
+# Specify all the constraints and the precision matrices of the interactions
+
 
 #Get sum-to-zero constraints for type II interaction
 ### w. RW1
@@ -247,28 +184,95 @@ typeIV_constraints_2_second_level = constraints_maker(type = "IV",
                                                       rw = "RW2",
                                                       prec_matrix = typeIV_prec_2_second_level)
 
-#----
+################################################################################
+# Specify all the formulas
+
+## Specify base-formula on ADM1
+### w. RW1
+Improper1_noInt_ADM1_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                     model = 'bym2',
+                                                     scale.model = T, 
+                                                     constr = T, 
+                                                     rankdef = 1,
+                                                     graph = RW1_prec,
+                                                     hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_first_level,
+    hyper = spatial_hyper)
+
+### w. RW2
+Improper2_noInt_ADM1_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                     model = 'bym2',
+                                                     scale.model = T, 
+                                                     constr = T, 
+                                                     graph = RW2_prec,
+                                                     hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_first_level,
+    hyper = spatial_hyper)
+
+## Specify base-formula on ADM4
+### w. RW1
+Improper1_noInt_ADM4_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                      model = 'bym2',
+                                                      scale.model = T, 
+                                                      constr = T, 
+                                                      rankdef = 1,
+                                                      graph = RW1_prec,
+                                                      hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper)
+
+### w. RW2
+Improper2_noInt_ADM4_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                      model = 'bym2',
+                                                      scale.model = T, 
+                                                      constr = T, 
+                                                      graph = RW2_prec,
+                                                      hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper)
+
+
 ## Specify all the formulas w. interactions
 
 # Type I formula
 ### w. RW1
-typeI_1_formula_first_level <- update(base_formula_1_first_level,  
+Improper1_typeI_ADM1_formula <- update(Improper1_noInt_ADM1_formula,  
                                       ~. + f(space.time,
                                              model = "iid", 
                                              hyper = interaction_hyper ))
 
-typeI_1_formula_second_level <- update(base_formula_1_second_level,  
+Improper1_typeI_ADM4_formula <- update(Improper1_noInt_ADM4_formula,  
                                        ~. + f(space.time,
                                               model = "iid", 
                                               hyper = interaction_hyper ))
 
 ### w. RW2
-typeI_2_formula_first_level <- update(base_formula_2_first_level,  
+Improper2_typeI_ADM1_formula <- update(Improper2_noInt_ADM1_formula,  
                                       ~. + f(space.time,
                                              model = "iid", 
                                              hyper = interaction_hyper ))
 
-typeI_2_formula_second_level <- update(base_formula_2_second_level,  
+Improper2_typeI_ADM4_formula <- update(Improper2_noInt_ADM4_formula,  
                                        ~. + f(space.time,
                                               model = "iid", 
                                               hyper = interaction_hyper ))
@@ -276,7 +280,7 @@ typeI_2_formula_second_level <- update(base_formula_2_second_level,
 
 # Get typeII formula
 ### w. RW1
-typeII_1_formula_first_level <- update(base_formula_1_first_level, 
+Improper1_typeII_ADM1_formula <- update(Improper1_noInt_ADM1_formula, 
                                        ~. + f(space.time, 
                                               model = "generic0", 
                                               Cmatrix = typeII_prec_1_first_level, 
@@ -284,7 +288,7 @@ typeII_1_formula_first_level <- update(base_formula_1_first_level,
                                               rankdef = nrow(first_level_admin_map), 
                                               hyper = interaction_hyper))
 
-typeII_1_formula_second_level <- update(base_formula_1_second_level, 
+Improper1_typeII_ADM4_formula <- update(Improper1_noInt_ADM4_formula, 
                                         ~. + f(space.time, 
                                                model = "generic0", 
                                                Cmatrix = typeII_prec_1_second_level, 
@@ -293,14 +297,14 @@ typeII_1_formula_second_level <- update(base_formula_1_second_level,
                                                hyper = interaction_hyper))
 
 ### w. RW2
-typeII_2_formula_first_level <- update(base_formula_2_first_level, 
+Improper2_typeII_ADM1_formula <- update(Improper2_noInt_ADM1_formula, 
                                        ~. + f(space.time, 
                                               model = "generic0", 
                                               Cmatrix = typeII_prec_2_first_level, 
                                               extraconstr = typeII_constraints_2_first_level, 
                                               hyper = interaction_hyper))
 
-typeII_2_formula_second_level <- update(base_formula_2_second_level, 
+Improper2_typeII_ADM4_formula <- update(Improper2_noInt_ADM4_formula, 
                                         ~. + f(space.time, 
                                                model = "generic0", 
                                                Cmatrix = typeII_prec_2_second_level, 
@@ -309,7 +313,7 @@ typeII_2_formula_second_level <- update(base_formula_2_second_level,
 
 # Get typeIII formula
 ### w. RW1
-typeIII_1_formula_first_level <- update(base_formula_1_first_level, 
+Improper1_typeIII_ADM1_formula <- update(Improper1_noInt_ADM1_formula, 
                                         ~. + f(space.time, 
                                                model = "generic0", 
                                                Cmatrix = typeIII_prec_first_level, 
@@ -317,7 +321,7 @@ typeIII_1_formula_first_level <- update(base_formula_1_first_level,
                                                rankdef = tT, 
                                                hyper = interaction_hyper))
 
-typeIII_1_formula_second_level <- update(base_formula_1_second_level, 
+Improper1_typeIII_ADM4_formula <- update(Improper1_noInt_ADM4_formula, 
                                          ~. + f(space.time, 
                                                 model = "generic0", 
                                                 Cmatrix = typeIII_prec_second_level, 
@@ -326,7 +330,7 @@ typeIII_1_formula_second_level <- update(base_formula_1_second_level,
                                                 hyper = interaction_hyper))
 
 ### w. RW2
-typeIII_2_formula_first_level <- update(base_formula_2_first_level, 
+Improper2_typeIII_ADM1_formula <- update(Improper2_noInt_ADM1_formula, 
                                         ~. + f(space.time, 
                                                model = "generic0", 
                                                Cmatrix = typeIII_prec_first_level, 
@@ -334,7 +338,7 @@ typeIII_2_formula_first_level <- update(base_formula_2_first_level,
                                                rankdef = tT, 
                                                hyper = interaction_hyper))
 
-typeIII_2_formula_second_level <- update(base_formula_2_second_level, 
+Improper2_typeIII_ADM4_formula <- update(Improper2_noInt_ADM4_formula, 
                                          ~. + f(space.time, 
                                                 model = "generic0", 
                                                 Cmatrix = typeIII_prec_second_level, 
@@ -345,7 +349,7 @@ typeIII_2_formula_second_level <- update(base_formula_2_second_level,
 
 #Get formula for type IV
 ### w. RW1
-typeIV_1_formula_first_level <- update(base_formula_1_first_level,
+Improper1_typeIV_ADM1_formula <- update(Improper1_noInt_ADM1_formula,
                                        ~. + f(space.time, 
                                               model = "generic0",
                                               Cmatrix = typeIV_prec_1_first_level,
@@ -353,7 +357,7 @@ typeIV_1_formula_first_level <- update(base_formula_1_first_level,
                                               rankdef = (nrow(first_level_admin_map) + tT - 1), 
                                               hyper = interaction_hyper))
 
-typeIV_1_formula_second_level <- update(base_formula_1_second_level,
+Improper1_typeIV_ADM4_formula <- update(Improper1_noInt_ADM4_formula,
                                         ~. + f(space.time, 
                                                model = "generic0",
                                                Cmatrix = typeIV_prec_1_second_level,
@@ -362,14 +366,14 @@ typeIV_1_formula_second_level <- update(base_formula_1_second_level,
                                                hyper = interaction_hyper))
 
 ### w. RW2
-typeIV_2_formula_first_level <- update(base_formula_2_first_level,
+Improper2_typeIV_ADM1_formula <- update(Improper2_noInt_ADM1_formula,
                                        ~. + f(space.time, 
                                               model = "generic0",
                                               Cmatrix = typeIV_prec_2_first_level,
                                               extraconstr = typeIV_constraints_2_first_level,
                                               hyper = interaction_hyper))
 
-typeIV_2_formula_second_level <- update(base_formula_2_second_level,
+Improper2_typeIV_ADM4_formula <- update(Improper2_noInt_ADM4_formula,
                                         ~. + f(space.time, 
                                                model = "generic0",
                                                Cmatrix = typeIV_prec_2_second_level,
@@ -378,7 +382,7 @@ typeIV_2_formula_second_level <- update(base_formula_2_second_level,
 
 
 
-proper_base_1_formula_first_level <- sampled_counts ~ 1 + time_id +
+proper1_noInt_ADM1_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar1",
     hyper = ar1_hyper) + 
@@ -387,7 +391,7 @@ proper_base_1_formula_first_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_first_level,
     hyper = spatial_hyper_proper)
 
-proper_base_1_formula_second_level <- sampled_counts ~ 1 + time_id +
+proper1_noInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar1",
     hyper = ar1_hyper) + 
@@ -396,23 +400,25 @@ proper_base_1_formula_second_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper)
 
-proper_1_onlyInt_formula_first_level <- sampled_counts ~ 1 + time_id + 
+proper1_onlyInt_ADM1_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_first_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
-    control.group = list(model = "ar1"))
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1))
 
-proper_1_onlyInt_formula_second_level <- sampled_counts ~ 1 + time_id + 
+proper1_onlyInt_ADM4_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
-    control.group = list(model = "ar1"))
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1))
 
-proper_1_full_formula_first_level <- sampled_counts ~ 1 + time_id + 
+proper1_full_ADM1_formula <- sampled_counts ~ 1 + time_id + 
   f(time_id.copy,
     model = "ar1",
     hyper = ar1_hyper) +
@@ -425,9 +431,10 @@ proper_1_full_formula_first_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_first_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
-    control.group = list(model = "ar1")) 
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1)) 
 
-proper_1_full_formula_second_level <- sampled_counts ~ 1 + time_id + 
+proper1_full_ADM4_formula <- sampled_counts ~ 1 + time_id + 
   f(time_id.copy,
     model = "ar1",
     hyper = ar1_hyper) +
@@ -440,10 +447,35 @@ proper_1_full_formula_second_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
-    control.group = list(model = "ar1")) 
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1))
+
+proper1_iid_ADM1_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar1",
+    hyper = ar1_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_first_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
+
+proper1_iid_ADM4_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar1",
+    hyper = ar1_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
 
 
-proper_base_2_formula_first_level <- sampled_counts ~ 1 + time_id +
+proper2_noInt_ADM1_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar",
     order = 2,
@@ -453,7 +485,7 @@ proper_base_2_formula_first_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_first_level,
     hyper = spatial_hyper_proper)
 
-proper_base_2_formula_second_level <- sampled_counts ~ 1 + time_id +
+proper2_noInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar",
     order = 2,
@@ -463,25 +495,27 @@ proper_base_2_formula_second_level <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper)
 
-proper_2_onlyInt_formula_first_level <- sampled_counts ~ 1 + time_id + 
+proper2_onlyInt_ADM1_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_first_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
-                         order = 2))
+                         order = 2,
+                         hyper = group_hyper_ar2))
 
-proper_2_onlyInt_formula_second_level <- sampled_counts ~ 1 + time_id + 
+proper2_onlyInt_ADM4_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
-                         order = 2))
+                         order = 2,
+                         hyper = group_hyper_ar2))
 
-proper_2_full_formula_first_level <- sampled_counts ~ 1 + time_id +
+proper2_full_ADM1_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar",
     order = 2,
@@ -496,10 +530,11 @@ proper_2_full_formula_first_level <- sampled_counts ~ 1 + time_id +
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
-                         order = 2))
+                         order = 2,
+                         hyper = group_hyper_ar2))
 
 
-proper_2_full_formula_second_level <- sampled_counts ~ 1 + time_id +
+proper2_full_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar",
     order = 2,
@@ -514,7 +549,34 @@ proper_2_full_formula_second_level <- sampled_counts ~ 1 + time_id +
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
-                         order = 2))
+                         order = 2
+                         hyper = group_hyper_ar2))
+
+proper2_iid_ADM1_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar",
+    order = 2,
+    hyper = ar_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_first_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
+
+proper2_iid_ADM4_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar",
+    order = 2,
+    hyper = ar_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
 
 
 

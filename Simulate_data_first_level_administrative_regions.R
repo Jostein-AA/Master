@@ -133,7 +133,6 @@ Lambda_st = simulate_risk_surface(seed,
                                   t_axis = t_axis,
                                   n_sim = n_sim)
 
-
 ## Add risk-values to yxt_grid w. geoms
 risk_surface.list = yxt_geom
 risk_surface.list$values = Lambda_st
