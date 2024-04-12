@@ -556,7 +556,7 @@ proper2_full_ADM4_formula <- sampled_counts ~ 1 + time_id +
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
-                         order = 2
+                         order = 2,
                          hyper = group_hyper_ar2))
 
 proper2_iid_ADM1_formula <- sampled_counts ~ 1 + time_id +

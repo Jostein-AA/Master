@@ -117,7 +117,7 @@ plot_temporal_trend_data_one_data_set <- function(sim_data, title){
   return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
     geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
     geom_point(aes(x = time_id, y = sampled_counts, col = "sampled counts"), color = "black") +
-    ylim(7.5, 12.5))
+    ylim(7, 14))
 }
 
 
@@ -187,7 +187,7 @@ ggarrange(plt1, plt2, plt3,
 
 ################################################################################
 
-E_it2 = 500
+E_it2 = 1000
 
 
 lambda_sc1.df$sampled_counts2 = sapply(lambda_sc1.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
@@ -217,22 +217,22 @@ plot_alternate <- function(sim_data, title){
   return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
            geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
            geom_point(aes(x = time_id, y = sampled_counts2, col = "sampled counts"), color = "black") +
-           ylim(35, 65))
+           ylim(90, 135))
 }
 
 
-plt1 <- plot_alternate(lambda_sc1.df, "ADM1 const, short: E_it = 500")
-plt2 <- plot_alternate(lambda_sc2.df, "ADM4 const, short: E_it = 500")
-plt3 <-plot_alternate(lambda_sc3.df, "ADM1 lin increasing, short: E_it = 500")
-plt4 <-plot_alternate(lambda_sc4.df, "ADM4 lin increasing, short: E_it = 500")
-plt5 <-plot_alternate(lambda_sc5.df, "ADM1 change point, short: E_it = 500")
-plt6 <-plot_alternate(lambda_sc6.df, "ADM4 change point, short: E_it = 500")
-plt7 <-plot_alternate(lambda_sc7.df, "ADM1 const, long: E_it = 500")
-plt8 <-plot_alternate(lambda_sc8.df, "ADM4 const, long: E_it = 500")
-plt9 <-plot_alternate(lambda_sc9.df, "ADM1 lin increasing, long: E_it = 500")
-plt10 <-plot_alternate(lambda_sc10.df, "ADM4 lin increasing, long: E_it = 500")
-plt11 <-plot_alternate(lambda_sc11.df, "ADM1 change point, long: E_it = 500")
-plt12 <-plot_alternate(lambda_sc12.df, "ADM4 change point, long: E_it = 500")
+plt1 <- plot_alternate(lambda_sc1.df, "ADM1 const, short: E_it = 1000")
+plt2 <- plot_alternate(lambda_sc2.df, "ADM4 const, short: E_it = 1000")
+plt3 <-plot_alternate(lambda_sc3.df, "ADM1 lin increasing, short: E_it = 1000")
+plt4 <-plot_alternate(lambda_sc4.df, "ADM4 lin increasing, short: E_it = 1000")
+plt5 <-plot_alternate(lambda_sc5.df, "ADM1 change point, short: E_it = 1000")
+plt6 <-plot_alternate(lambda_sc6.df, "ADM4 change point, short: E_it = 1000")
+plt7 <-plot_alternate(lambda_sc7.df, "ADM1 const, long: E_it = 1000")
+plt8 <-plot_alternate(lambda_sc8.df, "ADM4 const, long: E_it = 1000")
+plt9 <-plot_alternate(lambda_sc9.df, "ADM1 lin increasing, long: E_it = 1000")
+plt10 <-plot_alternate(lambda_sc10.df, "ADM4 lin increasing, long: E_it = 1000")
+plt11 <-plot_alternate(lambda_sc11.df, "ADM1 change point, long: E_it = 1000")
+plt12 <-plot_alternate(lambda_sc12.df, "ADM4 change point, long: E_it = 1000")
 
 ggarrange(plt1, plt2, plt3,
           plt4, plt5, plt6,
@@ -445,7 +445,7 @@ pred_to_plot <- data.frame(area_id = lambda_sc3.df$area_id,
                            lambda_it = lambda_sc3.df$lambda_it,
                            count_div_pop = lambda_sc3.df$sampled_counts2/lambda_sc3.df$E_it2)
 
-select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, "")
+select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, "Improper1_typeIV: Rate")
 
 
 ul_each <- lapply(tmp_$marginals.fitted.values, 

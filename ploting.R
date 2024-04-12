@@ -19,17 +19,12 @@ E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
-#load("improper1_noInt_fitted.RData")
-#load("improper1_typeI_fitted.RData")
-#load("improper1_typeII_fitted.RData")
-#load("improper1_typeIII_fitted.RData")
-#load("improper1_typeIV_fitted.RData")
-
 
 #Save as B_spline_basis_for_time 7.5 by 3.5
 #plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
 #     xlab = "t'")
 #for(i in 2:dim(Bt)[2]){lines(Bt[, i] ~ xt)}
+
 
 ################################################################################
 #Load in simulation data (done stupidly, change!)
@@ -600,7 +595,7 @@ select_regions_lin_pred_vs_true(true_risk = lambda_sc6.df,
 model_names = c("Improper1_noInt", "Improper1_typeIII", "Improper2_noInt",
                 "proper1_noInt")
 
-scenario_name = "sc3"
+scenario_name = "sc4"
 
 
 

@@ -46,11 +46,44 @@ select_regions_lin_pred_vs_true <- function(geofacet_grid,
     theme_bw() + 
     theme(axis.title=element_text(size=11),
           plot.title = element_text(size=11),
-          strip.text.x = element_text(size = 9))
+          strip.text.x = element_text(size = 9),
+          legend.position = c(0, 1),
+          legend.justification = c("left", "top"),
+          legend.box.just = "left")
   
   plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
   return(plt)
 }
+
+select_regions_lin_pred_vs_true_improper <- function(ADM1_grid, lambda_, model, title){
+  
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = model$summary.fitted.values$'0.5quant', 
+                             quantile_0.025 = model$summary.fitted.values$'0.025quant', 
+                             quantile_0.975 = model$summary.fitted.values$'0.975quant', 
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it,
+                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+  select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+  
+}
+
+select_regions_lin_pred_vs_true_proper <- function(ADM1_grid, lambda_, model, title){
+### NB: Must sort the proper ones
+pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                           time_id = lambda_$time_id,
+                           median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM1, tT), # model$summary.fitted.values$'0.5quant',
+                           quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM1, tT),# model$summary.fitted.values$'0.025quant',
+                           quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM1, tT), #model$summary.fitted.values$'0.975quant',
+                           sampled_counts = lambda_$sampled_counts,
+                           lambda_it = lambda_$lambda_it,
+                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+
+select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+}
+
 
 select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
                                             pred_to_plot,
@@ -80,38 +113,48 @@ select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
 }
 
 
+
+
 ################################################################################
 ## ADM1
 ## Make a geofacet grid to plot onto
-ADM1_grid <- data.frame(
-  code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
-  name = c(" Schleswig-Holstein ", 
-           " Mecklenburg-Vorpommern ", 
-           " Hamburg", 
-           " Berlin ", 
-           " Bremen ", 
-           " Niedersachsen", 
-           " Brandenburg", 
-           " Sachsen-Anhalt", 
-           " Nordrhein-Westfalen", 
-           " Sachsen", 
-           " Thuringen", 
-           " Hessen ", 
-           " Rheinland-Pfalz ", 
-           " Saarland", 
-           " Bayern", 
-           " Baden-Wurttemberg "),
-  row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
-  col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
-  stringsAsFactors = FALSE)
+#ADM1_grid <- data.frame(
+#  code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
+#  name = c("Schleswig-Holstein", 
+#           "Mecklenburg-Vorpommern", 
+#           "Hamburg", 
+#           "Berlin", 
+#           "Bremen", 
+#           "Niedersachsen", 
+#           "Brandenburg", 
+#           "Sachsen-Anhalt", 
+#           "Nordrhein-Westfalen", 
+#           "Sachsen", 
+#           "Thuringen", 
+#           "Hessen", 
+#           "Rheinland-Pfalz", 
+#           "Saarland", 
+#           "Bayern", 
+#           "Baden-Wurttemberg"),
+#  row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
+#  col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
+#  stringsAsFactors = FALSE)
+#geofacet::grid_preview(ADM1_grid)
 
+ADM1_grid <- data.frame(
+  row = c(1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5),
+  col = c(3, 4, 4, 6, 3, 2, 6, 3, 4, 3, 2, 6, 4, 1, 4, 3),
+  code = c("15", "8", "4", "6", "9", "10", "5", "13", "14", "7", "11", "3", "16", "12", "2", "1"),
+  name = c("Schleswig-Holstein", "Mecklenburg-Vorpommern", "Brandenburg", "Hamburg", "Niedersachsen", "Nordrhein-Westfalen", "Bremen", "Sachsen-Anhalt", "Sachsen", "Hessen", "Rheinland-Pfalz", "Berlin", "Thuringen", "Saarland", "Bayern", "Baden-Wurttemberg"),
+  stringsAsFactors = FALSE
+)
 geofacet::grid_preview(ADM1_grid)
 
 ################################################
 ### Plot the rates
 
-scenario_name = "sc3"
-title = TeX(r'(ADM1$_{const, short}$)')
+scenario_name = "sc7"
+title = TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in simulated data for that scenario
 load(paste("./Simulated_data/", scenario_name, "/", 
@@ -126,23 +169,15 @@ rm(lambda.df)
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
-model = proper2_onlyInt
-
-### NB: Must sort the proper ones
 
 
+### Plot a proper model
+model = proper2_onlyInt_ADM1
+select_regions_lin_pred_vs_true_proper(ADM1_grid, lambda_, model, title)
 
-pred_to_plot <- data.frame(area_id = lambda_$area_id,
-                           time_id = lambda_$time_id,
-                           median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM1, tT), # model$summary.fitted.values$'0.5quant',
-                           quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM1, tT),# model$summary.fitted.values$'0.025quant',
-                           quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM1, tT), #model$summary.fitted.values$'0.975quant',
-                           sampled_counts = lambda_$sampled_counts,
-                           lambda_it = lambda_$lambda_it,
-                           count_div_pop = lambda_$sampled_counts/lambda_$E_it)
-  
-select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
-
+### Plot an improper model
+model = Improper1_typeI_ADM1
+select_regions_lin_pred_vs_true_improper(ADM1_grid, lambda_, model, title)
 
 
 ################################################
