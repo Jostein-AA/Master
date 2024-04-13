@@ -1,4 +1,3 @@
-
 source("Utilities.R")
 
 ### These are here to see names of models and scenarios
@@ -18,6 +17,21 @@ source("Utilities.R")
 
 ## Specify model_name and scenario name, and function does the rest
 
-initialize_csv_tracker(model_name = "proper1_noInt",
+initialize_csv_tracker(model_name = "Improper1_typeV",
                        scenario = "sc1")
 
+initialize_csv_tracker(model_name = "Improper1_typeV",
+                       scenario = "sc3")
+
+initialize_csv_tracker(model_name = "Improper1_typeV",
+                       scenario = "sc5")
+
+
+initialize_csv_tracker(model_name = "Improper1_typeV",
+                       scenario = "sc7")
+
+initialize_csv_tracker(model_name = "Improper1_typeV",
+                       scenario = "sc9")
+
+initialize_csv_tracker(model_name = "Improper1_typeV",
+                       scenario = "sc11")

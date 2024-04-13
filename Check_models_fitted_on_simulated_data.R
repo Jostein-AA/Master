@@ -17,7 +17,8 @@ n_sim = 100
 E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
-dataset_id = 3
+dataset_id = 3 
+dataset_id_2 = 4
 
 scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 

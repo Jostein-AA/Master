@@ -108,17 +108,7 @@ rm(lambda.df)
 ################################################################################
 # Produce diagnostics plots
 
-plot_temporal_trend_data_one_data_set <- function(sim_data, title){
 
-  # Aggregate over the years
-  aggr <- aggregate(sim_data, by = list(time_id = sim_data$time_id), FUN = mean) 
-  
-  # Plot over the years
-  return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
-    geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
-    geom_point(aes(x = time_id, y = sampled_counts, col = "sampled counts"), color = "black") +
-    ylim(7, 14))
-}
 
 
 plt1 <- plot_temporal_trend_data_one_data_set(lambda_sc1.df, "ADM1 const, short: one data set")
@@ -142,26 +132,7 @@ ggarrange(plt1, plt2, plt3,
           nrow = 3)
 
 
-plot_temporal_trend_data_all_data_set <- function(scenario_name, title){
-  load(paste("./Simulated_data/", scenario_name,"/", scenario_name, "_data.RData",
-             sep = ""))
-  
-  tmp_ = lambda.df[, c("space.time", "area_id", "time_id", "E_it", "sampled_counts", "mu")]
-  
-  # Aggregate the sampled counts and mu over the data sets
-  
-  tmp_$sampled_counts <- rowMeans(tmp_$sampled_counts)
-  tmp_$mu <- rowMeans(tmp_$mu)
-  
-  # Aggregate over the years
-  aggr <- aggregate(tmp_, by = list(time_id = tmp_$time_id), FUN = mean)
-  
-  # Plot over the years
-  return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
-           geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
-           geom_point(aes(x = time_id, y = sampled_counts, col = "sampled counts"), color = "black") +
-           ylim(7.5, 12.5))
-}
+
 
 plt1 <- plot_temporal_trend_data_all_data_set("sc1", "ADM1 const, short: all data sets")
 plt2 <- plot_temporal_trend_data_all_data_set("sc2", "ADM4 const, short: all data sets")

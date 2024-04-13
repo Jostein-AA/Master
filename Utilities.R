@@ -195,6 +195,77 @@ get_first_not_yet_analyzed <- function(model_name, scenario){
 ################################################################################
 #Plotting functions
 
+plot_temporal_trend_data_one_data_set <- function(scenario_name, data_set_id, title,
+                                                  xlab, ylab){
+  #Function to plot the trend of the simulated data, one data set
+  
+  # Load in the simulated data
+  load(paste("./Simulated_data/", scenario_name,"/", scenario_name, "_data.RData",
+             sep = ""))
+  
+  # Extract only the simulated data of data_set_id
+  sim_data = lambda.df[, c("space.time", "area_id", "time_id", "E_it")]
+  sim_data$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  sim_data$mu = lambda.df$mu[, data_set_id]
+  
+  # Aggregate over the years
+  aggr <- aggregate(sim_data, by = list(time_id = sim_data$time_id), FUN = mean)
+  aggr <- aggr[, 2:ncol(aggr)]
+  
+  aggr1 <- aggr[, c("time_id", "E_it")]
+  aggr1$aggregated_value = aggr$sampled_counts
+  aggr1$type = rep("Aggregated sampled counts", nrow(aggr))
+  aggr2 <- aggr[, c("time_id", "E_it")]
+  aggr2$aggregated_value = aggr$mu
+  aggr2$type = rep("Aggregated expected count", nrow(aggr))
+  
+  #Combine the two
+  aggr3 <- rbind(aggr1, aggr2)
+  
+  # Plot over the years
+  return(
+    ggplot(data = aggr3) + 
+      ggtitle(title) + 
+      geom_line(aes(x = time_id, y = aggregated_value, col = type, linetype = type)) + #linetype = type
+      scale_linetype_manual(values = c("longdash", "solid")) +
+      scale_color_manual(values = c("darkred", "blue")) +
+      ylim(8, 14) + 
+      theme_bw() + 
+      theme(axis.title=element_text(size=11),
+            plot.title = element_text(size=11),
+            strip.text.x = element_text(size = 9)) +
+      labs(col = NULL) + 
+      guides(linetype = "none") +
+      xlab(xlab) + 
+      ylab(ylab) 
+  )
+}
+
+
+plot_temporal_trend_data_all_data_set <- function(scenario_name, title){
+  # Function to plot the simulated average trend of the data across all the simulations for
+  # that scenario
+  load(paste("./Simulated_data/", scenario_name,"/", scenario_name, "_data.RData",
+             sep = ""))
+  
+  tmp_ = lambda.df[, c("space.time", "area_id", "time_id", "E_it", "sampled_counts", "mu")]
+  
+  # Aggregate the sampled counts and mu over the data sets
+  
+  tmp_$sampled_counts <- rowMeans(tmp_$sampled_counts)
+  tmp_$mu <- rowMeans(tmp_$mu)
+  
+  # Aggregate over the years
+  aggr <- aggregate(tmp_, by = list(time_id = tmp_$time_id), FUN = mean)
+  
+  # Plot over the years
+  return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
+           geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
+           geom_point(aes(x = time_id, y = sampled_counts, col = "sampled counts"), color = "black") +
+           ylim(7.5, 12.5))
+}
+
+
 plot_fitted_temporal_trends <- function(model_on_first_level_20_knots,
                                         model_on_first_level_10_knots,
                                         model_on_second_level_20_knots,
@@ -353,8 +424,8 @@ heatmap_points <- function(risk_surface.list,
   
   
   # Make it so that each heatmap is plotted on similar color scale 
-  scale_col = heat.colors(30, rev=TRUE)          #Divide color gradient into 30 
-  scale = scale_col[seq(3, 30, length.out = 15)] #Select color scale to be more red
+  scale_col = heat.colors(50, rev=TRUE)          #Divide color gradient into 30 
+  scale = scale_col[seq(3, 50, length.out = 15)] #Select color scale to be more red
   risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
   hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 15), 4)
     

@@ -16,6 +16,7 @@ n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
 dataset_id = 3
+dataset_id_2 = 10
 
 ################################################################################
 # Specify the hyperpriors

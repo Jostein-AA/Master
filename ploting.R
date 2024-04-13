@@ -20,6 +20,8 @@ n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
 
+
+
 #Save as B_spline_basis_for_time 7.5 by 3.5
 #plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
 #     xlab = "t'")
@@ -110,7 +112,7 @@ plt_first_level <- ggplot() +
     min.segment.length = 0.3,
     colour = "black",
     segment.colour = "black",
-    size = 2) + 
+    size = 3.5) + 
   
   theme(plot.title = element_text(size = 15,  hjust = 0.5),
         axis.title.x = element_blank(), #Remove axis and background grid
@@ -169,69 +171,96 @@ plt_polygon_grid
 
 ################################################################################
 # Plot two continuous risk surfaces at similar times w. different amount of knots
-load("./Data/Simulated_risk_surfaces/sc3_risk_surfaces.RData")
-risk_surface.list_sc3 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
+load("./Data/Simulated_risk_surfaces/sc1_risk_surfaces.RData")
+risk_surface.list_sc1 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
                                               "unique_id", "time_id", 
                                               "first_level_area_id_mapping", 
                                               "second_level_area_id_mapping")]
 
-risk_surface.list_sc3$values = risk_surface.list$values[, 1]
+risk_surface.list_sc1$values = risk_surface.list$values[, 1]
 
 rm(risk_surface.list)
 gc()
 
-load("./Data/Simulated_risk_surfaces/sc9_risk_surfaces.RData")
-risk_surface.list_sc9 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
+load("./Data/Simulated_risk_surfaces/sc7_risk_surfaces.RData")
+risk_surface.list_sc7 = risk_surface.list[, c("t", "polygon_id", "geometry", "x", "y", 
                                               "unique_id", "time_id", 
                                               "first_level_area_id_mapping", 
                                               "second_level_area_id_mapping")]
 
-risk_surface.list_sc9$values = risk_surface.list$values[, 1]
+risk_surface.list_sc7$values = risk_surface.list$values[, 1]
 
 rm(risk_surface.list)
 gc()
 
-plt_sc3 <- heatmap_points(risk_surface.list_sc3,
+plt_sc1 <- heatmap_points(risk_surface.list_sc1,
                           polygon_grid2,
                           admin_map = germany_border,
                           t_axis[1],
                           title = "20 X 20 Knots")
 
 
-plt_sc9 <- heatmap_points(risk_surface.list_sc9,
+plt_sc7 <- heatmap_points(risk_surface.list_sc7,
                           polygon_grid2,
                           admin_map = germany_border,
                           t_axis[1],
                           title = "10 X 10 Knots")
 
 # Save to pdf as 10 by 6, name: continuous_risk_20_vs_10
-ggarrange(plt_sc3, NULL, plt_sc9,
+ggarrange(plt_sc1, NULL, plt_sc7,
           ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
           common.legend = F)
 
 ################################################################################
 # Plot the temporal trends
 
+
+xlab = "Year"
+ylab = TeX(r'($\bar{Y}_{t}$)')
+
+plt1 <- plot_temporal_trend_data_one_data_set("sc1", 3, "ADM1: const trend, short range", xlab = NULL, ylab = ylab)
+plt2 <- plot_temporal_trend_data_one_data_set("sc2", 3, "ADM4: const trend, short range", xlab = NULL, ylab = ylab)
+plt3 <- plot_temporal_trend_data_one_data_set("sc3", 3, "ADM1: linear trend, short range", xlab = NULL, ylab = NULL)
+plt4 <- plot_temporal_trend_data_one_data_set("sc4", 3, "ADM4: linear trend, short range", xlab = NULL, ylab = NULL)
+plt5 <- plot_temporal_trend_data_one_data_set("sc5", 3, "ADM1: change point, short range", xlab = NULL, ylab = NULL)
+plt6 <- plot_temporal_trend_data_one_data_set("sc6", 3, "ADM4: change point, short range", xlab = NULL, ylab = NULL)
+plt7 <- plot_temporal_trend_data_one_data_set("sc7", 3, "ADM1: const trend, long range", xlab = NULL, ylab = ylab)
+plt8 <- plot_temporal_trend_data_one_data_set("sc8", 3, "ADM4: const trend, long range", xlab = xlab, ylab = ylab)
+plt9 <- plot_temporal_trend_data_one_data_set("sc9", 3, "ADM1: linear trend, long range", xlab = NULL, ylab = NULL)
+plt10 <- plot_temporal_trend_data_one_data_set("sc10", 3, "ADM4: linear trend, long range", xlab = xlab, ylab = NULL)
+plt11 <- plot_temporal_trend_data_one_data_set("sc11", 3, "ADM1: change point, long range", xlab = NULL, ylab = NULL)
+plt12 <- plot_temporal_trend_data_one_data_set("sc12", 3, "ADM4: change point, long range", xlab = xlab, ylab = NULL)
+
+
+# Save to pdf as aggregated_temporal_trends: 10.5 by 10.5 
+ggarrange(plt1, plt3, plt5, 
+          plt7, plt9, plt11,
+          plt2, plt4, plt6,
+          plt8, plt10, plt12,
+          ncol = 3, nrow = 4,
+          common.legend = T, 
+          legend = "top")
+
 # Save to pdf as 12 by 9: const_temporal_trend_fitted
-plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc1,
-                            model_on_first_level_10_knots = improper_typeI_sc7,
-                            model_on_second_level_20_knots = improper_typeI_sc2,
-                            model_on_second_level_10_knots = improper_typeI_sc8,
-                            tT)
+#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc1,
+#                            model_on_first_level_10_knots = improper_typeI_sc7,
+#                            model_on_second_level_20_knots = improper_typeI_sc2,
+#                            model_on_second_level_10_knots = improper_typeI_sc8,
+#                            tT)
 
 # Save to pdf as 12 by 9: lin_increasing_temporal_trend_fitted
-plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc3,
-                            model_on_first_level_10_knots = improper_typeI_sc9,
-                            model_on_second_level_20_knots = improper_typeI_sc4,
-                            model_on_second_level_10_knots = improper_typeI_sc10,
-                            tT)
+#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc3,
+#                            model_on_first_level_10_knots = improper_typeI_sc9,
+#                            model_on_second_level_20_knots = improper_typeI_sc4,
+#                            model_on_second_level_10_knots = improper_typeI_sc10,
+#                            tT)
 
 # Save to pdf as 12 by 9: change_point_temporal_trend_fitted
-plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc5,
-                            model_on_first_level_10_knots = improper_typeI_sc11,
-                            model_on_second_level_20_knots = improper_typeI_sc6,
-                            model_on_second_level_10_knots = improper_typeI_sc12,
-                            tT)
+#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc5,
+#                            model_on_first_level_10_knots = improper_typeI_sc11,
+#                            model_on_second_level_20_knots = improper_typeI_sc6,
+#                            model_on_second_level_10_knots = improper_typeI_sc12,
+#                            tT)
 
 
 
@@ -543,6 +572,236 @@ ggarrange(plt_fitted, NULL, plt_fitted_sd,
 
 
 ################################################################################
+# Plot the models fitted values over time for regions (for ADM1 plot all regions w. geofacet)
+
+dataset_id = 3 
+dataset_id_2 = 4
+
+
+
+scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
+# Create ADM1 grid for geofacet
+ADM1_grid <- data.frame(
+  row = c(1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5),
+  col = c(3, 4, 4, 6, 3, 2, 6, 3, 4, 3, 2, 6, 4, 1, 4, 3),
+  code = c("15", "8", "4", "6", "9", "10", "5", "13", "14", "7", "11", "3", "16", "12", "2", "1"),
+  name = c("Schleswig-H.", "Mecklenburg-V.", "Brandenburg", "Hamburg", "Niedersachsen", "Nordrhein-W.", "Bremen", "Sachsen-A.", "Sachsen", "Hessen", "Rheinland-P.", "Berlin", "Thuringen", "Saarland", "Bayern", "Baden-W."),
+  stringsAsFactors = FALSE #olstein orpommern estfalen nhalt falz urttemberg
+)
+geofacet::grid_preview(ADM1_grid)
+
+
+select_regions_lin_pred_vs_true <- function(geofacet_grid,
+                                            pred_to_plot,
+                                            title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = "Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_point(aes(x = time_id, y = lambda_it, col = "True rate")) + 
+    geom_point((aes(x = time_id, y = count_div_pop, col = "sampled count/Eit"))) + # TeX(r'($Y_{it}/E_{it}$)')
+    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate",
+         col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=12),
+          plot.title = element_text(hjust = 0.5, size=12),
+          strip.text.x = element_text(size = 10),
+          legend.position = c(0.15, 1),
+          legend.justification = c("right", "top"),
+          legend.box.just = "right",
+          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                  labels = unname(TeX(c("Posterior 95% CI",
+                                                        "Posterior median risk",
+                                                        "Simulated rate: $\\lambda_{it}$",
+                                                        "Simulated count $\\frac{Y_{it}}{E_{it}}$")))) # 
+  return(plt)
+}
+
+select_regions_lin_pred_vs_true_improper <- function(ADM1_grid, lambda_, model, title){
+  
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = model$summary.fitted.values$'0.5quant', 
+                             quantile_0.025 = model$summary.fitted.values$'0.025quant', 
+                             quantile_0.975 = model$summary.fitted.values$'0.975quant', 
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it,
+                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+  select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+  
+}
+
+select_regions_lin_pred_vs_true_proper <- function(ADM1_grid, lambda_, model, title){
+  ### NB: Must sort the proper ones
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM1, tT), # model$summary.fitted.values$'0.5quant',
+                             quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM1, tT),# model$summary.fitted.values$'0.025quant',
+                             quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM1, tT), #model$summary.fitted.values$'0.975quant',
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it,
+                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+  select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+}
+
+
+plt_select_regions_lin_pred_vs_true <- function(ADM1_grid, 
+                                                scenario_name,
+                                                dataset_id,
+                                                model,
+                                                improper = T,
+                                                title){
+  
+  ### Load in simulated data for that scenario
+  load(paste("./Simulated_data/", scenario_name, "/", 
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  
+  #### Remove unessecary data
+  rm(lambda.df)
+  
+  ## Actually plot it
+  if(improper){
+    select_regions_lin_pred_vs_true_improper(ADM1_grid, lambda_, model, title)
+  } else{
+    select_regions_lin_pred_vs_true_proper(ADM1_grid, lambda_, model, title)
+  }
+}
+
+
+scenario_name = "sc1"
+title = "Scenario: const trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    Improper1_typeI_ADM1, improper = T,
+                                    title = paste("Model: Improper1_typeI", title, sep = "   "))
+
+
+scenario_name = "sc3"
+title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    proper2_onlyInt_ADM1, improper = F,
+                                    title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+
+scenario_name = "sc5"
+title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    Improper2_typeIV_ADM1, improper = T,
+                                    title = paste("Model: Improper2_typeIV", title, sep = "   "))
+
+scenario_name = "sc7"
+title = "Scenario: const trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    Improper1_typeIII_ADM1, improper = T,
+                                    title = paste("Model: Improper1_typeIII", title, sep = "   "))
+
+
+scenario_name = "sc9"
+"Scenario: linear trend, short range (ADM1)"
+title = "Scenario: linear trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    proper1_full_ADM1, improper = F,
+                                    title = paste("Model: proper1_full", title, sep = "   "))
+
+scenario_name = "sc11"
+title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                    Improper1_noInt_ADM1, improper = T,
+                                    title = paste("Model: Improper1_noInt", title, sep = "   "))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
+                                              pred_to_plot,
+                                              title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true counts
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+    geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
+    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate",
+         col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=11),
+          plot.title = element_text(size=11),
+          strip.text.x = element_text(size = 9))
+  
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
+  return(plt)
+}
+
+
+
+
+
+
 # Plot time-series plot for some regions w. fitted rate against
 # The true rate AND sampled_count/E_{it}
 regions = c(1, 2, 3, 4,
