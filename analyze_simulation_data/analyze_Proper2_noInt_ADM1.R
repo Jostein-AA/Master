@@ -104,7 +104,7 @@ tryCatch_inla <- function(data,
                                 model_name, "_", scenario_name, "_", toString(data_set_id), ".RData", 
                                 sep = "")
       
-      marginals = tmp_$marginals.fitted.values 
+      marginals = sort_proper_fitted(tmp_$marginals.fitted.values, n_ADM1, tT)
       cpo = tmp_$cpo$cpo
       
       save(marginals, 
