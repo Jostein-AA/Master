@@ -1116,7 +1116,7 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
                 "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
                 "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
 
-scenario_name = "sc2"
+scenario_name = "sc1"
 
 
 
@@ -1134,7 +1134,11 @@ to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
                               IS_one_year_ahead = tmp_$IS_1_year_ahead,
                               IS_two_year_ahead = tmp_$IS_2_year_ahead,
                               IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                              IS_tot = tmp_$total_IS)
+                              IS_tot = tmp_$total_IS,
+                              MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                              MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                              MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                              MSE_tot = tmp_$total_mse)
 
 
 for(model_name in model_names[2:length(model_names)]){
@@ -1150,22 +1154,22 @@ for(model_name in model_names[2:length(model_names)]){
                       IS_one_year_ahead = tmp_$IS_1_year_ahead,
                       IS_two_year_ahead = tmp_$IS_2_year_ahead,
                       IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                      IS_tot = tmp_$total_IS)
+                      IS_tot = tmp_$total_IS,
+                      MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                      MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                      MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                      MSE_tot = tmp_$total_mse)
   
   to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
   
 }
-
-
-
 
 ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
                              y = model_name, 
                              fill = model_name)) +
   geom_density_ridges() +
   theme_ridges() + 
-  theme(legend.position = "none") + 
-  xlim(12.5, 18)
+  theme(legend.position = "none")
 
 ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
                              y = model_name, 

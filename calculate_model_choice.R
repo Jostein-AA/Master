@@ -15,6 +15,17 @@ E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
+model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+                "Improper1_typeIII", "Improper1_typeIV",
+                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+                "Improper2_typeIII", "Improper2_typeIV",
+                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
+
+
+scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
+scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+
 
 ################################################################################
 # load in data and start calculating
@@ -108,8 +119,9 @@ calc_mse_is_count_one_model_one_scenario_ADM1 <- function(model_name,
     }
     
     ### For the proper models on the ADM1, the marginals must be sorted
-    ### This was done by hardcoding this in for only the proper models
-    # marginals = sort_proper_fitted(marginals, n_ADM1, tT)
+    if(substr(model_name, 1, 1) == "p"){
+      marginals = sort_proper_fitted(marginals, n_ADM1, tT)
+    }
     
     ### If not failure: count it as successfully opened!
     successes = successes + 1
@@ -313,16 +325,6 @@ calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
 
 
 ################################################################################
-model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
-                "Improper1_typeIII", "Improper1_typeIV",
-                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
-                "Improper2_typeIII", "Improper2_typeIV",
-                "proper1_noInt", "proper1_onlyInt", "proper1_full",
-                "proper2_noInt", "proper2_onlyInt", "proper2_full")
-
-
-scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
-scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
 
 
 ### Iterate over each model for each scenario on ADM1 to calculate the model choice data frames
@@ -372,14 +374,16 @@ for(scenario_name in scenario_names_ADM1){
                                               "proper1_noInt",
                                               "proper1_onlyInt",
                                               "proper1_full",
+                                              "proper1_iid",
                                               "proper2_noInt",
                                               "proper2_onlyInt",
-                                              "proper2_full"), 8),
-                                model_choice = c(rep(1, 16),rep(2, 16),
-                                                 rep(3, 16),rep(4, 16),
-                                                 rep(5, 16),rep(6, 16),
-                                                 rep(7, 16),rep(8, 16)),
-                                value = 1:(8 * 16))
+                                              "proper2_full",
+                                              "proper2_iid"), 8),
+                                model_choice = c(rep(1, 18),rep(2, 18),
+                                                 rep(3, 18),rep(4, 18),
+                                                 rep(5, 18),rep(6, 18),
+                                                 rep(7, 18),rep(8, 18)),
+                                value = 1:(8 * 18))
   
   
   for(model_name in model_names){
@@ -433,26 +437,28 @@ for(scenario_name in scenario_names_ADM1){
   print(scenario_name)
   
   model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
-                                                     "Improper1_typeI",
-                                                     "Improper1_typeII",
-                                                     "Improper1_typeIII",
-                                                     "Improper1_typeIV",
-                                                     "Improper2_noInt",
-                                                     "Improper2_typeI",
-                                                     "Improper2_typeII",
-                                                     "Improper2_typeIII",
-                                                     "Improper2_typeIV",
-                                                     "proper1_noInt",
-                                                     "proper1_onlyInt",
-                                                     "proper1_full",
-                                                     "proper2_noInt",
-                                                     "proper2_onlyInt",
-                                                     "proper2_full"), 8),
-                                       model_choice = c(rep(1, 16),rep(2, 16),
-                                                        rep(3, 16),rep(4, 16),
-                                                        rep(5, 16),rep(6, 16),
-                                                        rep(7, 16),rep(8, 16)),
-                                       value = 1:(8 * 16))
+                                                    "Improper1_typeI",
+                                                    "Improper1_typeII",
+                                                    "Improper1_typeIII",
+                                                    "Improper1_typeIV",
+                                                    "Improper2_noInt",
+                                                    "Improper2_typeI",
+                                                    "Improper2_typeII",
+                                                    "Improper2_typeIII",
+                                                    "Improper2_typeIV",
+                                                    "proper1_noInt",
+                                                    "proper1_onlyInt",
+                                                    "proper1_full",
+                                                    "proper1_iid",
+                                                    "proper2_noInt",
+                                                    "proper2_onlyInt",
+                                                    "proper2_full",
+                                                    "proper2_iid"), 8),
+                                      model_choice = c(rep(1, 18),rep(2, 18),
+                                                       rep(3, 18),rep(4, 18),
+                                                       rep(5, 18),rep(6, 18),
+                                                       rep(7, 18),rep(8, 18)),
+                                      value = 1:(8 * 18))
   
   
   for(model_name in model_names){
@@ -517,32 +523,34 @@ for(scenario_name in scenario_names_ADM4){
   print(scenario_name)
   
   model_choice_counts.df <- data.frame(Model = rep(c("Improper1_noInt",
-                                              "Improper1_typeI",
-                                              "Improper1_typeII",
-                                              "Improper1_typeIII",
-                                              "Improper1_typeIV",
-                                              "Improper2_noInt",
-                                              "Improper2_typeI",
-                                              "Improper2_typeII",
-                                              "Improper2_typeIII",
-                                              "Improper2_typeIV",
-                                              "proper1_noInt",
-                                              "proper1_onlyInt",
-                                              "proper1_full",
-                                              "proper2_noInt",
-                                              "proper2_onlyInt",
-                                              "proper2_full"), 8),
-                                model_choice = c(rep(1, 16),rep(2, 16),
-                                                 rep(3, 16),rep(4, 16),
-                                                 rep(5, 16),rep(6, 16),
-                                                 rep(7, 16),rep(8, 16)),
-                                value = 1:(8 * 16))
+                                                     "Improper1_typeI",
+                                                     "Improper1_typeII",
+                                                     "Improper1_typeIII",
+                                                     "Improper1_typeIV",
+                                                     "Improper2_noInt",
+                                                     "Improper2_typeI",
+                                                     "Improper2_typeII",
+                                                     "Improper2_typeIII",
+                                                     "Improper2_typeIV",
+                                                     "proper1_noInt",
+                                                     "proper1_onlyInt",
+                                                     "proper1_full",
+                                                     "proper1_iid",
+                                                     "proper2_noInt",
+                                                     "proper2_onlyInt",
+                                                     "proper2_full",
+                                                     "proper2_iid"), 8),
+                                       model_choice = c(rep(1, 18),rep(2, 18),
+                                                        rep(3, 18),rep(4, 18),
+                                                        rep(5, 18),rep(6, 18),
+                                                        rep(7, 18),rep(8, 18)),
+                                       value = 1:(8 * 18))
   
   
   for(model_name in model_names){
     #Load in the model_choice data
     load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
-               sep = " "))
+               sep = ""))
     tmp_ <- model_choice_for_counts
     
     #Remove potential NAs
@@ -590,32 +598,34 @@ for(scenario_name in scenario_names_ADM4){
   print(scenario_name)
   
   model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
-                                                     "Improper1_typeI",
-                                                     "Improper1_typeII",
-                                                     "Improper1_typeIII",
-                                                     "Improper1_typeIV",
-                                                     "Improper2_noInt",
-                                                     "Improper2_typeI",
-                                                     "Improper2_typeII",
-                                                     "Improper2_typeIII",
-                                                     "Improper2_typeIV",
-                                                     "proper1_noInt",
-                                                     "proper1_onlyInt",
-                                                     "proper1_full",
-                                                     "proper2_noInt",
-                                                     "proper2_onlyInt",
-                                                     "proper2_full"), 8),
-                                       model_choice = c(rep(1, 16),rep(2, 16),
-                                                        rep(3, 16),rep(4, 16),
-                                                        rep(5, 16),rep(6, 16),
-                                                        rep(7, 16),rep(8, 16)),
-                                       value = 1:(8 * 16))
+                                                    "Improper1_typeI",
+                                                    "Improper1_typeII",
+                                                    "Improper1_typeIII",
+                                                    "Improper1_typeIV",
+                                                    "Improper2_noInt",
+                                                    "Improper2_typeI",
+                                                    "Improper2_typeII",
+                                                    "Improper2_typeIII",
+                                                    "Improper2_typeIV",
+                                                    "proper1_noInt",
+                                                    "proper1_onlyInt",
+                                                    "proper1_full",
+                                                    "proper1_iid",
+                                                    "proper2_noInt",
+                                                    "proper2_onlyInt",
+                                                    "proper2_full",
+                                                    "proper2_iid"), 8),
+                                      model_choice = c(rep(1, 18),rep(2, 18),
+                                                       rep(3, 18),rep(4, 18),
+                                                       rep(5, 18),rep(6, 18),
+                                                       rep(7, 18),rep(8, 18)),
+                                      value = 1:(8 * 18))
   
   
   for(model_name in model_names){
     #Load in the model_choice data
     load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
-               sep = " "))
+               sep = ""))
     tmp_ <- model_choice_for_rates
     
     #Remove potential NAs
@@ -657,6 +667,201 @@ for(scenario_name in scenario_names_ADM4){
   #Save latex table
   cat(latex_tabular, file =paste("./results/model_choice/table_rates_", scenario_name, ".tex", sep = ""))
 }
+################################################################################
+# Get a table for the totals only
+
+
+
+
+
+
+###################################
+# ADM1
+
+#####
+#counts
+model_choice_counts.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                   "Improper1_typeI",
+                                                   "Improper1_typeII",
+                                                   "Improper1_typeIII",
+                                                   "Improper1_typeIV",
+                                                   "Improper2_noInt",
+                                                   "Improper2_typeI",
+                                                   "Improper2_typeII",
+                                                   "Improper2_typeIII",
+                                                   "Improper2_typeIV",
+                                                   "proper1_noInt",
+                                                   "proper1_onlyInt",
+                                                   "proper1_full",
+                                                   "proper1_iid",
+                                                   "proper2_noInt",
+                                                   "proper2_onlyInt",
+                                                   "proper2_full",
+                                                   "proper2_iid"), 6),
+                                     model_choice = c(rep(1, 18),rep(2, 18),
+                                                      rep(3, 18),rep(4, 18),
+                                                      rep(5, 18),rep(6, 18)),
+                                     value = 1:(6 * 18))
+
+for(i in 1:length(scenario_names_ADM1)){
+  
+  scenario_name = scenario_names_ADM1[i]
+  print(scenario_name)
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_counts
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    model_choice_counts.df[model_choice_counts.df$Model == model_name & 
+                             model_choice_counts.df$model_choice == i, ]$value = tmp2_[8]
+    
+  }
+}
+
+#Make caption and label for latex table
+caption = "Total for ADM1 (counts)"
+label = paste("model-choice-", scenario_name, sep = "")
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(Model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    
+    Heading(name = "Average IS", character.only = F)*Factor(model_choice,  #model_choice_for_counts
+                     levelnames = c("const, short", "lin, short", "cp, short",
+                                    "const, long", "lin, long", "cp, long"))*
+    Heading()*value*Heading()*identity,
+  data = model_choice_counts.df),
+  caption = caption,
+  label = label
+)
+
+
+#Save latex table
+cat(latex_tabular, file =paste("./results/model_choice/table_counts_total_ADM1.tex", sep = ""))
+
+#####
+#rates
+model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                   "Improper1_typeI",
+                                                   "Improper1_typeII",
+                                                   "Improper1_typeIII",
+                                                   "Improper1_typeIV",
+                                                   "Improper2_noInt",
+                                                   "Improper2_typeI",
+                                                   "Improper2_typeII",
+                                                   "Improper2_typeIII",
+                                                   "Improper2_typeIV",
+                                                   "proper1_noInt",
+                                                   "proper1_onlyInt",
+                                                   "proper1_full",
+                                                   "proper1_iid",
+                                                   "proper2_noInt",
+                                                   "proper2_onlyInt",
+                                                   "proper2_full",
+                                                   "proper2_iid"), 6),
+                                     model_choice = c(rep(1, 18),rep(2, 18),
+                                                      rep(3, 18),rep(4, 18),
+                                                      rep(5, 18),rep(6, 18)),
+                                     value = 1:(6 * 18))
+
+for(i in 1:length(scenario_names_ADM1)){
+  
+  scenario_name = scenario_names_ADM1[i]
+  print(scenario_name)
+  
+  for(model_name in model_names){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_rates
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    model_choice_rates.df[model_choice_rates.df$Model == model_name & 
+                             model_choice_rates.df$model_choice == i, ]$value = tmp2_[8]
+    
+  }
+}
+
+#Make caption and label for latex table
+caption = "Total for ADM1 (rates)"
+label = paste("model-choice-", scenario_name, sep = "")
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(Model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    
+    Heading(name = "Average IS", character.only = F)*Factor(model_choice,  #model_choice_for_counts
+                                                            levelnames = c("const, short", "lin, short", "cp, short",
+                                                                           "const, long", "lin, long", "cp, long"))*
+    Heading()*value*Heading()*identity,
+  data = model_choice_rates.df),
+  caption = caption,
+  label = label
+)
+
+
+#Save latex table
+cat(latex_tabular, file =paste("./results/model_choice/table_rates_total_ADM1.tex", sep = ""))
+
+
+# Find indices of the smallest values for each scenario
+
+### Scenario 1
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 1, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 1 & model_choice_rates.df$value == min1, ]
+
+### Scenario 3
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 2, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 2 & model_choice_rates.df$value == min1, ]
+
+
+### Scenario 5
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 3, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 3 & model_choice_rates.df$value == min1, ]
+
+
+### Scenario 7
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 4, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 4 & model_choice_rates.df$value == min1, ]
+
+
+### Scenario 9
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 5, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 5 & model_choice_rates.df$value == min1, ]
+
+
+### Scenario 11
+min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 6, ]$value) 
+model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rates.df$value == min1, ]
+
+
+
+##### 
+# ADM4
+
+
+
+
+
+
+
 
 ################################################################################
 # Get a table for a singular dataset for each scenario, to better see maybe?
