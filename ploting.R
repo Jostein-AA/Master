@@ -574,12 +574,13 @@ ggarrange(plt_fitted, NULL, plt_fitted_sd,
 ################################################################################
 # Plot the models fitted values over time for regions (for ADM1 plot all regions w. geofacet)
 
+##############################
+#ADM 1
+
+# Dataset choosen
 dataset_id = 3 
-dataset_id_2 = 4
 
 
-
-scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 # Create ADM1 grid for geofacet
 ADM1_grid <- data.frame(
   row = c(1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5),
@@ -591,12 +592,30 @@ ADM1_grid <- data.frame(
 geofacet::grid_preview(ADM1_grid)
 
 
-select_regions_lin_pred_vs_true <- function(geofacet_grid,
+#####
+#rate
+
+plt_linpredictor_vs_true_rate <- function(geofacet_grid,
                                             pred_to_plot,
                                             title){
   # Function that plots for select regions the fitted linear predictor of
   # the provided model along w. corresponding 95% CI's
   # against the true risk
+  
+  if(nrow(geofacet_grid) == 16){
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.position = c(0.15, 1),
+                   legend.justification = c("right", "top"),
+                   legend.box.just = "right",
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  } else{
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  }
   
   plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
     geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = "Posterior 95% CI"), 
@@ -610,13 +629,7 @@ select_regions_lin_pred_vs_true <- function(geofacet_grid,
          y = "Rate",
          col = NULL) +
     theme_bw() + 
-    theme(axis.title=element_text(size=12),
-          plot.title = element_text(hjust = 0.5, size=12),
-          strip.text.x = element_text(size = 10),
-          legend.position = c(0.15, 1),
-          legend.justification = c("right", "top"),
-          legend.box.just = "right",
-          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+    theme
   
   plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
                                   labels = unname(TeX(c("Posterior 95% CI",
@@ -626,8 +639,7 @@ select_regions_lin_pred_vs_true <- function(geofacet_grid,
   return(plt)
 }
 
-select_regions_lin_pred_vs_true_improper <- function(ADM1_grid, lambda_, model, title){
-  
+plt_linpredictor_vs_true_rate_improper <- function(ADM_grid, lambda_, model, title){
   pred_to_plot <- data.frame(area_id = lambda_$area_id,
                              time_id = lambda_$time_id,
                              median = model$summary.fitted.values$'0.5quant', 
@@ -637,26 +649,26 @@ select_regions_lin_pred_vs_true_improper <- function(ADM1_grid, lambda_, model, 
                              lambda_it = lambda_$lambda_it,
                              count_div_pop = lambda_$sampled_counts/lambda_$E_it)
   
-  select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
   
 }
 
-select_regions_lin_pred_vs_true_proper <- function(ADM1_grid, lambda_, model, title){
+plt_linpredictor_vs_true_rate_proper <- function(ADM_grid, lambda_, model, title){
   ### NB: Must sort the proper ones
   pred_to_plot <- data.frame(area_id = lambda_$area_id,
                              time_id = lambda_$time_id,
-                             median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', n_ADM1, tT), # model$summary.fitted.values$'0.5quant',
-                             quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', n_ADM1, tT),# model$summary.fitted.values$'0.025quant',
-                             quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', n_ADM1, tT), #model$summary.fitted.values$'0.975quant',
+                             median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', length(unique(lambda_$area_id)), tT), # model$summary.fitted.values$'0.5quant',
+                             quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', length(unique(lambda_$area_id)), tT),# model$summary.fitted.values$'0.025quant',
+                             quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', length(unique(lambda_$area_id)), tT), #model$summary.fitted.values$'0.975quant',
                              sampled_counts = lambda_$sampled_counts,
                              lambda_it = lambda_$lambda_it,
                              count_div_pop = lambda_$sampled_counts/lambda_$E_it)
   
-  select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, title)
+  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
 }
 
 
-plt_select_regions_lin_pred_vs_true <- function(ADM1_grid, 
+wrapper_plt_linpredictor_vs_true_rate <- function(ADM_grid, 
                                                 scenario_name,
                                                 dataset_id,
                                                 model,
@@ -676,9 +688,9 @@ plt_select_regions_lin_pred_vs_true <- function(ADM1_grid,
   
   ## Actually plot it
   if(improper){
-    select_regions_lin_pred_vs_true_improper(ADM1_grid, lambda_, model, title)
+    plt_linpredictor_vs_true_rate_improper(ADM_grid, lambda_, model, title)
   } else{
-    select_regions_lin_pred_vs_true_proper(ADM1_grid, lambda_, model, title)
+    plt_linpredictor_vs_true_rate_proper(ADM_grid, lambda_, model, title)
   }
 }
 
@@ -690,7 +702,7 @@ title = "Scenario: const trend, short range (ADM1)"             #TeX(r'(ADM1$_{c
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     Improper1_typeI_ADM1, improper = T,
                                     title = paste("Model: Improper1_typeI", title, sep = "   "))
 
@@ -702,7 +714,7 @@ title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     proper2_onlyInt_ADM1, improper = F,
                                     title = paste("Model: Proper2_onlyInt", title, sep = "   "))
 
@@ -713,7 +725,7 @@ title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an improper model
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     Improper2_typeIV_ADM1, improper = T,
                                     title = paste("Model: Improper2_typeIV", title, sep = "   "))
 
@@ -724,7 +736,7 @@ title = "Scenario: const trend, long range (ADM1)"             #TeX(r'(ADM1$_{co
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an Improper model. Save
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     Improper1_typeIII_ADM1, improper = T,
                                     title = paste("Model: Improper1_typeIII", title, sep = "   "))
 
@@ -737,7 +749,7 @@ title = "Scenario: linear trend, long range (ADM1)"             #TeX(r'(ADM1$_{c
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot a proper model
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     proper1_full_ADM1, improper = F,
                                     title = paste("Model: proper1_full", title, sep = "   "))
 
@@ -748,7 +760,7 @@ title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{c
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an improper model
-plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = dataset_id,
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                     Improper1_noInt_ADM1, improper = T,
                                     title = paste("Model: Improper1_noInt", title, sep = "   "))
 
@@ -756,23 +768,12 @@ plt_select_regions_lin_pred_vs_true(ADM1_grid, scenario_name, dataset_id = datas
 
 
 
+#####
+# Count
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
-                                              pred_to_plot,
-                                              title){
+plt_predcount_vs_true_count <- function(geofacet_grid,
+                                        pred_to_plot,
+                                        title){
   # Function that plots for select regions the fitted linear predictor of
   # the provided model along w. corresponding 95% CI's
   # against the true counts
@@ -782,61 +783,325 @@ select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
                 fill = "#F8766D", alpha = 0.6) +
     geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
     geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
-    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
+    geom_line(aes(x = time_id, y = post_mean, col = "Posterior mean risk")) + 
     facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
     labs(title = title,
          x = "Year",
          y = "Rate",
          col = NULL) +
     theme_bw() + 
-    theme(axis.title=element_text(size=11),
-          plot.title = element_text(size=11),
-          strip.text.x = element_text(size = 9))
+    theme(axis.title=element_text(size=12),
+          plot.title = element_text(hjust = 0.5, size=12),
+          strip.text.x = element_text(size = 10),
+          legend.position = c(0.15, 1),
+          legend.justification = c("right", "top"),
+          legend.box.just = "right",
+          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
   
-  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                  labels = unname(TeX(c("Posterior 95% CI",
+                                                        "Posterior mean $\\hat{Y}_{it}$",
+                                                        "True $Y_{it}$",
+                                                        "Expected true $Y_{it}$")))) # 
   return(plt)
 }
 
+wrapper_plt_predcount_vs_true_count <- function(ADM1_grid, 
+                                                scenario_name,
+                                                dataset_id,
+                                                model,
+                                                improper = T,
+                                                title){
+  
+  ### Load in simulated data for that scenario
+  load(paste("./Simulated_data/", scenario_name, "/", 
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  
+  #### Remove unessecary data
+  rm(lambda.df)
+  
+  ## If proper sort the marginals
+  if(!improper){
+    model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
+                                                        length(unique(lambda_$area_id)),
+                                                        tT)
+  } 
+    
+  ## Get the upper, lower, and median quantile for the pred. counts
+  ul_each <- lapply(model$marginals.fitted.values, 
+                    FUN = function(x){
+                      return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+                    })
+  
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = rep(NA, nrow(lambda_)),
+                             post_mean = rep(NA, nrow(lambda_)),
+                             quantile_0.025 = rep(NA, nrow(lambda_)),
+                             quantile_0.975 = rep(NA, nrow(lambda_)),
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it * lambda_$E_it,
+                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+  for(i in 1:nrow(pred_to_plot)){
+    pred_to_plot[i, ]$median = ul_each[[i]]$median
+    pred_to_plot[i, ]$post_mean = ul_each[[i]]$post_mean
+    pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
+    pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
+  }
+  
+  plt_predcount_vs_true_count(ADM1_grid, pred_to_plot, title)
+}
+
+
+scenario_name = "sc1"
+title = "Scenario: const trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      Improper1_typeI_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeI", title, sep = "   "))
+
+
+scenario_name = "sc3"
+title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper2_onlyInt_ADM1, improper = F,
+                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+
+scenario_name = "sc5"
+title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      Improper2_typeIV_ADM1, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+
+scenario_name = "sc7"
+title = "Scenario: const trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      Improper1_typeIII_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeIII", title, sep = "   "))
+
+
+scenario_name = "sc9"
+"Scenario: linear trend, short range (ADM1)"
+title = "Scenario: linear trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_full_ADM1, improper = F,
+                                      title = paste("Model: proper1_full", title, sep = "   "))
+
+scenario_name = "sc11"
+title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      Improper1_noInt_ADM1, improper = T,
+                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+
+
+
+###################
+# ADM4
+
+dataset_id_2 = 4
+
+ADM4_grid <- data.frame(
+  code = c("1", "50", "100", "150", "200", "250", "300", "350", "400"),
+  name = c("Alb-Donau-K.",
+           "Ansbach",
+           "Munchen",
+           "Oberhavel",
+           "Celle",
+           "Dusseldorf",
+           "Bad Kreuznach",
+           "Stendal",
+           "Wartburgkreis"),
+  row = c(1, 1, 1, 2, 2, 2, 3, 3, 3),
+  col = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
+  stringsAsFactors = FALSE)
+
+
+geofacet::grid_preview(ADM4_grid)
+
+
+
+#####
+#rate
+
+scenario_name = "sc2"
+title = "Scenario: const trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_typeIV_ADM4, improper = T,
+                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+
+
+scenario_name = "sc4"
+title = "Scenario: linear trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      proper2_onlyInt_ADM4, improper = F,
+                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+
+scenario_name = "sc6"
+title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper2_typeIII_ADM4, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+
+scenario_name = "sc8"
+title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_noInt_ADM4, improper = T,
+                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+
+
+scenario_name = "sc10"
+title = "Scenario: linear trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      proper1_onlyInt_ADM4, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+scenario_name = "sc12"
+title = "Scenario: change point, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_typeIV_ADM4, improper = T,
+                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
 
 
 
 
 
-# Plot time-series plot for some regions w. fitted rate against
-# The true rate AND sampled_count/E_{it}
-regions = c(1, 2, 3, 4,
-            5, 6, 7, 8)
-# Save to pdf as 10 by 10   name: first_level_typeIV_time_series_sc5
-select_regions_lin_pred_vs_true(true_risk = lambda_sc5.df,
-                                model = improper_typeIV_sc5,
-                                regions = regions,
-                                n = nrow(first_level_admin_map),
-                                tT = tT)
+#####
+#count
 
-regions = c(9, 10, 11, 12,
-            13, 14, 15, 16)
-# Save to pdf as 10 by 10   name: first_level_typeIV_time_series_sc5_2
-select_regions_lin_pred_vs_true(true_risk = lambda_sc5.df,
-                                model = improper_typeIV_sc5,
-                                regions = regions,
-                                n = nrow(first_level_admin_map),
-                                tT = tT)
+scenario_name = "sc2"
+title = "Scenario: const trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
 
-## Plot the fitted linear pred. for 6 areas over time w. 95 %CIs against true values
-regions = c(1, 50, 100,
-            150, 200, 250,
-            300, 350)
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-#region_time_series(true_risk = lambda.df, model = improper_noInt,
-#                   region = regions[6], n = nrow(germany_map_2), tT = tT)
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_typeIV_ADM4, improper = T,
+                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
 
-## Plot the fitted linear predictor vs the true values for the regions = regions
-# Save as pdf as 10 by 10   name: second_level_typeIV_time_series_sc6
-select_regions_lin_pred_vs_true(true_risk = lambda_sc6.df,
-                                model = improper_typeIV_sc6,
-                                regions = regions,
-                                n = nrow(second_level_admin_map),
-                                tT = tT)
+
+scenario_name = "sc4"
+title = "Scenario: linear trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      proper2_onlyInt_ADM4, improper = F,
+                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+
+scenario_name = "sc6"
+title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper2_typeIII_ADM4, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+
+scenario_name = "sc8"
+title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an Improper model. Save
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_noInt_ADM4, improper = T,
+                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+
+
+scenario_name = "sc10"
+title = "Scenario: linear trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot a proper model
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      proper1_onlyInt_ADM4, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+scenario_name = "sc12"
+title = "Scenario: change point, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
+
+### Load in the models for that scenario
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+### Plot an improper model
+(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                                      Improper1_typeIV_ADM4, improper = T,
+                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+
+
+
 
 
 
@@ -844,17 +1109,14 @@ select_regions_lin_pred_vs_true(true_risk = lambda_sc6.df,
 # Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
 
 
-#model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
-#                "Improper1_typeIII", "Improper1_typeIV",
-#                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
-#                "Improper2_typeIII", "Improper2_typeIV",
-#                "proper1_noInt", "proper1_onlyInt", "proper1_full",
-#                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+                "Improper1_typeIII", "Improper1_typeIV",
+                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+                "Improper2_typeIII", "Improper2_typeIV",
+                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
 
-model_names = c("Improper1_noInt", "Improper1_typeIII", "Improper2_noInt",
-                "proper1_noInt")
-
-scenario_name = "sc4"
+scenario_name = "sc2"
 
 
 
@@ -902,7 +1164,8 @@ ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead,
                              fill = model_name)) +
   geom_density_ridges() +
   theme_ridges() + 
-  theme(legend.position = "none")
+  theme(legend.position = "none") + 
+  xlim(12.5, 18)
 
 ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
                              y = model_name, 
@@ -978,6 +1241,9 @@ ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead,
   geom_density_ridges() +
   theme_ridges() + 
   theme(legend.position = "none")
+
+################################################################################
+# Posterior distributions
 
 
 

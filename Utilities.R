@@ -57,8 +57,10 @@ find_ul_quants_counts_single_pred <- function(lambda_marginal,
   ## Calculate upper and lower quantile (and median)
   u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
   median = as.numeric(quantile(count_sample, 0.5))
+  mean <- as.numeric(mean(count_sample))
   
-  return(list(l = l, u = u, median = median))
+  return(list(l = l, u = u, median = median,
+              post_mean = mean))
   
 }
 
