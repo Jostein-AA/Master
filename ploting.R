@@ -13,14 +13,18 @@ library(latex2exp)
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
+# Some useful numbers
 tT = 13
 n_sim = 100
 E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
+dataset_id = 3 
+dataset_id_2 = 4
 
-
+################################################################################
+# Splines
 
 #Save as B_spline_basis_for_time 7.5 by 3.5
 #plot(Bt[, 1] ~ xt, type = "l", ylim = c(0, 1), ylab = TeX(r'($B_{t}(t')$)'),
@@ -264,177 +268,123 @@ ggarrange(plt1, plt3, plt5,
 
 
 
-################################################################################
-# Plot the continuous risk surface in one time interval (first and last)
 
-plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
-                                            time_interval, t_axis,
-                                            admin_map,
-                                            polygon_grid2){
+
+
+
+################################################################################
+# Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
+
+
+model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
+                "Improper1_typeIII", "Improper1_typeIV",
+                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
+                "Improper2_typeIII", "Improper2_typeIV",
+                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
+
+
+ridgeplot_counts <- function(model_names, scenario_name,
+                             one_2_3_or_total, xlab,
+                             xlim){
   
-  ## Load in a specific scenario
-  filename = paste(dir, risk_surface_filename, sep = "")
-  load(filename)
-  col_names <- colnames(risk_surface.list)[colnames(risk_surface.list) != "values"]
-  tmp_ = risk_surface.list[, col_names]
-  tmp_$values = risk_surface.list$values[, 1]
-  rm(risk_surface.list)
+  model_name = model_names[1]
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
   
-  ## get the times
-  t_axis_indices = which(time_interval - 1 < t_axis & 
-                           t_axis <= time_interval)
+  tmp_ <- model_choice_for_counts
+  
+  to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                                 IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                                 IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                                 IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                                 IS_tot = tmp_$total_IS,
+                                 MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                                 MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                                 MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                                 MSE_tot = tmp_$total_mse)
   
   
-  if(length(t_axis_indices) == 3){
-    ### Plot the continuous true risk surface for times within time_interval
-    plt_1 <- heatmap_points(tmp_,
-                            polygon_grid2,
-                            admin_map,
-                            t_axis[t_axis_indices[1]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[1]], 1)))
+  for(model_name in model_names[2:length(model_names)]){
+    ### Load in Model choice data
+    load(paste("./results/model_choice/model_choice_", 
+               model_name, "_", 
+               scenario_name, ".RData",
+               sep = ""))
     
-    plt_2 <- heatmap_points(tmp_,
-                            polygon_grid2,
-                            admin_map,
-                            t_axis[t_axis_indices[2]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[2]], 1)))
+    tmp_ <- model_choice_for_counts
     
-    plt_3 <- heatmap_points(tmp_,
-                            polygon_grid2,
-                            admin_map,
-                            t_axis[t_axis_indices[3]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[3]], 1)))
+    tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                        IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                        IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                        IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                        IS_tot = tmp_$total_IS,
+                        MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                        MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                        MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                        MSE_tot = tmp_$total_mse)
     
+    to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
     
-    
-    ggarrange(plt_1, plt_2, plt_3,
-              ncol = 3, nrow = 1,
-              common.legend = T, legend = "right")
-    
-  } else {
-    print("Unsuited")
   }
-  
-  
+  if(one_2_3_or_total == 1){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y = element_text(size = 10),
+              axis.text.x = element_text(size = 10),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab("Model") + 
+        xlim(xlim[1], xlim[2])
+      
+    )
+  } else if(one_2_3_or_total == 2){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y=element_blank(),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.text.x = element_text(size = 10),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab(NULL) + 
+        xlim(xlim[1], xlim[2])
+    )
+    
+  } else if(one_2_3_or_total == 3){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y=element_blank(),
+              axis.text.x = element_text(size = 10),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab(NULL) + 
+        xlim(xlim[1], xlim[2])
+    )
+  }
 }
 
-dir = "./Data/Simulated_risk_surfaces/"
-
-##########
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc1_risk_surfaces.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                first_level_admin_map,
-                                polygon_grid2 = polygon_grid2)
-
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc2_risk_surfaces.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc3_risk_surfaces.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc4_risk_surfaces.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc5_risk_surfaces.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-# Save as 15 by 6 name: continuous_scenario_6_time_1
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc6_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc7_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc8_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-#Save to pdf as 15 by 6. name: continuous_scenario_9_time_1
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc9_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc10_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc11_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc12_risk_surface_2.RData",
-                                time_interval = 1, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-
-##########
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc1_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc2_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc3_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc4_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc5_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-# Save as 15 by 6, name: continuous_scenario_6_time_12
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc6_risk_surface_2.RData",
-                                time_interval = 12, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc7_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc8_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-#Save to pdf as 15 by 6. name: continuous_scenario_9_time_12
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc9_risk_surface_2.RData",
-                                time_interval = 12, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc10_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc11_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
-plt_cont_risk_one_time_interval(dir = dir,
-                                risk_surface_filename = "sc12_risk_surface_2.RData",
-                                time_interval = 13, t_axis = t_axis,
-                                polygon_grid2 = polygon_grid2)
 
 
 
@@ -442,133 +392,166 @@ plt_cont_risk_one_time_interval(dir = dir,
 
 
 
+ridgeplot_rates <- function(model_names, scenario_name,
+                             one_2_3_or_total, xlab,
+                            xlim){
+  
+  model_name = model_names[1]
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_rates
+  
+  to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                                 IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                                 IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                                 IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                                 IS_tot = tmp_$total_IS,
+                                 MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                                 MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                                 MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                                 MSE_tot = tmp_$total_mse)
+  
+  
+  for(model_name in model_names[2:length(model_names)]){
+    ### Load in Model choice data
+    load(paste("./results/model_choice/model_choice_", 
+               model_name, "_", 
+               scenario_name, ".RData",
+               sep = ""))
+    
+    tmp_ <- model_choice_for_rates
+    
+    tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                        IS_one_year_ahead = tmp_$IS_1_year_ahead,
+                        IS_two_year_ahead = tmp_$IS_2_year_ahead,
+                        IS_three_year_ahead = tmp_$IS_3_year_ahead,
+                        IS_tot = tmp_$total_IS,
+                        MSE_one_year_ahead = tmp_$mse_1_year_ahead,
+                        MSE_two_year_ahead = tmp_$mse_2_year_ahead,
+                        MSE_three_year_ahead = tmp_$mse_3_year_ahead,
+                        MSE_tot = tmp_$total_mse)
+    
+    to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
+    
+  }
+  
+  if(one_2_3_or_total == 1){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y = element_text(size = 10),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.text.x = element_text(size = 10),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab("Model") +
+        xlim(xlim[1], xlim[2])
+      
+    )
+  } else if(one_2_3_or_total == 2){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y=element_blank(),
+              axis.text.x = element_text(size = 10),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab(NULL) +
+        xlim(xlim[1], xlim[2])
+    )
+    
+  } else if(one_2_3_or_total == 3){
+    return(
+      ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
+                                   y = model_name, 
+                                   fill = model_name)) +
+        geom_density_ridges() +
+        theme_ridges() + 
+        theme(legend.position = "none",
+              axis.text.y=element_blank(),
+              axis.text.x = element_text(size = 10),
+              axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+              axis.title=element_text(size=13)) + 
+        xlab(xlab) + 
+        ylab(NULL) +
+        xlim(xlim[1], xlim[2])
+    )
+  }
+}
 
 
 
-# Plot the continuous risk surface at three specific times (t = 0.3, 7, 12.5)
+
+ridgeplot_counts_and_rates_all_years <- function(scenario_name, xlim_counts, xlim_rates){
+  
+  plt1 <- ridgeplot_counts(model_names = model_names, scenario_name = scenario_name, 1, "IS count: 1 year ahead", xlim_counts)
+  plt2 <- ridgeplot_counts(model_names = model_names, scenario_name = scenario_name, 2, "IS count: 2 years ahead", xlim_counts)
+  plt3 <- ridgeplot_counts(model_names = model_names, scenario_name = scenario_name, 3, "IS count: 3 years ahead", xlim_counts)
+  
+  
+  plt4 <- ridgeplot_rates(model_names = model_names, scenario_name = scenario_name, 1, "IS rate: 1 year ahead", xlim_rates)
+  plt5 <- ridgeplot_rates(model_names = model_names, scenario_name = scenario_name, 2, "IS rate: 2 years ahead", xlim_rates)
+  plt6 <- ridgeplot_rates(model_names = model_names, scenario_name = scenario_name, 3, "IS rate: 3 years ahead", xlim_rates)
+  
+  plt <- ggarrange(plt1, plt2, plt3, 
+                   plt4, plt5, plt6,
+                   widths = c(1.35, 1, 1),
+                   ncol = 3, nrow = 2, common.legend = F)
+  return(plt)
+}
+
+#Save as 15 by 15 sc1_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc1", c(8, 27), c(0.02, 0.1))
+
+#Save as 15 by 15 sc2_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc2", c(12, 20), c(0.02, 0.12))
+
+#Save as 15 by 15 sc3_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc3", c(10, 30), c(0.02, 0.12))
 
 
+#Save as 15 by 15 sc4_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc4", c(12, 22), c(0.02, 0.13))
 
+#Save as 15 by 15 sc5_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc5", c(10, 25), c(0.02, 0.11))
 
-################################################################################
+#Save as 15 by 15 sc6_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc6", c(12, 20), c(0.02, 0.13))
 
-# the discrete rate resulting from this AND sampled_count/E_it for the regions
-# Add the estimated rate for some of the models AND standard devation (or similar)
+#Save as 15 by 15 sc7_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc7", c(8, 27), c(0.02, 0.1))
 
+#Save as 15 by 15 sc8_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc8", c(12, 20), c(0.02, 0.12))
 
-## Plot the discrete rate and the sampled-count/E_it for first-level
-tmp_ = lambda_sc9.df[lambda_sc9.df$time_id == 1, ]
-tmp_map_ = first_level_admin_map
+#Save as 15 by 15 sc9_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc9", c(8, 27), c(0.02, 0.1))
 
-tmp_map_$lambda = tmp_$lambda_it[, 1]; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts[, 1]
+#Save as 15 by 15 sc10_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc10", c(12, 20), c(0.02, 0.12))
 
-plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
-plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))
+#Save as 15 by 15 sc11_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc11", c(8, 27), c(0.02, 0.1))
 
-# Save to pdf as 10 by 6, name: sc9_rate_and_counts_div_pop
-ggarrange(plt_lambda, NULL, plt_count_div_e_it,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
+#Save as 15 by 15 sc12_IS_ridgeplot_all
+ridgeplot_counts_and_rates_all_years("sc12", c(12, 20), c(0.02, 0.12))
 
-## Plot the discrete rate and the sampled-count/E_it for first-level
-tmp_ = lambda_sc9.df[lambda_sc9.df$time_id == 12, ]
-tmp_map_ = first_level_admin_map
-tmp_map_$lambda = tmp_$lambda_it[, 1]; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts[, 1]
-
-plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
-plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))
-
-# Save to pdf as 10 by 6, name: sc9_rate_and_counts_div_pop_2
-ggarrange(plt_lambda, NULL, plt_count_div_e_it,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-## Plot the estimated rate and std. deviation of rate for model on first-level
-tmp_ = improper_typeIV_sc9$summary.fitted.values$mean[1:nrow(first_level_admin_map)]
-tmp_map_ = first_level_admin_map
-plt_fitted = heatmap_areas(tmp_map_, tmp_, title = "Posterior mean rate")
-
-tmp_ = improper_typeIV_sc9$summary.fitted.values$sd[1:nrow(first_level_admin_map)]
-plt_fitted_sd = heatmap_areas(tmp_map_, tmp_, title = "Posterior std deviation of rate")
-
-# Save to pdf as 10 by 6, name: fitted_rate_n_sd_typeIV_sc9
-ggarrange(plt_fitted, NULL, plt_fitted_sd,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-## Plot the estimated rate and std. deviation of rate for model on first-level
-tmp_ = improper_typeIV_sc9$summary.fitted.values$mean[(11 * nrow(first_level_admin_map) + 1):(12 * nrow(first_level_admin_map))]
-tmp_map_ = first_level_admin_map
-plt_fitted = heatmap_areas(tmp_map_, tmp_, title = "Posterior mean rate")
-
-tmp_ = improper_typeIV_sc9$summary.fitted.values$sd[(11 * nrow(first_level_admin_map) + 1):(12 * nrow(first_level_admin_map))]
-plt_fitted_sd = heatmap_areas(tmp_map_, tmp_, title = "Posterior std deviation of rate")
-
-# Save to pdf as 10 by 6, name: fitted_rate_n_sd_typeIV_sc9_2
-ggarrange(plt_fitted, NULL, plt_fitted_sd,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-
-
-## Plot the discrete rate and the sampled-count/E_it for second_level
-tmp_ = lambda_sc6.df[lambda_sc6.df$time_id == 1, ]
-tmp_map_ = second_level_admin_map
-tmp_map_$lambda = tmp_$lambda_it; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts
-
-plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
-plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))
-
-# Save to pdf as 10 by 6, name: Rate_and_counts_div_pop_sc6
-ggarrange(plt_lambda, NULL, plt_count_div_e_it,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-## Plot fits
-tmp_ = improper_typeIV_sc6$summary.fitted.values$mean[1:nrow(second_level_admin_map)]
-tmp_map_ = second_level_admin_map
-plt_fitted = heatmap_areas(tmp_map_, tmp_, title = "Posterior mean rate")
-
-tmp_ = improper_typeIV_sc6$summary.fitted.values$sd[1:nrow(second_level_admin_map)]
-plt_fitted_sd = heatmap_areas(tmp_map_, tmp_, title = "Posterior std deviation of rate")
-
-# Save to pdf as 10 by 6, name: fitted_rate_n_sd_typeIV_sc6
-ggarrange(plt_fitted, NULL, plt_fitted_sd,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-
-## Plot the discrete rate and the sampled-count/E_it for second_level
-tmp_ = lambda_sc6.df[lambda_sc6.df$time_id == 12, ]
-tmp_map_ = second_level_admin_map
-tmp_map_$lambda = tmp_$lambda_it; tmp_map_$E_it = tmp_$E_it; tmp_map_$counts = tmp_$sampled_counts
-
-plt_lambda <- heatmap_areas(tmp_map_, tmp_map_$lambda, title = "Rate")
-plt_count_div_e_it <- heatmap_areas(tmp_map_, tmp_map_$counts / tmp_map_$E_it, title = TeX(r'($Y_{it}/E_{it}$)'))
-
-# Save to pdf as 10 by 6, name: Rate_and_counts_div_pop_sc6_2
-ggarrange(plt_lambda, NULL, plt_count_div_e_it,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
-
-
-## Plot fits
-tmp_ = improper_typeIV_sc6$summary.fitted.values$mean[(11 * nrow(second_level_admin_map) + 1):(12 * nrow(second_level_admin_map))]
-tmp_map_ = second_level_admin_map
-plt_fitted = heatmap_areas(tmp_map_, tmp_, title = "Posterior mean rate")
-
-tmp_ = improper_typeIV_sc6$summary.fitted.values$sd[(11 * nrow(second_level_admin_map) + 1):(12 * nrow(second_level_admin_map))]
-plt_fitted_sd = heatmap_areas(tmp_map_, tmp_, title = "Posterior std deviation of rate")
-
-# Save to pdf as 10 by 6, name: fitted_rate_n_sd_typeIV_sc6_2
-ggarrange(plt_fitted, NULL, plt_fitted_sd,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
 
 
 ################################################################################
@@ -595,117 +578,30 @@ geofacet::grid_preview(ADM1_grid)
 #####
 #rate
 
-plt_linpredictor_vs_true_rate <- function(geofacet_grid,
-                                            pred_to_plot,
-                                            title){
-  # Function that plots for select regions the fitted linear predictor of
-  # the provided model along w. corresponding 95% CI's
-  # against the true risk
-  
-  if(nrow(geofacet_grid) == 16){
-    theme <- theme(axis.title=element_text(size=12),
-                   plot.title = element_text(hjust = 0.5, size=12),
-                   strip.text.x = element_text(size = 10),
-                   legend.position = c(0.15, 1),
-                   legend.justification = c("right", "top"),
-                   legend.box.just = "right",
-                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
-  } else{
-    theme <- theme(axis.title=element_text(size=12),
-                   plot.title = element_text(hjust = 0.5, size=12),
-                   strip.text.x = element_text(size = 10),
-                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
-  }
-  
-  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
-    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = "Posterior 95% CI"), 
-                fill = "#F8766D", alpha = 0.6) +
-    geom_point(aes(x = time_id, y = lambda_it, col = "True rate")) + 
-    geom_point((aes(x = time_id, y = count_div_pop, col = "sampled count/Eit"))) + # TeX(r'($Y_{it}/E_{it}$)')
-    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
-    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
-    labs(title = title,
-         x = "Year",
-         y = "Rate",
-         col = NULL) +
-    theme_bw() + 
-    theme
-  
-  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
-                                  labels = unname(TeX(c("Posterior 95% CI",
-                                                        "Posterior median risk",
-                                                        "Simulated rate: $\\lambda_{it}$",
-                                                        "Simulated count $\\frac{Y_{it}}{E_{it}}$")))) # 
-  return(plt)
-}
-
-plt_linpredictor_vs_true_rate_improper <- function(ADM_grid, lambda_, model, title){
-  pred_to_plot <- data.frame(area_id = lambda_$area_id,
-                             time_id = lambda_$time_id,
-                             median = model$summary.fitted.values$'0.5quant', 
-                             quantile_0.025 = model$summary.fitted.values$'0.025quant', 
-                             quantile_0.975 = model$summary.fitted.values$'0.975quant', 
-                             sampled_counts = lambda_$sampled_counts,
-                             lambda_it = lambda_$lambda_it,
-                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
-  
-  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
-  
-}
-
-plt_linpredictor_vs_true_rate_proper <- function(ADM_grid, lambda_, model, title){
-  ### NB: Must sort the proper ones
-  pred_to_plot <- data.frame(area_id = lambda_$area_id,
-                             time_id = lambda_$time_id,
-                             median = sort_proper_fitted(model$summary.fitted.values$'0.5quant', length(unique(lambda_$area_id)), tT), # model$summary.fitted.values$'0.5quant',
-                             quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant', length(unique(lambda_$area_id)), tT),# model$summary.fitted.values$'0.025quant',
-                             quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant', length(unique(lambda_$area_id)), tT), #model$summary.fitted.values$'0.975quant',
-                             sampled_counts = lambda_$sampled_counts,
-                             lambda_it = lambda_$lambda_it,
-                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
-  
-  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
-}
 
 
-wrapper_plt_linpredictor_vs_true_rate <- function(ADM_grid, 
-                                                scenario_name,
-                                                dataset_id,
-                                                model,
-                                                improper = T,
-                                                title){
-  
-  ### Load in simulated data for that scenario
-  load(paste("./Simulated_data/", scenario_name, "/", 
-             scenario_name, "_data.RData", sep = ""))
-  
-  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
-  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
-  
-  #### Remove unessecary data
-  rm(lambda.df)
-  
-  ## Actually plot it
-  if(improper){
-    plt_linpredictor_vs_true_rate_improper(ADM_grid, lambda_, model, title)
-  } else{
-    plt_linpredictor_vs_true_rate_proper(ADM_grid, lambda_, model, title)
-  }
-}
-
-
+### SC1
 scenario_name = "sc1"
 title = "Scenario: const trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    Improper1_typeI_ADM1, improper = T,
-                                    title = paste("Model: Improper1_typeI", title, sep = "   "))
+                                      Improper2_noInt_ADM1, improper = T,
+                                      title = paste("Model: Improper2_noInt", title, sep = "   "))
 
+
+### Plot a proper model. Save as select_regions_lin_pred_vs_true_sc1_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_onlyInt_ADM1, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+
+
+### SC3
 
 scenario_name = "sc3"
 title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -713,10 +609,21 @@ title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+### Plot an Improper model select_regions_lin_pred_vs_true_sc3_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    proper2_onlyInt_ADM1, improper = F,
-                                    title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+                                      Improper1_typeII_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeII", title, sep = "   "))
+
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc3_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper2_noInt_ADM1, improper = F,
+                                      title = paste("Model: proper2_noInt", title, sep = "   "))
+
+
+
+
+### SC5
 
 scenario_name = "sc5"
 title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -724,34 +631,62 @@ title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
+### Plot an improper model Save as select_regions_lin_pred_vs_true_sc5_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    Improper2_typeIV_ADM1, improper = T,
-                                    title = paste("Model: Improper2_typeIV", title, sep = "   "))
+                                      Improper2_typeIV_ADM1, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
 
+### Plot a proper model: select_regions_lin_pred_vs_true_sc5_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_full_ADM1, improper = F,
+                                      title = paste("Model: proper1_full", title, sep = "   "))
+
+
+
+### SC7
 scenario_name = "sc7"
 title = "Scenario: const trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save
+### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc7_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    Improper1_typeIII_ADM1, improper = T,
-                                    title = paste("Model: Improper1_typeIII", title, sep = "   "))
+                                      Improper2_noInt_ADM1, improper = T,
+                                      title = paste("Model: Improper2_noInt", title, sep = "   "))
 
+
+### Plot a proper model. Save as select_regions_lin_pred_vs_true_sc7_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_onlyInt_ADM1, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+
+
+### SC9
 
 scenario_name = "sc9"
-"Scenario: linear trend, short range (ADM1)"
 title = "Scenario: linear trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model
+### Plot an Improper model select_regions_lin_pred_vs_true_sc9_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    proper1_full_ADM1, improper = F,
-                                    title = paste("Model: proper1_full", title, sep = "   "))
+                                      Improper1_typeII_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeII", title, sep = "   "))
+
+
+### Plot a proper model select_regions_lin_pred_vs_true_sc9_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper2_noInt_ADM1, improper = F,
+                                      title = paste("Model: proper2_noInt", title, sep = "   "))
+
+
+
+
+### SC11
 
 scenario_name = "sc11"
 title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -759,116 +694,48 @@ title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
+### Plot an improper model Save as select_regions_lin_pred_vs_true_sc11_Imp 9 by 7
 wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                    Improper1_noInt_ADM1, improper = T,
-                                    title = paste("Model: Improper1_noInt", title, sep = "   "))
+                                      Improper2_typeIV_ADM1, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
 
-
+### Plot a proper model: select_regions_lin_pred_vs_true_sc11_prop 9 by 7
+wrapper_plt_linpredictor_vs_true_rate(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_full_ADM1, improper = F,
+                                      title = paste("Model: proper1_full", title, sep = "   "))
 
 
 
 #####
 # Count
 
-plt_predcount_vs_true_count <- function(geofacet_grid,
-                                        pred_to_plot,
-                                        title){
-  # Function that plots for select regions the fitted linear predictor of
-  # the provided model along w. corresponding 95% CI's
-  # against the true counts
-  
-  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
-    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
-                fill = "#F8766D", alpha = 0.6) +
-    geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
-    geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
-    geom_line(aes(x = time_id, y = post_mean, col = "Posterior mean risk")) + 
-    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
-    labs(title = title,
-         x = "Year",
-         y = "Rate",
-         col = NULL) +
-    theme_bw() + 
-    theme(axis.title=element_text(size=12),
-          plot.title = element_text(hjust = 0.5, size=12),
-          strip.text.x = element_text(size = 10),
-          legend.position = c(0.15, 1),
-          legend.justification = c("right", "top"),
-          legend.box.just = "right",
-          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
-  
-  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
-                                  labels = unname(TeX(c("Posterior 95% CI",
-                                                        "Posterior mean $\\hat{Y}_{it}$",
-                                                        "True $Y_{it}$",
-                                                        "Expected true $Y_{it}$")))) # 
-  return(plt)
-}
-
-wrapper_plt_predcount_vs_true_count <- function(ADM1_grid, 
-                                                scenario_name,
-                                                dataset_id,
-                                                model,
-                                                improper = T,
-                                                title){
-  
-  ### Load in simulated data for that scenario
-  load(paste("./Simulated_data/", scenario_name, "/", 
-             scenario_name, "_data.RData", sep = ""))
-  
-  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
-  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
-  
-  #### Remove unessecary data
-  rm(lambda.df)
-  
-  ## If proper sort the marginals
-  if(!improper){
-    model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
-                                                        length(unique(lambda_$area_id)),
-                                                        tT)
-  } 
-    
-  ## Get the upper, lower, and median quantile for the pred. counts
-  ul_each <- lapply(model$marginals.fitted.values, 
-                    FUN = function(x){
-                      return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
-                    })
-  
-  pred_to_plot <- data.frame(area_id = lambda_$area_id,
-                             time_id = lambda_$time_id,
-                             median = rep(NA, nrow(lambda_)),
-                             post_mean = rep(NA, nrow(lambda_)),
-                             quantile_0.025 = rep(NA, nrow(lambda_)),
-                             quantile_0.975 = rep(NA, nrow(lambda_)),
-                             sampled_counts = lambda_$sampled_counts,
-                             lambda_it = lambda_$lambda_it * lambda_$E_it,
-                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
-  
-  for(i in 1:nrow(pred_to_plot)){
-    pred_to_plot[i, ]$median = ul_each[[i]]$median
-    pred_to_plot[i, ]$post_mean = ul_each[[i]]$post_mean
-    pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
-    pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
-  }
-  
-  plt_predcount_vs_true_count(ADM1_grid, pred_to_plot, title)
-}
 
 
+
+
+
+### SC1
 scenario_name = "sc1"
 title = "Scenario: const trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
+### Plot an Improper model. Save as select_regions_pred_count_vs_true_sc1_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                      Improper1_typeI_ADM1, improper = T,
-                                      title = paste("Model: Improper1_typeI", title, sep = "   "))
+                                      Improper2_noInt_ADM1, improper = T,
+                                      title = paste("Model: Improper2_noInt", title, sep = "   "))
 
+
+### Plot a proper model. Save as select_regions_pred_count_vs_true_sc1_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_onlyInt_ADM1, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+
+
+### SC3
 
 scenario_name = "sc3"
 title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -876,10 +743,21 @@ title = "Scenario: linear trend, short range (ADM1)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
+### Plot an Improper model select_regions_pred_count_vs_true_sc3_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                      proper2_onlyInt_ADM1, improper = F,
-                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+                                      Improper1_typeII_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeII", title, sep = "   "))
+
+
+### Plot a proper model select_regions_pred_count_vs_true_sc3_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper2_noInt_ADM1, improper = F,
+                                      title = paste("Model: proper2_noInt", title, sep = "   "))
+
+
+
+
+### SC5
 
 scenario_name = "sc5"
 title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -887,34 +765,62 @@ title = "Scenario: change point, short range (ADM1)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
+### Plot an improper model Save as select_regions_pred_count_vs_true_sc5_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
                                       Improper2_typeIV_ADM1, improper = T,
                                       title = paste("Model: Improper2_typeIV", title, sep = "   "))
 
+### Plot a proper model: select_regions_pred_count_vs_true_sc5_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_full_ADM1, improper = F,
+                                      title = paste("Model: proper1_full", title, sep = "   "))
+
+
+
+### SC7
 scenario_name = "sc7"
 title = "Scenario: const trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save
+### Plot an Improper model. Save as select_regions_pred_count_vs_true_sc7_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                      Improper1_typeIII_ADM1, improper = T,
-                                      title = paste("Model: Improper1_typeIII", title, sep = "   "))
+                                      Improper2_noInt_ADM1, improper = T,
+                                      title = paste("Model: Improper2_noInt", title, sep = "   "))
 
+
+### Plot a proper model. Save as select_regions_pred_count_vs_true_sc7_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_onlyInt_ADM1, improper = F,
+                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+
+
+### SC9
 
 scenario_name = "sc9"
-"Scenario: linear trend, short range (ADM1)"
 title = "Scenario: linear trend, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
 
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model
+### Plot an Improper model select_regions_pred_count_vs_true_sc9_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                      proper1_full_ADM1, improper = F,
-                                      title = paste("Model: proper1_full", title, sep = "   "))
+                                      Improper1_typeII_ADM1, improper = T,
+                                      title = paste("Model: Improper1_typeII", title, sep = "   "))
+
+
+### Plot a proper model select_regions_pred_count_vs_true_sc9_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper2_noInt_ADM1, improper = F,
+                                      title = paste("Model: proper2_noInt", title, sep = "   "))
+
+
+
+
+### SC11
 
 scenario_name = "sc11"
 title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -922,10 +828,16 @@ title = "Scenario: change point, long range (ADM1)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
+### Plot an improper model Save as select_regions_pred_count_vs_true_sc11_Imp 9 by 7
 wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
-                                      Improper1_noInt_ADM1, improper = T,
-                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+                                      Improper2_typeIV_ADM1, improper = T,
+                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+
+### Plot a proper model: select_regions_pred_count_vs_true_sc11_prop 9 by 7
+wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = dataset_id,
+                                      proper1_full_ADM1, improper = F,
+                                      title = paste("Model: proper1_full", title, sep = "   "))
+
 
 
 
@@ -935,27 +847,22 @@ wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = datas
 dataset_id_2 = 4
 
 ADM4_grid <- data.frame(
-  code = c("1", "50", "100", "150", "200", "250", "300", "350", "400"),
-  name = c("Alb-Donau-K.",
-           "Ansbach",
-           "Munchen",
-           "Oberhavel",
-           "Celle",
-           "Dusseldorf",
-           "Bad Kreuznach",
-           "Stendal",
-           "Wartburgkreis"),
-  row = c(1, 1, 1, 2, 2, 2, 3, 3, 3),
-  col = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
+  code = c("1", "50", "100", "150", "200", "250", "300", "350", "400",
+           "93", "106", "354"),
+  name = c("Alb-Donau-K.", "Ansbach",
+           "Munchen", "Oberhavel",
+           "Celle", "Dusseldorf", 
+           "Bad Kreuznach", "Stendal",
+           "Wartburgkreis", "Luchow-Dannenberg",
+           "Nurnberg", "Dresden"),
+  row = c(1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
+  col = c(1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4),
   stringsAsFactors = FALSE)
 
 
 geofacet::grid_preview(ADM4_grid)
 
-
-
-#####
-#rate
+### SC2
 
 scenario_name = "sc2"
 title = "Scenario: const trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -963,11 +870,13 @@ title = "Scenario: const trend, short range (ADM4)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_typeIV_ADM4, improper = T,
-                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+# Save as timeseries_sc2 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       Improper1_typeIV_ADM4, improper = T,
+                       title = paste("Model: Improper1_typeIV", title, sep = "   "))
 
+
+### SC4
 
 scenario_name = "sc4"
 title = "Scenario: linear trend, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -975,10 +884,14 @@ title = "Scenario: linear trend, short range (ADM4)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      proper2_onlyInt_ADM4, improper = F,
-                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+# Save as timeseries_sc4 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper1_onlyInt_ADM4, improper = F,
+                       title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+
+### SC6
 
 scenario_name = "sc6"
 title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -986,10 +899,13 @@ title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper2_typeIII_ADM4, improper = T,
-                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+# Save as timeseries_sc6 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper2_onlyInt_ADM4, improper = F,
+                       title = paste("Model: proper2_onlyInt", title, sep = "   "))
+
+
+### SC8
 
 scenario_name = "sc8"
 title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -997,11 +913,13 @@ title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{co
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an Improper model. Save
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_noInt_ADM4, improper = T,
-                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+# Save as timeseries_sc8 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       Improper2_typeIII_ADM4, improper = T,
+                       title = paste("Model: Improper2_typeIII", title, sep = "   "))
 
+
+### SC10
 
 scenario_name = "sc10"
 title = "Scenario: linear trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -1009,10 +927,13 @@ title = "Scenario: linear trend, long range (ADM4)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot a proper model
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      proper1_onlyInt_ADM4, improper = F,
-                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+# Save as timeseries_sc10 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper1_onlyInt_ADM4, improper = F,
+                       title = paste("Model: proper1_onlyInt", title, sep = "   "))
+
+
+### SC12
 
 scenario_name = "sc12"
 title = "Scenario: change point, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -1020,10 +941,11 @@ title = "Scenario: change point, long range (ADM4)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-### Plot an improper model
-wrapper_plt_linpredictor_vs_true_rate(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_typeIV_ADM4, improper = T,
-                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+# Save as timeseries_sc12 10 by 8.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       Improper1_typeIV_ADM4, improper = T,
+                       title = paste("Model: Improper1_typeIV", title, sep = "   "))
+
 
 
 
@@ -1040,8 +962,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an Improper model. Save as select_regions_lin_pred_vs_true_sc1 9 by 7
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_typeIV_ADM4, improper = T,
-                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+  Improper1_typeIV_ADM4, improper = T,
+  title = paste("Model: Improper1_typeIV", title, sep = "   "))
 
 
 scenario_name = "sc4"
@@ -1052,8 +974,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot a proper model select_regions_lin_pred_vs_true_sc3 9 by 7
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      proper2_onlyInt_ADM4, improper = F,
-                                      title = paste("Model: Proper2_onlyInt", title, sep = "   "))
+  proper2_onlyInt_ADM4, improper = F,
+  title = paste("Model: Proper2_onlyInt", title, sep = "   "))
 
 scenario_name = "sc6"
 title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -1063,8 +985,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an improper model
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper2_typeIII_ADM4, improper = T,
-                                      title = paste("Model: Improper2_typeIV", title, sep = "   "))
+  Improper2_typeIII_ADM4, improper = T,
+  title = paste("Model: Improper2_typeIV", title, sep = "   "))
 
 scenario_name = "sc8"
 title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -1074,8 +996,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an Improper model. Save
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_noInt_ADM4, improper = T,
-                                      title = paste("Model: Improper1_noInt", title, sep = "   "))
+  Improper1_noInt_ADM4, improper = T,
+  title = paste("Model: Improper1_noInt", title, sep = "   "))
 
 
 scenario_name = "sc10"
@@ -1086,8 +1008,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot a proper model
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      proper1_onlyInt_ADM4, improper = F,
-                                      title = paste("Model: proper1_onlyInt", title, sep = "   "))
+  proper1_onlyInt_ADM4, improper = F,
+  title = paste("Model: proper1_onlyInt", title, sep = "   "))
 
 scenario_name = "sc12"
 title = "Scenario: change point, long range (ADM4)"             #TeX(r'(ADM1$_{const, long}$)')
@@ -1097,157 +1019,263 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 ### Plot an improper model
 (ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                                      Improper1_typeIV_ADM4, improper = T,
-                                      title = paste("Model: Improper1_typeIV", title, sep = "   "))
+  Improper1_typeIV_ADM4, improper = T,
+  title = paste("Model: Improper1_typeIV", title, sep = "   "))
 
 
 
 
-
-
-################################################################################
-# Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
-
-
-model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
-                "Improper1_typeIII", "Improper1_typeIV",
-                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
-                "Improper2_typeIII", "Improper2_typeIV",
-                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
-                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
-
-scenario_name = "sc1"
-
-
-
-#########
-# Based on counts
-model_name = model_names[1]
-load(paste("./results/model_choice/model_choice_", 
-           model_name, "_", 
-           scenario_name, ".RData",
-           sep = ""))
-
-tmp_ <- model_choice_for_counts
-
-to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
-                              IS_one_year_ahead = tmp_$IS_1_year_ahead,
-                              IS_two_year_ahead = tmp_$IS_2_year_ahead,
-                              IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                              IS_tot = tmp_$total_IS,
-                              MSE_one_year_ahead = tmp_$mse_1_year_ahead,
-                              MSE_two_year_ahead = tmp_$mse_2_year_ahead,
-                              MSE_three_year_ahead = tmp_$mse_3_year_ahead,
-                              MSE_tot = tmp_$total_mse)
-
-
-for(model_name in model_names[2:length(model_names)]){
-  ### Load in Model choice data
-  load(paste("./results/model_choice/model_choice_", 
-             model_name, "_", 
-             scenario_name, ".RData",
-             sep = ""))
-  
-  tmp_ <- model_choice_for_counts
-  
-  tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
-                      IS_one_year_ahead = tmp_$IS_1_year_ahead,
-                      IS_two_year_ahead = tmp_$IS_2_year_ahead,
-                      IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                      IS_tot = tmp_$total_IS,
-                      MSE_one_year_ahead = tmp_$mse_1_year_ahead,
-                      MSE_two_year_ahead = tmp_$mse_2_year_ahead,
-                      MSE_three_year_ahead = tmp_$mse_3_year_ahead,
-                      MSE_tot = tmp_$total_mse)
-  
-  to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
-  
-}
-
-ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-
-ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-
-ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-
-
-#########
-# Based on rates
-model_name = model_names[1]
-load(paste("./results/model_choice/model_choice_", 
-           model_name, "_", 
-           scenario_name, ".RData",
-           sep = ""))
-
-tmp_ <- model_choice_for_rates
-
-to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
-                               IS_one_year_ahead = tmp_$IS_1_year_ahead,
-                               IS_two_year_ahead = tmp_$IS_2_year_ahead,
-                               IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                               IS_tot = tmp_$total_IS)
-
-
-for(model_name in model_names[2:length(model_names)]){
-  ### Load in Model choice data
-  load(paste("./results/model_choice/model_choice_", 
-             model_name, "_", 
-             scenario_name, ".RData",
-             sep = ""))
-  
-  tmp_ <- model_choice_for_rates
-  
-  tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
-                      IS_one_year_ahead = tmp_$IS_1_year_ahead,
-                      IS_two_year_ahead = tmp_$IS_2_year_ahead,
-                      IS_three_year_ahead = tmp_$IS_3_year_ahead,
-                      IS_tot = tmp_$total_IS)
-  
-  to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
-  
-}
-
-
-
-
-ggplot(to_plot_ridge.df, aes(x = IS_one_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-
-ggplot(to_plot_ridge.df, aes(x = IS_two_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-
-ggplot(to_plot_ridge.df, aes(x = IS_three_year_ahead, 
-                             y = model_name, 
-                             fill = model_name)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
 
 ################################################################################
 # Posterior distributions
+
+
+################################################################################
+# Plot the fits on the maps
+
+#####################
+# Plot the continuous risk surface in one time interval (first and last)
+
+dir = "./Data/Simulated_risk_surfaces/"
+#####
+# ADM1
+
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc1_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                first_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc3_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                first_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc5_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                first_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+
+#####
+# ADM 4
+
+### SC2
+
+# Save as cont_risk_sc2_year_1 12.5 by 7.5
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc2_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+# Save as cont_risk_sc2_year_12
+plt_cont_risk_one_time_interval(dir = dir,
+                            risk_surface_filename = "sc2_risk_surfaces.RData",
+                            time_interval = 12, t_axis = t_axis,
+                            second_level_admin_map,
+                            polygon_grid2 = polygon_grid2)
+
+
+### SC4
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc4_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+### SC6
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc6_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+### SC8
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc8_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+### SC10
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc10_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+### SC12
+plt_cont_risk_one_time_interval(dir = dir,
+                                risk_surface_filename = "sc12_risk_surfaces.RData",
+                                time_interval = 1, t_axis = t_axis,
+                                second_level_admin_map,
+                                polygon_grid2 = polygon_grid2)
+
+
+
+#####################
+# Plot the discrete rate per 100 and the observed counts
+
+plt_true_discrete_rate_four_years <- function(scenario_name, 
+                              dataset_id,
+                              admin_map,
+                              scale_col,
+                              scale){
+  
+  ### Load in the area-specific rate
+  load(paste("Simulated_data/", scenario_name, "/",
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  #lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$mu <- lambda_$lambda_it * lambda_$E_it
+  
+  ### Create bins
+  min_mu = min(lambda_$mu); max_mu = max(lambda_$mu)
+  #min_count = min(lambda_$sampled_counts); max_count = max(lambda_$sampled_counts)
+  hardcoded_bins_mu = round(seq(min_mu, max_mu, length.out = 12), 2)
+  #hardcoded_bins_count = seq(round(min_count, 0), round(max_count, 0), length.out = 5)
+  
+  
+  ### Attach the simulated values to the admin_map for the years 1, 5, 9, and 13
+  tmp_map_ = admin_map
+  
+  #### Plot year 1
+  tmp_map_$mu <- lambda_[lambda_$time_id == 1, ]$mu
+  plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_mu, title = "1")
+  
+  #tmp_map_$lambda_it <- lambda_[lambda_$time_id == year, ]$lambda_it
+  #tmp_map_$sampled_counts <- lambda_[lambda_$time_id == year, ]$sampled_counts
+  
+  #### Plot year 5
+  tmp_map_$mu <- lambda_[lambda_$time_id == 5, ]$mu
+  plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_mu, title = "5")
+  
+  #### Plot year 9
+  tmp_map_$mu <- lambda_[lambda_$time_id == 9, ]$mu
+  plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_mu, title = "9")
+  
+  #### Plot year 13
+  tmp_map_$mu <- lambda_[lambda_$time_id == 13, ]$mu
+  plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_mu, title = "13")
+  return(ggarrange(plt1, plt2, plt3, plt4, 
+                   ncol = 4, nrow = 1, 
+                   common.legend = T,
+                   legend = "bottom"))
+}
+
+plt_true_counts_four_years <- function(scenario_name, 
+                                              dataset_id,
+                                              admin_map,
+                                              scale_col,
+                                              scale){
+  
+  ### Load in the area-specific rate
+  load(paste("Simulated_data/", scenario_name, "/",
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  
+  
+  ### Create bins
+  min_count = min(lambda_$sampled_counts); max_count = max(lambda_$sampled_counts)
+  hardcoded_bins_count = round(seq(min_count, max_count, length.out = 12), 0)
+  
+  
+  ### Attach the simulated values to the admin_map for the years 1, 5, 9, and 13
+  tmp_map_ = admin_map
+  
+  #### Plot year 1
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 1, ]$sampled_counts
+  plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_count, title = "1")
+  
+  
+  #### Plot year 5
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 5, ]$sampled_counts
+  plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_count, title = "5")
+  
+  #### Plot year 9
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 9, ]$sampled_counts
+  plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_count, title = "9")
+  
+  #### Plot year 13
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 13, ]$sampled_counts
+  plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins_count, title = "13")
+  
+  return(ggarrange(plt1, plt2, plt3, plt4, 
+                   ncol = 4, nrow = 1, 
+                   common.legend = T,
+                   legend = "bottom"))
+}
+
+scale_col = heat.colors(30, rev=TRUE)
+scale = scale_col[seq(3, 30, length.out = 12)]
+
+
+
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", 
+                                          dataset_id = dataset_id_2,
+                                          admin_map = second_level_admin_map,
+                                          scale_col = scale_col,
+                                          scale = scale)
+
+# Save as sc2_true_rate 10 by 4
+annotate_figure(plt5,
+                top = text_grob("Rate per 100 for years: ", 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+
+
+plt5 <- plt_true_counts_four_years(scenario_name = "sc2", 
+                                          dataset_id = dataset_id_2,
+                                          admin_map = second_level_admin_map,
+                                          scale_col = scale_col,
+                                          scale = scale)
+
+# Save as sc2_true_count 10 by 4
+annotate_figure(plt5,
+                top = text_grob("Simulated counts for years: ", 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+# AND the fitted pred. count and standard deviation ()
+# Plot the best improper vs best proper four or three years
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -24,14 +24,15 @@ count_mse_one_year_one_dataset <- function(sampled_counts_one_year,
 
 
 rate_mse_one_year_one_dataset <- function(sampled_rates_one_year, 
-                                          lambda_marginals_one_year){
+                                          lambda_marginals_one_year,
+                                          E_it = 100){
   
   ## For each area find the expected predicted count (i.e. point prediction)
-  pred_count <- as.numeric(sapply(lambda_marginals_one_year, 
+  pred_rate <- as.numeric(sapply(lambda_marginals_one_year, 
                                   FUN = function(x){return(mean(x[, 1]))}))
   
-  ## Calculate the MSE
-  mse_one_year <- mean((sampled_rates_one_year - pred_count)**2)
+  ## Calculate the MSE of rate per 100
+  mse_one_year <- mean((sampled_rates_one_year * E_it - pred_rate * E_it)**2)
   
   # Return the MSE of that year
   return(mse_one_year)
@@ -126,7 +127,8 @@ find_ul_quants_rate_single_pred <- function(lambda_marginal){
 
 
 rate_IS_one_year_one_dataset <- function(sampled_rates_one_year,
-                                         lambda_marginals_one_year){
+                                         lambda_marginals_one_year,
+                                         E_it = 100){
   
   ## Find the l and u for each singular instance in a year
   ul_each_one_year <- lapply(lambda_marginals_one_year, 
@@ -138,10 +140,10 @@ rate_IS_one_year_one_dataset <- function(sampled_rates_one_year,
   ### Initialize space for IS 
   IS_each_instance = rep(0, length(lambda_marginals_one_year))
   
-  ### Calculate IS each area
+  ### Calculate IS each area of rate per 100
   for(i in 1:length(lambda_marginals_one_year)){
-    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year[[i]]$l, ul_each_one_year[[i]]$u, 
-                                          sampled_rates_one_year[i])
+    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year[[i]]$l * E_it, ul_each_one_year[[i]]$u * E_it, 
+                                          sampled_rates_one_year[i] * E_it)
   }
   
   ## Find the average IS this year
@@ -196,6 +198,439 @@ get_first_not_yet_analyzed <- function(model_name, scenario){
 
 ################################################################################
 #Plotting functions
+
+################
+# Time series of specific areas
+
+timeseries_plt <- function(geofacet_grid,
+                          pred_to_plot,
+                          title){
+  
+  print("GUUUURKA")
+  
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  if(nrow(geofacet_grid) == 16){
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.position = c(0.15, 1),
+                   legend.justification = c("right", "top"),
+                   legend.box.just = "right",
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  } else{
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.background = element_rect(linetype = 1,
+                                                    linewidth = 1,
+                                                    colour = "grey"),
+                   legend.position = "bottom")
+  }
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id)) + 
+    geom_ribbon(aes(x = time_id, ymin = pred_count_quantile_0.025, 
+                    ymax = pred_count_quantile_0.975, 
+                    col = "A"), 
+                fill = "#CC33CC", alpha = 0.15) +
+    geom_ribbon(aes(x = time_id, ymin = pred_rate_quantile_0.025, 
+                    ymax = pred_rate_quantile_0.975, 
+                    col = "B"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_line(aes(x = time_id, y = pred_rate_median, 
+                  col = "C")) + 
+    geom_point(aes(x = time_id, 
+                   y = lambda_it, 
+                   col = "D")) + 
+    geom_point((aes(x = time_id, 
+                    y = sampled_counts, 
+                    col = "E"))) + # TeX(r'($Y_{it}/E_{it}$)')
+    geom_vline(xintercept = 10.5, linetype = "longdash", 
+               color = "darkgrey", linewidth = 0.6) +
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate per 100",
+         col = NULL) +
+    theme_bw() + 
+    theme
+  
+  plt <- plt + scale_color_manual(values = c("#CC33CC", 
+                                             "#F8766D",
+                                             "black",
+                                             "#00BFC4", 
+                                             "blue"),
+                                  labels = unname(TeX(c(" Posterior 95% CI: $Y_{it}$",
+                                                        " Posterior 95% CI: $\\lambda_{it}E_{it}$",
+                                                        " Posterior median $\\lambda_{it}E_{it}$",
+                                                        " True: $\\lambda_{it}E_{it}$",
+                                                        " True: $Y_{it}$")))) # 
+  
+  plt <- plt + scale_x_continuous(breaks = c(1, 4, 7, 10, 13))
+  
+  return(plt)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+wrapper_timeseries_plt <- function(ADM_grid, 
+                                   scenario_name,
+                                   dataset_id,
+                                   model,
+                                   improper = T,
+                                   title){
+  
+  ### Load in simulated data for that scenario
+  load(paste("./Simulated_data/", scenario_name, "/", 
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  
+  #### Remove unessecary data
+  rm(lambda.df)
+  
+  ## If proper sort the marginals
+  print("All right love")
+  
+  if(!improper){
+    model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
+                                                        length(unique(lambda_$area_id)),
+                                                        tT)
+    
+    model$summary.fitted.values$'0.5quant' <- sort_proper_fitted(model$summary.fitted.values$'0.5quant',
+                                                      length(unique(lambda_$area_id)),
+                                                      tT)
+    
+    model$summary.fitted.values$'0.025quant' <- sort_proper_fitted(model$summary.fitted.values$'0.025quant',
+                                                                 length(unique(lambda_$area_id)),
+                                                                 tT)
+    
+    model$summary.fitted.values$'0.975quant' <- sort_proper_fitted(model$summary.fitted.values$'0.975quant',
+                                                                 length(unique(lambda_$area_id)),
+                                                                 tT)
+    
+  } 
+  
+  ## Get the upper, lower, and median quantile for the pred. counts
+  ul_each <- lapply(model$marginals.fitted.values, 
+                    FUN = function(x){
+                      return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+                    })
+  
+  print("HELL")
+  
+  
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             pred_rate_median = model$summary.fitted.values$'0.5quant' * lambda_$E_it, 
+                             pred_rate_quantile_0.025 = model$summary.fitted.values$'0.025quant' * lambda_$E_it, 
+                             pred_rate_quantile_0.975 = model$summary.fitted.values$'0.975quant' * lambda_$E_it, 
+                             pred_count_mean = rep(NA, nrow(lambda_)),
+                             pred_count_quantile_0.025 = rep(NA, nrow(lambda_)),
+                             pred_count_quantile_0.975 = rep(NA, nrow(lambda_)),
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it * lambda_$E_it)
+  
+  print("Cheeky bugger")
+  
+  
+  for(i in 1:nrow(pred_to_plot)){
+    pred_to_plot[i, ]$pred_count_mean = ul_each[[i]]$post_mean
+    pred_to_plot[i, ]$pred_count_quantile_0.025 = ul_each[[i]]$l
+    pred_to_plot[i, ]$pred_count_quantile_0.975 = ul_each[[i]]$u
+  }
+  
+  timeseries_plt(ADM_grid, pred_to_plot, title)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plt_linpredictor_vs_true_rate <- function(geofacet_grid,
+                                          pred_to_plot,
+                                          title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true risk
+  
+  if(nrow(geofacet_grid) == 16){
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.position = c(0.15, 1),
+                   legend.justification = c("right", "top"),
+                   legend.box.just = "right",
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  } else{
+    theme <- theme(axis.title=element_text(size=12),
+                   plot.title = element_text(hjust = 0.5, size=12),
+                   strip.text.x = element_text(size = 10),
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  }
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = "Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_point(aes(x = time_id, y = lambda_it, col = "True rate")) + 
+    geom_point((aes(x = time_id, y = sampled_counts, col = "sampled count"))) + # TeX(r'($Y_{it}/E_{it}$)')
+    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
+    geom_vline(xintercept = 10.5, linetype = "longdash", 
+               color = "darkgrey", linewidth = 0.6) +
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate per 100",
+         col = NULL) +
+    theme_bw() + 
+    theme
+  
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                  labels = unname(TeX(c("Posterior 95% CI of rate per 100",
+                                                        "Posterior median rate per 100",
+                                                        "Simulated rate per 100: $\\lambda_{it}\\cdot E_{it}$",
+                                                        "Simulated count $Y_{it}$")))) # 
+  
+  plt <- plt + scale_x_continuous(breaks = c(1, 4, 7, 10, 13))
+  
+  return(plt)
+}
+
+plt_linpredictor_vs_true_rate_improper <- function(ADM_grid, lambda_, model, title){
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = model$summary.fitted.values$'0.5quant' * lambda_$E_it, 
+                             quantile_0.025 = model$summary.fitted.values$'0.025quant' * lambda_$E_it, 
+                             quantile_0.975 = model$summary.fitted.values$'0.975quant' * lambda_$E_it, 
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it * lambda_$E_it)
+  
+  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
+  
+}
+
+plt_linpredictor_vs_true_rate_proper <- function(ADM_grid, lambda_, model, title){
+  ### NB: Must sort the proper ones
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = sort_proper_fitted(model$summary.fitted.values$'0.5quant',
+                                                         length(unique(lambda_$area_id)),
+                                                         tT) * lambda_$E_it, # model$summary.fitted.values$'0.5quant',
+                             quantile_0.025 = sort_proper_fitted(model$summary.fitted.values$'0.025quant',
+                                                                 length(unique(lambda_$area_id)),
+                                                                 tT) * lambda_$E_it,# model$summary.fitted.values$'0.025quant',
+                             quantile_0.975 = sort_proper_fitted(model$summary.fitted.values$'0.975quant',
+                                                                 length(unique(lambda_$area_id)),
+                                                                 tT) * lambda_$E_it, #model$summary.fitted.values$'0.975quant',
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it * lambda_$E_it)
+  
+  plt_linpredictor_vs_true_rate(ADM_grid, pred_to_plot, title)
+}
+
+
+wrapper_plt_linpredictor_vs_true_rate <- function(ADM_grid, 
+                                                  scenario_name,
+                                                  dataset_id,
+                                                  model,
+                                                  improper = T,
+                                                  title){
+  
+  ### Load in simulated data for that scenario
+  load(paste("./Simulated_data/", scenario_name, "/", 
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  
+  #### Remove unessecary data
+  rm(lambda.df)
+  
+  ## Actually plot it
+  if(improper){
+    plt_linpredictor_vs_true_rate_improper(ADM_grid, lambda_, model, title)
+  } else{
+    plt_linpredictor_vs_true_rate_proper(ADM_grid, lambda_, model, title)
+  }
+}
+
+
+
+
+plt_predcount_vs_true_count <- function(geofacet_grid,
+                                        pred_to_plot,
+                                        title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true counts
+  
+  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+    geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
+    geom_line(aes(x = time_id, y = post_mean, col = "Posterior mean risk")) +
+    geom_vline(xintercept = 10.5, linetype = "longdash", 
+               color = "darkgrey", linewidth = 0.6) +
+    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
+    labs(title = title,
+         x = "Year",
+         y = "Rate",
+         col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=12),
+          plot.title = element_text(hjust = 0.5, size=12),
+          strip.text.x = element_text(size = 10),
+          legend.position = c(0.15, 1),
+          legend.justification = c("right", "top"),
+          legend.box.just = "right",
+          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  
+  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                  labels = unname(TeX(c("Posterior 95% CI",
+                                                        "Posterior mean $\\hat{Y}_{it}$",
+                                                        "True $Y_{it}$",
+                                                        "Expected true $Y_{it}$")))) # 
+  return(plt)
+}
+
+wrapper_plt_predcount_vs_true_count <- function(ADM1_grid, 
+                                                scenario_name,
+                                                dataset_id,
+                                                model,
+                                                improper = T,
+                                                title){
+  
+  ### Load in simulated data for that scenario
+  load(paste("./Simulated_data/", scenario_name, "/", 
+             scenario_name, "_data.RData", sep = ""))
+  
+  lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
+  lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
+  
+  #### Remove unessecary data
+  rm(lambda.df)
+  
+  ## If proper sort the marginals
+  if(!improper){
+    model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
+                                                        length(unique(lambda_$area_id)),
+                                                        tT)
+  } 
+  
+  ## Get the upper, lower, and median quantile for the pred. counts
+  ul_each <- lapply(model$marginals.fitted.values, 
+                    FUN = function(x){
+                      return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+                    })
+  
+  pred_to_plot <- data.frame(area_id = lambda_$area_id,
+                             time_id = lambda_$time_id,
+                             median = rep(NA, nrow(lambda_)),
+                             post_mean = rep(NA, nrow(lambda_)),
+                             quantile_0.025 = rep(NA, nrow(lambda_)),
+                             quantile_0.975 = rep(NA, nrow(lambda_)),
+                             sampled_counts = lambda_$sampled_counts,
+                             lambda_it = lambda_$lambda_it * lambda_$E_it,
+                             count_div_pop = lambda_$sampled_counts/lambda_$E_it)
+  
+  for(i in 1:nrow(pred_to_plot)){
+    pred_to_plot[i, ]$median = ul_each[[i]]$median
+    pred_to_plot[i, ]$post_mean = ul_each[[i]]$post_mean
+    pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
+    pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
+  }
+  
+  plt_predcount_vs_true_count(ADM1_grid, pred_to_plot, title)
+}
+
+
+################
+# Every other plotting function
+
+plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
+                                            time_interval, t_axis,
+                                            admin_map,
+                                            polygon_grid2){
+  
+  ## Load in a specific scenario
+  filename = paste(dir, risk_surface_filename, sep = "")
+  load(filename)
+  col_names <- colnames(risk_surface.list)[colnames(risk_surface.list) != "values"]
+  tmp_ = risk_surface.list[, col_names]
+  tmp_$values = risk_surface.list$values[, 1]
+  rm(risk_surface.list)
+  
+  ## get the times
+  t_axis_indices = which(time_interval - 1 < t_axis & 
+                           t_axis <= time_interval)
+  
+  
+  if(length(t_axis_indices) == 3){
+    ### Plot the continuous true risk surface for times within time_interval
+    plt_1 <- heatmap_points(tmp_,
+                            polygon_grid2,
+                            admin_map,
+                            t_axis[t_axis_indices[1]],
+                            title = paste("time: ", 
+                                          round(t_axis[t_axis_indices[1]], 1)))
+    
+    plt_2 <- heatmap_points(tmp_,
+                            polygon_grid2,
+                            admin_map,
+                            t_axis[t_axis_indices[2]],
+                            title = paste("time: ", 
+                                          round(t_axis[t_axis_indices[2]], 1)))
+    
+    plt_3 <- heatmap_points(tmp_,
+                            polygon_grid2,
+                            admin_map,
+                            t_axis[t_axis_indices[3]],
+                            title = paste("time: ", 
+                                          round(t_axis[t_axis_indices[3]], 1)))
+    
+    
+    
+    ggarrange(plt_1, plt_2, plt_3,
+              ncol = 3, nrow = 1,
+              common.legend = T, legend = "right")
+    
+  } else {
+    print("Unsuited")
+  }
+}
+
+
 
 plot_temporal_trend_data_one_data_set <- function(scenario_name, data_set_id, title,
                                                   xlab, ylab){

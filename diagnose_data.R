@@ -157,297 +157,168 @@ ggarrange(plt1, plt2, plt3,
 
 
 ################################################################################
+# Load in risk surface for ADM1, and see how the data looks
 
-E_it2 = 1000
+dir = "Data/Simulated_risk_surfaces/"
+columnNames_risk_surface = c("t", "polygon_id", "geometry", "x", "y", 
+                "unique_id", "time_id", 
+                "first_level_area_id_mapping", 
+                "second_level_area_id_mapping")
 
+columnNames_lambda = c("area_id", "time_id", "E_it", "space.time")
 
-lambda_sc1.df$sampled_counts2 = sapply(lambda_sc1.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc2.df$sampled_counts2 = sapply(lambda_sc2.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc3.df$sampled_counts2 = sapply(lambda_sc3.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc4.df$sampled_counts2 = sapply(lambda_sc4.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc5.df$sampled_counts2 = sapply(lambda_sc5.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc6.df$sampled_counts2 = sapply(lambda_sc6.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc7.df$sampled_counts2 = sapply(lambda_sc7.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc8.df$sampled_counts2 = sapply(lambda_sc8.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc9.df$sampled_counts2 = sapply(lambda_sc9.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc10.df$sampled_counts2 = sapply(lambda_sc10.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc11.df$sampled_counts2 = sapply(lambda_sc11.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-lambda_sc12.df$sampled_counts2 = sapply(lambda_sc12.df$lambda_it * E_it2, FUN = function(x){return(rpois(1, x))})
-
-
-
-
-plot_alternate <- function(sim_data, title){
-  
-  # Aggregate over the years
-  aggr <- aggregate(sim_data, by = list(time_id = sim_data$time_id), FUN = mean)
-  
-  aggr$mu = aggr$mu * E_it2/100
-  
-  # Plot over the years
-  return(ggplot(data = aggr[, 2:ncol(aggr)]) + ggtitle(title) + 
-           geom_line(aes(x = time_id, y = mu, col = "mu"), color = "blue") + 
-           geom_point(aes(x = time_id, y = sampled_counts2, col = "sampled counts"), color = "black") +
-           ylim(90, 135))
-}
+#####
+#SC1
+scenario_name = "sc1"
+load(paste(dir, scenario_name, "_risk_surfaces.RData", sep = ""))
+risk_surface.list_sc1 = risk_surface.list[, columnNames_risk_surface]
+risk_surface.list_sc1$values = risk_surface.list$values[, 1]
+rm(risk_surface.list)
 
 
-plt1 <- plot_alternate(lambda_sc1.df, "ADM1 const, short: E_it = 1000")
-plt2 <- plot_alternate(lambda_sc2.df, "ADM4 const, short: E_it = 1000")
-plt3 <-plot_alternate(lambda_sc3.df, "ADM1 lin increasing, short: E_it = 1000")
-plt4 <-plot_alternate(lambda_sc4.df, "ADM4 lin increasing, short: E_it = 1000")
-plt5 <-plot_alternate(lambda_sc5.df, "ADM1 change point, short: E_it = 1000")
-plt6 <-plot_alternate(lambda_sc6.df, "ADM4 change point, short: E_it = 1000")
-plt7 <-plot_alternate(lambda_sc7.df, "ADM1 const, long: E_it = 1000")
-plt8 <-plot_alternate(lambda_sc8.df, "ADM4 const, long: E_it = 1000")
-plt9 <-plot_alternate(lambda_sc9.df, "ADM1 lin increasing, long: E_it = 1000")
-plt10 <-plot_alternate(lambda_sc10.df, "ADM4 lin increasing, long: E_it = 1000")
-plt11 <-plot_alternate(lambda_sc11.df, "ADM1 change point, long: E_it = 1000")
-plt12 <-plot_alternate(lambda_sc12.df, "ADM4 change point, long: E_it = 1000")
+plt1 <- heatmap_points(risk_surface.list_sc1,
+               polygon_grid2, 
+               first_level_admin_map,
+               t_axis[1], paste("t: ", toString(round(t_axis[1], 1)),
+                                sep = ""))
 
+plt2 <- heatmap_points(risk_surface.list_sc1,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[2], paste("t: ", toString(round(t_axis[2], 1)),
+                                        sep = ""))
+
+plt3 <- heatmap_points(risk_surface.list_sc1,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[3], paste("t: ", toString(round(t_axis[3], 1)),
+                                        sep = ""))
+# Save as sc1_t_1_continuous_risk 12 by 6
 ggarrange(plt1, plt2, plt3,
-          plt4, plt5, plt6,
-          plt7, plt8, plt9,
-          plt10, plt11, plt12,
-          ncol = 2, 
-          nrow = 3)
+          ncol = 3, nrow = 1, common.legend = T)
 
-################################################################################
-# Check how a couple of fitted models fair
 
-### Temporal hyperparameters (Precision of iid and precision of RW1 and RW2) w. corresponding priors: penalized constraint 
-temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+### Load in the area-specific rate
 
-### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
-spatial_hyper = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
-                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
+load(paste("Simulated_data/sc1/", scenario_name, "_data.RData", sep = ""))
+lambda_ <- lambda.df[, columnNames_lambda]
+lambda_$lambda_it <- lambda.df$lambda_it[, 1]
 
-### Interaction hyperparameter and prior (Precision of interaction)
-interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
+tmp_map_ = first_level_admin_map
+tmp_map_$lambda_it <- lambda_[lambda_$time_id == 1, ]$lambda_it
 
-### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
-ar1_hyper = list(prec = list(prior = 'pc.prec', 
-                             param = c(1, 0.01)), 
-                 rho = list(prior = 'pc.cor1', 
-                            param = c(0.5, 0.5 + 1E-2)))
-
-### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
-spatial_hyper_proper = list(prec= list(prior = 'pc.prec', 
-                                       param = c(1, 0.01)))
-
-### Group hyper
-group_hyper_ar1 = list(rho = list(prior = 'pc.cor1', 
-                                  param = c(0.5, 0.5 + 1E-2)))
+# Save as sc1_t_1_discrete_rate 5 by 5
+heatmap_areas(tmp_map_, tmp_map_$lambda_it, title = "Rate for year 1")
 
 
 
-
-### Specify the RW1 precision matrix
-RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
-                           scale.model = FALSE, sparse = TRUE)
-
-### Scale precision matrix of RW model so the geometric mean of the marginal variances is one
-scaled_RW1_prec <- inla.scale.model(RW1_prec,
-                                    list(A = matrix(1, 1, dim(RW1_prec)[1]),
-                                         e = 0))
+#####
+#SC7
+scenario_name = "sc7"
+load(paste(dir, scenario_name, "_risk_surfaces.RData", sep = ""))
+risk_surface.list_sc7 = risk_surface.list[, columnNames_risk_surface]
+risk_surface.list_sc7$values = risk_surface.list$values[, 1]
+rm(risk_surface.list)
 
 
-### Make precision matrix for Besag on ADM1
-matrix4inla <- nb2mat(nb_first_level, style="B")
-mydiag = rowSums(matrix4inla)
-matrix4inla <- -matrix4inla
-diag(matrix4inla) <- mydiag
-Besag_prec_first_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+plt1 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[1], paste("t: ", toString(round(t_axis[1], 1)),
+                                        sep = ""))
 
-### get scaled Besag on ADM1
-scaled_besag_prec_first_level <- INLA::inla.scale.model(Besag_prec_first_level, 
-                                                        constr = list(A = matrix(1,1,dim(Besag_prec_first_level)[1]), 
-                                                                      e = 0))
+plt2 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[2], paste("t: ", toString(round(t_axis[2], 1)),
+                                        sep = ""))
 
-### Get type IV interaction precision matrix
-typeIV_prec_1_first_level <- scaled_RW1_prec %x% scaled_besag_prec_first_level
-
-### Get type IV constraints
-typeIV_constraints_1_first_level = constraints_maker(type = "IV", 
-                                                     n = nrow(first_level_admin_map), 
-                                                     t = tT)
-
-
-Improper1_noInt_ADM1_formula <- sampled_counts2 ~ 1 + f(time_id, 
-                                                       model = 'bym2',
-                                                       scale.model = T, 
-                                                       constr = T, 
-                                                       rankdef = 1,
-                                                       graph = RW1_prec,
-                                                       hyper = temporal_hyper) + 
-  f(area_id, 
-    model = 'bym2',
-    scale.model = T,
-    constr = T,
-    rankdef = 1,
-    graph = Besag_prec_first_level,
-    hyper = spatial_hyper)
-
-Improper1_typeIV_ADM1_formula <- update(Improper1_noInt_ADM1_formula,
-                                        ~. + f(space.time, 
-                                               model = "generic0",
-                                               Cmatrix = typeIV_prec_1_first_level,
-                                               extraconstr = typeIV_constraints_1_first_level,
-                                               rankdef = (nrow(first_level_admin_map) + tT - 1), 
-                                               hyper = interaction_hyper))
+plt3 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[3], paste("t: ", toString(round(t_axis[3], 1)),
+                                        sep = ""))
+# Save as sc7_t_1_continuous_risk 12 by 6
+ggarrange(plt1, plt2, plt3,
+          ncol = 3, nrow = 1, common.legend = T)
 
 
 
+scenario_name = "sc2"
+load(paste(dir, scenario_name, "_risk_surfaces.RData", sep = ""))
+risk_surface.list_sc7 = risk_surface.list[, columnNames_risk_surface]
+risk_surface.list_sc7$values = risk_surface.list$values[, 1]
+rm(risk_surface.list)
 
 
-proper1_onlyInt_ADM1_formula <- sampled_counts2 ~ 1 + time_id + 
-                                          f(area_id, 
-                                            model = "besagproper2",
-                                            graph = Besag_prec_first_level,
-                                            hyper = spatial_hyper_proper,
-                                            group = time_id, 
-                                            control.group = list(model = "ar1",
-                                                                 hyper = group_hyper_ar1))
+plt1 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       second_level_admin_map,
+                       t_axis[1], paste("t: ", toString(round(t_axis[1], 1)),
+                                        sep = ""))
+
+plt2 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       second_level_admin_map,
+                       t_axis[2], paste("t: ", toString(round(t_axis[2], 1)),
+                                        sep = ""))
+
+plt3 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       second_level_admin_map,
+                       t_axis[3], paste("t: ", toString(round(t_axis[3], 1)),
+                                        sep = ""))
+# Save as sc7_t_1_continuous_risk 12 by 6
+ggarrange(plt1, plt2, plt3,
+          ncol = 3, nrow = 1, common.legend = T)
 
 
+plt1 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[length(t_axis) - 2], 
+                       paste("t: ", toString(round(t_axis[length(t_axis) - 2], 1)),
+                                        sep = ""))
+
+plt2 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[length(t_axis) - 1], 
+                       paste("t: ", toString(round(t_axis[length(t_axis) - 1], 1)),
+                                        sep = ""))
+
+plt3 <- heatmap_points(risk_surface.list_sc7,
+                       polygon_grid2, 
+                       first_level_admin_map,
+                       t_axis[length(t_axis)], 
+                       paste("t: ", toString(round(t_axis[length(t_axis) ], 1)),
+                                        sep = ""))
+# Save as sc7_t_13_continuous_risk 12 by 6
+ggarrange(plt1, plt2, plt3,
+          ncol = 3, nrow = 1, common.legend = T)
 
 
+### Load in the area-specific rate
 
+load(paste("Simulated_data/", scenario_name, "/", scenario_name, "_data.RData", sep = ""))
+lambda_ <- lambda.df[, columnNames_lambda]
+lambda_$lambda_it <- lambda.df$lambda_it[, 1]
 
-lambda_sc3.df$E_it2 = E_it2
+tmp_map_ = first_level_admin_map
+tmp_map_$lambda_it <- lambda_[lambda_$time_id == 1, ]$lambda_it
 
-tmp_ = inla(Improper1_typeIV_ADM1_formula, 
-            data = lambda_sc3.df, 
-            family = "poisson",
-            E = E_it2, #E_it
-            control.predictor = list(compute = TRUE,
-                                     link = 1),       #For predictions
-            control.compute = list(config = TRUE, # To see constraints later
-                                   cpo = T,       # For model selection
-                                   return.marginals.predictor=TRUE))
+# Save as sc7_t_1_discrete_rate 5 by 5
+plt1 <- heatmap_areas(tmp_map_, tmp_map_$lambda_it, title = "Rate for year 1")
 
-library("geofacet")
-select_regions_lin_pred_vs_true <- function(geofacet_grid,
-                                            pred_to_plot,
-                                            title){
-  # Function that plots for select regions the fitted linear predictor of
-  # the provided model along w. corresponding 95% CI's
-  # against the true risk
-  
-  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
-    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
-                fill = "#F8766D", alpha = 0.6) +
-    geom_point(aes(x = time_id, y = lambda_it, col = "True rate")) + 
-    geom_point((aes(x = time_id, y = count_div_pop, col = "sampled count/Eit"))) +
-    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
-    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
-    labs(title = title,
-         x = "Year",
-         y = "Rate",
-         col = NULL) +
-    theme_bw() + 
-    theme(axis.title=element_text(size=11),
-          plot.title = element_text(size=11),
-          strip.text.x = element_text(size = 9))
-  
-  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
-  return(plt)
-}
+tmp_map_ = first_level_admin_map
+tmp_map_$lambda_it <- lambda_[lambda_$time_id == 13, ]$lambda_it
 
-select_regions_lin_pred_vs_true_2 <- function(geofacet_grid,
-                                              pred_to_plot,
-                                              title){
-  # Function that plots for select regions the fitted linear predictor of
-  # the provided model along w. corresponding 95% CI's
-  # against the true counts
-  
-  plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
-    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
-                fill = "#F8766D", alpha = 0.6) +
-    geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
-    geom_point((aes(x = time_id, y = lambda_it, col = "True rate per 100"))) +
-    geom_line(aes(x = time_id, y = median, col = "Posterior median risk")) + 
-    facet_geo(~ area_id, grid = geofacet_grid, label = "name") + 
-    labs(title = title,
-         x = "Year",
-         y = "Rate",
-         col = NULL) +
-    theme_bw() + 
-    theme(axis.title=element_text(size=11),
-          plot.title = element_text(size=11),
-          strip.text.x = element_text(size = 9))
-  
-  plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue")) # 
-  return(plt)
-}
+# Save as sc7_t_13_discrete_rate 5 by 5
+plt2 <- heatmap_areas(tmp_map_, tmp_map_$lambda_it, title = "Rate for year 13")
 
-
-ADM1_grid <- data.frame(
-  code = c("15", "8", "6", "3", "5", "9", "4", "13", "10", "14", "16", "7", "11", "12", "2", "1"),
-  name = c(" Schleswig-Holstein ", 
-           " Mecklenburg-Vorpommern ", 
-           " Hamburg", 
-           " Berlin ", 
-           " Bremen ", 
-           " Niedersachsen", 
-           " Brandenburg", 
-           " Sachsen-Anhalt", 
-           " Nordrhein-Westfalen", 
-           " Sachsen", 
-           " Thuringen", 
-           " Hessen ", 
-           " Rheinland-Pfalz ", 
-           " Saarland", 
-           " Bayern", 
-           " Baden-Wurttemberg "),
-  row = c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5),
-  col = c(2, 4, 3, 4, 2, 3, 5, 4, 2, 5, 4, 3, 2, 1, 4, 3),
-  stringsAsFactors = FALSE)
-
-
-
-pred_to_plot <- data.frame(area_id = lambda_sc3.df$area_id,
-                           time_id = lambda_sc3.df$time_id,
-                           median =  tmp_$summary.fitted.values$'0.5quant', # sort_proper_fitted(tmp_$summary.fitted.values$'0.5quant', n_ADM1, tT),
-                           quantile_0.025 = tmp_$summary.fitted.values$'0.025quant', # sort_proper_fitted(tmp_$summary.fitted.values$'0.025quant', n_ADM1, tT),
-                           quantile_0.975 =  tmp_$summary.fitted.values$'0.975quant', # sort_proper_fitted(tmp_$summary.fitted.values$'0.975quant', n_ADM1, tT),
-                           sampled_counts = lambda_sc3.df$sampled_counts2,
-                           lambda_it = lambda_sc3.df$lambda_it,
-                           count_div_pop = lambda_sc3.df$sampled_counts2/lambda_sc3.df$E_it2)
-
-select_regions_lin_pred_vs_true(ADM1_grid, pred_to_plot, "Improper1_typeIV: Rate")
-
-
-ul_each <- lapply(tmp_$marginals.fitted.values, 
-                  FUN = function(x){
-                    return(find_ul_quants_counts_single_pred(x, E_it2))
-                  })
-
-### NB: Must sort the proper models
-
-pred_to_plot <- data.frame(area_id = lambda_sc3.df$area_id,
-                           time_id = lambda_sc3.df$time_id,
-                           median = rep(NA, nrow(lambda_sc3.df)),
-                           quantile_0.025 = rep(NA, nrow(lambda_sc3.df)),
-                           quantile_0.975 = rep(NA, nrow(lambda_sc3.df)),
-                           sampled_counts = lambda_sc3.df$sampled_counts2,
-                           lambda_it = lambda_sc3.df$lambda_it * lambda_sc3.df$E_it2,
-                           count_div_pop = lambda_sc3.df$sampled_counts2/lambda_sc3.df$E_it2)
-
-for(i in 1:nrow(pred_to_plot)){
-  pred_to_plot[i, ]$median = ul_each[[i]]$median
-  pred_to_plot[i, ]$quantile_0.025 = ul_each[[i]]$l
-  pred_to_plot[i, ]$quantile_0.975 = ul_each[[i]]$u
-}
-
-select_regions_lin_pred_vs_true_2(ADM1_grid, pred_to_plot, "")
-
-
-
-
-
-
+ggarrange(plt1, plt2, 
+          ncol = 2, nrow = 1,
+          common.legend = F)
 
 
 

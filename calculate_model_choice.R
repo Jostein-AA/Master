@@ -510,8 +510,8 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
                 "Improper1_typeIII", "Improper1_typeIV",
                 "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
                 "Improper2_typeIII", "Improper2_typeIV",
-                "proper1_noInt", "proper1_onlyInt", "proper1_full",
-                "proper2_noInt", "proper2_onlyInt", "proper2_full")
+                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
+                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
 
 # For counts
 for(scenario_name in scenario_names_ADM4){
@@ -1004,9 +1004,9 @@ model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
                                                      rep(5, 18),rep(6, 18)),
                                     value = 1:(6 * 18))
 
-for(i in 1:length(scenario_names_ADM1)){
+for(i in 1:length(scenario_names_ADM4)){
   
-  scenario_name = scenario_names_ADM1[i]
+  scenario_name = scenario_names_ADM4[i]
   print(scenario_name)
   
   for(model_name in model_names){
@@ -1053,39 +1053,33 @@ cat(latex_tabular, file =paste("./results/model_choice/table_rates_total_ADM1.te
 
 # Find indices of the smallest values for each scenario
 
-### Scenario 1
+### Scenario 2
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 1, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 1 & model_choice_rates.df$value == min1, ]
 
-### Scenario 3
+### Scenario 4
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 2, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 2 & model_choice_rates.df$value == min1, ]
 
 
-### Scenario 5
+### Scenario 6
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 3, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 3 & model_choice_rates.df$value == min1, ]
 
 
-### Scenario 7
+### Scenario 8
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 4, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 4 & model_choice_rates.df$value == min1, ]
 
 
-### Scenario 9
+### Scenario 10
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 5, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 5 & model_choice_rates.df$value == min1, ]
 
 
-### Scenario 11
+### Scenario 12
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 6, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rates.df$value == min1, ]
-
-
-
-
-
-
 
 ################################################################################
 # Get a table for a singular dataset for each scenario, to better see maybe?
