@@ -1131,39 +1131,32 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
   
   lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
   lambda_$lambda_it <- lambda.df$lambda_it[, dataset_id]
-  #lambda_$sampled_counts <- lambda.df$sampled_counts[, dataset_id]
   lambda_$mu <- lambda_$lambda_it * lambda_$E_it
   
   ### Create bins
   min_mu = min(lambda_$mu); max_mu = max(lambda_$mu)
-  #min_count = min(lambda_$sampled_counts); max_count = max(lambda_$sampled_counts)
   hardcoded_bins_mu = round(seq(min_mu, max_mu, length.out = 12), 2)
-  #hardcoded_bins_count = seq(round(min_count, 0), round(max_count, 0), length.out = 5)
   
-  
-  ### Attach the simulated values to the admin_map for the years 1, 5, 9, and 13
+  ### Attach the simulated values to the admin_map for the years 3, 7, 11, and 13
   tmp_map_ = admin_map
   
-  #### Plot year 1
-  tmp_map_$mu <- lambda_[lambda_$time_id == 1, ]$mu
+  #### Plot year 3
+  tmp_map_$mu <- lambda_[lambda_$time_id == 3, ]$mu
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "1")
+                        hardcoded_bins = hardcoded_bins_mu, title = "3")
   
-  #tmp_map_$lambda_it <- lambda_[lambda_$time_id == year, ]$lambda_it
-  #tmp_map_$sampled_counts <- lambda_[lambda_$time_id == year, ]$sampled_counts
-  
-  #### Plot year 5
-  tmp_map_$mu <- lambda_[lambda_$time_id == 5, ]$mu
+  #### Plot year 7
+  tmp_map_$mu <- lambda_[lambda_$time_id == 7, ]$mu
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "5")
+                        hardcoded_bins = hardcoded_bins_mu, title = "7")
   
-  #### Plot year 9
-  tmp_map_$mu <- lambda_[lambda_$time_id == 9, ]$mu
+  #### Plot year 11
+  tmp_map_$mu <- lambda_[lambda_$time_id == 11, ]$mu
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "9")
+                        hardcoded_bins = hardcoded_bins_mu, title = "11")
   
   #### Plot year 13
   tmp_map_$mu <- lambda_[lambda_$time_id == 13, ]$mu
@@ -1195,27 +1188,27 @@ plt_true_counts_four_years <- function(scenario_name,
   hardcoded_bins_count = round(seq(min_count, max_count, length.out = 12), 0)
   
   
-  ### Attach the simulated values to the admin_map for the years 1, 5, 9, and 13
+  ### Attach the simulated values to the admin_map for the years 3, 7, 11, and 13
   tmp_map_ = admin_map
   
-  #### Plot year 1
-  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 1, ]$sampled_counts
+  #### Plot year 3
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 3, ]$sampled_counts
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "1")
+                        hardcoded_bins = hardcoded_bins_count, title = "3")
   
   
-  #### Plot year 5
-  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 5, ]$sampled_counts
+  #### Plot year 7
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 7, ]$sampled_counts
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "5")
+                        hardcoded_bins = hardcoded_bins_count, title = "7")
   
-  #### Plot year 9
-  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 9, ]$sampled_counts
+  #### Plot year 11
+  tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 11, ]$sampled_counts
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "9")
+                        hardcoded_bins = hardcoded_bins_count, title = "11")
   
   #### Plot year 13
   tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 13, ]$sampled_counts
@@ -1229,10 +1222,9 @@ plt_true_counts_four_years <- function(scenario_name,
                    legend = "bottom"))
 }
 
+
 scale_col = heat.colors(30, rev=TRUE)
 scale = scale_col[seq(3, 30, length.out = 12)]
-
-
 
 plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", 
                                           dataset_id = dataset_id_2,
@@ -1240,9 +1232,9 @@ plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2",
                                           scale_col = scale_col,
                                           scale = scale)
 
-# Save as sc2_true_rate 10 by 4
-annotate_figure(plt5,
-                top = text_grob("Rate per 100 for years: ", 
+# Save as sc2_true_rate 8.5 by 3.5
+annotate_figure(plt5, 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated rate per 100 for years: )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 14))
@@ -1256,9 +1248,9 @@ plt5 <- plt_true_counts_four_years(scenario_name = "sc2",
                                           scale_col = scale_col,
                                           scale = scale)
 
-# Save as sc2_true_count 10 by 4
+# Save as sc2_true_count 8.5 by 3.5
 annotate_figure(plt5,
-                top = text_grob("Simulated counts for years: ", 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated counts for years: )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 14))
@@ -1268,20 +1260,192 @@ annotate_figure(plt5,
 # Plot the best improper vs best proper four or three years
 
 
+plt_fitted_rate_four_years <- function(model, 
+                                       Improper = T, 
+                                       admin_map,
+                                       scale_col,
+                                       scale,
+                                       hardcoded_bins,
+                                       overall_title){
+  
+  #Find the number of areas
+  n_ADM = nrow(admin_map)
+  
+  # If a proper model, must sort the fitted rates
+  if(!Improper){
+    print("sort")
+    model$summary.fitted.values$mean <- sort_proper_fitted(model$summary.fitted.values$mean, 
+                                                           n_ADM, tT)
+    
+  }
+  
+  
+  ### Attach the fitted values to the admin_map for the years 3, 7, 11, and 13
+  tmp_map_ = admin_map
+  
+  
+  #### Plot year 3
+  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "3")
+  
+  #### Plot year 7
+  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "7")
+  
+  #### Plot year 11
+  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "11")
+  
+  #### Plot year 13
+  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "13")
+  
+  plt <- ggarrange(plt1, plt2, plt3, plt4, 
+                   ncol = 4, nrow = 1, 
+                   common.legend = T, 
+                   legend = "bottom")
+  
+  plt <- annotate_figure(plt,
+                  top = text_grob(overall_title, 
+                                  color = "black", 
+                                  face = "bold", 
+                                  size = 14))
+  
+  
+  
+  return(plt)
+}
+
+plt_fitted_rate_sd_four_years <- function(model, 
+                                       Improper = T, 
+                                       admin_map,
+                                       scale_col,
+                                       scale,
+                                       hardcoded_bins,
+                                       overall_title){
+  
+  #Find the number of areas
+  n_ADM = nrow(admin_map)
+  
+  # If a proper model, must sort the fitted rates
+  if(!Improper){
+    print("sort")
+    model$summary.fitted.values$sd <- sort_proper_fitted(model$summary.fitted.values$sd, 
+                                                         n_ADM, tT)
+  }
+  
+  
+  ### Attach the fitted values to the admin_map for the years 3, 7, 11, and 13
+  tmp_map_ = admin_map
+  
+  
+  #### Plot year 3
+  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "3")
+  
+  #### Plot year 7
+  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "7")
+  
+  #### Plot year 11
+  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "11")
+  
+  #### Plot year 13
+  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = "13")
+  
+  plt <- ggarrange(plt1, plt2, plt3, plt4, 
+                   ncol = 4, nrow = 1, 
+                   common.legend = T, 
+                   legend = "bottom")
+  
+  plt <- annotate_figure(plt,
+                         top = text_grob(overall_title, 
+                                         color = "black", 
+                                         face = "bold", 
+                                         size = 14))
+  
+  
+  
+  return(plt)
+}
+
+
+scale_col = heat.colors(30, rev=TRUE)
+scale = scale_col[seq(3, 30, length.out = 12)]
 
 
 
 
+#####
+#SC2
+scenario_name = "sc2"
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+best_imp_model <- Improper1_typeIV_ADM4
+best_prop_model <- proper2_onlyInt_ADM4  
+
+hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$mean * 100),
+                                     max(best_prop_model$summary.fitted.values$mean * 100), 
+                                     length.out = 12), 2)
+
+
+hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd * 100),
+                                   max(best_prop_model$summary.fitted.values$sd * 100), 
+                                   length.out = 12), 2)
+
+### Improper
+
+## Plot the mean rate 
+# Save as sc2_mean_fitted_rate_Imp 8.5 by 3.5
+plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of Improper1_typeIV for years)'))
+
+## Plot the sd of the rate
+# Save as sc2_sd_fitted_rate_Imp 8.5 by 3.5
+plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of Improper1_typeIV for years)'))
+
+
+
+### Proper
+
+## Plot the mean rate
+# Save as sc2_mean_fitted_rate_prop 8.5 by 3.5
+plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of proper2_onlyInt for years)'))
+
+## Plot the sd of the rate
+# Save as sc2_sd_fitted_rate_prop 8.5 by 3.5
+plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of proper2_onlyInt for years)'))
 
 
 
 
-
-
-
-
-
-
+##### 
+#SC4
 
 
 

@@ -829,7 +829,10 @@ heatmap_areas <- function(map_w_values,
             legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             panel.spacing = unit(1, 'lines')) +
-      guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
+      guides(fill=guide_legend(title=NULL,
+                               reverse = TRUE, 
+                               label.position = "right",
+                               nrow = 1)) + #Remove colorbar title
       binned_scale( #Scaling the color
         aesthetics = "fill",
         scale_name = "gradientn",
