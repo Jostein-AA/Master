@@ -320,6 +320,10 @@ calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
 
 
 ################################################################################
+# Implement log-score
+
+
+################################################################################
 
 
 ### Iterate over each model for each scenario on ADM1 to calculate the model choice data frames

@@ -245,33 +245,6 @@ ggarrange(plt1, plt3, plt5,
           common.legend = T, 
           legend = "top")
 
-# Save to pdf as 12 by 9: const_temporal_trend_fitted
-#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc1,
-#                            model_on_first_level_10_knots = improper_typeI_sc7,
-#                            model_on_second_level_20_knots = improper_typeI_sc2,
-#                            model_on_second_level_10_knots = improper_typeI_sc8,
-#                            tT)
-
-# Save to pdf as 12 by 9: lin_increasing_temporal_trend_fitted
-#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc3,
-#                            model_on_first_level_10_knots = improper_typeI_sc9,
-#                            model_on_second_level_20_knots = improper_typeI_sc4,
-#                            model_on_second_level_10_knots = improper_typeI_sc10,
-#                            tT)
-
-# Save to pdf as 12 by 9: change_point_temporal_trend_fitted
-#plot_fitted_temporal_trends(model_on_first_level_20_knots = improper_typeI_sc5,
-#                            model_on_first_level_10_knots = improper_typeI_sc11,
-#                            model_on_second_level_20_knots = improper_typeI_sc6,
-#                            model_on_second_level_10_knots = improper_typeI_sc12,
-#                            tT)
-
-
-
-
-
-
-
 ################################################################################
 # Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
 
@@ -1027,7 +1000,365 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 
 ################################################################################
-# Posterior distributions
+# Posterior distributions of hyperparameters and effects
+
+#################################
+# ADM1
+
+
+#################################
+# ADM4
+
+#########################
+# Effects
+
+#############
+#Temporal effects
+plot_fitted_temporal_trends <- function(model_on_short_range,
+                                        model_on_long_range,
+                                        Improper = T,
+                                        n_ADM,
+                                        tT,
+                                        title,
+                                        ylim){
+  
+  #
+  years = 1:tT
+  
+  # Create df for plotting
+  tmp <- data.frame(years = rep(years, 2), 
+                    range = c(rep("short", tT),
+                              rep("long", tT)), 
+                    l_quant = rep(NA, 2 * tT),
+                    median = rep(NA, 2 * tT),
+                    u_quant = rep(NA, 2 * tT))
+  
+  #If Improper model
+  if(Improper){
+    
+    # Scale the effects by the mixing param (mean[2] phi, mean[1] prec.)
+    scale_short <- sqrt(model_on_short_range$summary.hyperpar$mean[2]) * 1/sqrt(model_on_short_range$summary.hyperpar$mean[1])
+    scale_long <- sqrt(model_on_long_range$summary.hyperpar$mean[2]) * 1/sqrt(model_on_long_range$summary.hyperpar$mean[1])
+    
+    ### Insert data for short-range
+    tmp$l_quant[1:tT] <- model_on_short_range$summary.random$time_id[(tT + 1):(2 * tT), 4] * scale_short
+    tmp$median[1:tT] <- model_on_short_range$summary.random$time_id[(tT + 1):(2 * tT), 5] * scale_short
+    tmp$u_quant[1:tT] <- model_on_short_range$summary.random$time_id[(tT + 1):(2 * tT), 6] * scale_short
+    
+    ### Insert data for long-range
+    tmp$l_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 4] * scale_long
+    tmp$median[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 5] * scale_long
+    tmp$u_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 6] * scale_long
+    
+    ylab = expression(alpha[t])
+    
+  }else{ # If proper
+    fixed_effect_short <- years * model_on_short_range$summary.fixed$mean[2]
+    fixed_effect_long <- years * model_on_long_range$summary.fixed$mean[2]
+    
+    # Insert data into df for plotting
+    tmp$l_quant[1:tT] <- model_on_short_range$summary.random$time_id.copy[1:tT, 4] + fixed_effect_short
+    tmp$median[1:tT] <- model_on_short_range$summary.random$time_id.copy[1:tT, 5] + fixed_effect_short
+    tmp$u_quant[1:tT] <- model_on_short_range$summary.random$time_id.copy[1:tT, 6] + fixed_effect_short
+    
+    tmp$l_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id.copy[1:tT, 4] + fixed_effect_long
+    tmp$median[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id.copy[1:tT, 5] + fixed_effect_long
+    tmp$u_quant[(tT+1):(2*tT)]<- model_on_long_range$summary.random$time_id.copy[1:tT, 6] + fixed_effect_long
+  
+    ylab = expression(alpha[t] + beta*t)
+  }
+  
+  #Make a plot
+  plt <- ggplot(data = tmp) + ggtitle(title) +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    geom_line(aes(years, median, col = range), linewidth = 1.5) +
+    geom_line(aes(years, l_quant, col = range), linewidth = 0.9, linetype = "dashed") + 
+    geom_line(aes(years, u_quant, col = range), linewidth = 0.9, linetype = "dashed") + 
+    geom_vline(xintercept = 10.5, linetype = "dashed", 
+               color = "darkgrey", linewidth = 0.75) +
+    xlab("Year") + ylab(ylab) + 
+    ylim(ylim)
+  
+  
+  return(plt)
+}
+
+#######
+#Improper
+
+# Constant trend
+load("diagnostics_sc2.RData")
+model_on_short_range = Improper1_noInt_ADM4
+
+load("diagnostics_sc8.RData")
+model_on_long_range = Improper1_noInt_ADM4
+
+
+plt_const_imp <- plot_fitted_temporal_trends(model_on_short_range,
+                                             model_on_long_range,
+                                             Improper = T, 
+                                             n_ADM4,
+                                             tT,
+                                             "Constant temporal trend",
+                                             ylim = c(-0.15, 0.12))
+
+# Linear trend
+load("diagnostics_sc4.RData")
+model_on_short_range = Improper1_noInt_ADM4
+
+load("diagnostics_sc10.RData")
+model_on_long_range = Improper1_noInt_ADM4
+
+
+plt_lin_imp <- plot_fitted_temporal_trends(model_on_short_range,
+                            model_on_long_range,
+                            Improper = T, 
+                            n_ADM4,
+                            tT,
+                            "Linear temporal trend",
+                            ylim = c(-0.15, 0.12))
+
+# CP
+load("diagnostics_sc6.RData")
+model_on_short_range = Improper1_noInt_ADM4
+
+load("diagnostics_sc12.RData")
+model_on_long_range = Improper1_noInt_ADM4
+
+
+plt_cp_imp <- plot_fitted_temporal_trends(model_on_short_range,
+                            model_on_long_range,
+                            Improper = T, 
+                            n_ADM4,
+                            tT,
+                            "Change point temporal trend",
+                            ylim = c(-0.15, 0.12))
+
+# Save as temporal_trends_improper 9 by 3
+ggarrange(plt_const_imp, plt_lin_imp, plt_cp_imp,
+          ncol = 3, nrow = 1, common.legend = T, 
+          legend = "top")
+
+#######
+# Proper
+# Constant trend
+load("diagnostics_sc2.RData")
+model_on_short_range = proper1_noInt_ADM4
+
+load("diagnostics_sc8.RData")
+model_on_long_range = proper1_noInt_ADM4
+
+
+plt_const_prop <- plot_fitted_temporal_trends(model_on_short_range,
+                                             model_on_long_range,
+                                             Improper = F, 
+                                             n_ADM4,
+                                             tT,
+                                             "Constant temporal trend",
+                                             ylim = c(-0.5, 0.5))
+
+# Linear trend
+load("diagnostics_sc4.RData")
+model_on_short_range = proper1_noInt_ADM4
+
+load("diagnostics_sc10.RData")
+model_on_long_range = proper1_noInt_ADM4
+
+
+plt_lin_prop <- plot_fitted_temporal_trends(model_on_short_range,
+                                           model_on_long_range,
+                                           Improper = F, 
+                                           n_ADM4,
+                                           tT,
+                                           "Linear temporal trend",
+                                           ylim = c(-0.5, 0.5))
+
+# CP
+load("diagnostics_sc6.RData")
+model_on_short_range = proper1_noInt_ADM4
+
+load("diagnostics_sc12.RData")
+model_on_long_range = proper1_noInt_ADM4
+
+
+plt_cp_prop <- plot_fitted_temporal_trends(model_on_short_range,
+                                          model_on_long_range,
+                                          Improper = F, 
+                                          n_ADM4,
+                                          tT,
+                                          "Change point temporal trend",
+                                          ylim = c(-0.5, 0.5))
+
+# Save as temporal_trends_proper 9 by 3
+ggarrange(plt_const_prop, plt_lin_prop, plt_cp_prop,
+          ncol = 3, nrow = 1, common.legend = T, 
+          legend = "top")
+
+
+#############
+#Spatial effects
+
+plt_spatial_effects <- function(model,
+                                Improper = T,
+                                admin_map, 
+                                title){
+  
+  n_ADM = nrow(admin_map)
+  
+  # Create a color scale for the heatmaps
+  scale_col = heat.colors(30, rev=TRUE)
+  scale = scale_col[seq(3, 30, length.out = 12)]
+  
+  if(Improper){
+    # Get scale 
+    scale_factor <- sqrt(model$summary.hyperpar$mean[4]) * 
+      1/sqrt(model$summary.hyperpar$mean[3])
+    
+    # Get the mean effect
+    mean_effect <- model$summary.random$area_id[(n_ADM + 1):(2 * n_ADM), 2] *
+      scale_factor
+    
+    # Get sd of effect
+    sd_effect <- model$summary.random$area_id[(n_ADM + 1):(2 * n_ADM), 3] *
+      scale_factor
+    
+  } else{
+    # Get the mean effect
+    mean_effect <- model$summary.random$area_id[1:n_ADM, 2]
+    
+    # Get sd of effect
+    sd_effect <- model$summary.random$area_id[1:n_ADM, 3]
+  } 
+  
+  
+  
+  
+  
+  # Get hardcoded bins
+  hardcoded_bins_effect = round(seq(min(mean_effect), max(mean_effect),
+                              length.out = 8), 2)
+  
+  hardcoded_bins_sd = round(seq(min(sd_effect), max(sd_effect),
+                                    length.out = 8), 2)
+  
+    
+  
+  
+  # Actually plot
+  admin_map$effect = mean_effect
+  admin_map$sd = sd_effect
+  
+  plt_effect <- heatmap_areas(admin_map,
+                              admin_map$effect,
+                              scale_col = scale_col,
+                              scale = scale,
+                              hardcoded_bins = hardcoded_bins_effect,
+                              title = TeX(r'(Mean posterior $\theta_{i}$)'))
+  
+  plt_sd <- heatmap_areas(admin_map,
+                            admin_map$sd,
+                            scale_col = scale_col,
+                            scale = scale,
+                            hardcoded_bins = hardcoded_bins_sd,
+                            title = TeX(r'(SD posterior $\theta_{i}$)'))
+  
+    return(
+    ggarrange(plt_effect,
+            plt_sd,
+            ncol = 2, nrow = 1,
+            common.legend = F)
+    )
+}
+
+### Improper
+load("diagnostics_sc2.RData")
+model_on_short_range <- Improper1_noInt_ADM4
+
+load("diagnostics_sc8.RData")
+model_on_long_range = Improper1_noInt_ADM4
+
+plt <- plt_spatial_effects(model_on_short_range,
+                            Improper = T,
+                            second_level_admin_map,
+                            title = "")
+
+# Save as spatial_effect_Imp_short 5 by 3
+annotate_figure(plt,  top = text_grob("Model: Improper1_noInt", 
+                                      color = "black",  face = "bold", size = 14))
+
+plt <- plt_spatial_effects(model_on_long_range,
+                           Improper = T,
+                           second_level_admin_map,
+                           title = "")
+
+# Save as spatial_effect_Imp_long 5 by 3
+annotate_figure(plt,  top = text_grob("Model: Improper1_noInt", 
+                                      color = "black",  face = "bold", size = 14))
+
+
+### proper
+load("diagnostics_sc2.RData")
+model_on_short_range <- proper1_noInt_ADM4
+
+load("diagnostics_sc8.RData")
+model_on_long_range = proper1_noInt_ADM4
+
+plt <- plt_spatial_effects(model_on_short_range,
+                           Improper = F,
+                           second_level_admin_map,
+                           title = "")
+
+# Save as spatial_effect_prop_short 5 by 3
+annotate_figure(plt,  top = text_grob("Model: proper1_noInt", 
+                                      color = "black",  face = "bold", size = 14))
+
+plt <- plt_spatial_effects(model_on_long_range,
+                           Improper = F,
+                           second_level_admin_map,
+                           title = "")
+
+# Save as spatial_effect_prop_long 5 by 3
+annotate_figure(plt,  top = text_grob("Model: proper1_noInt", 
+                                      color = "black",  face = "bold", size = 14))
+
+
+
+
+#############
+#Space-time interaction in some way???
+
+
+
+
+
+
+
+
+
+#########################
+#Hyperparameters
+
+
+##### Temporal
+
+
+##### Spatial
+
+
+##### Interaction
+
+
+
+
+
+
+
+
+
+################################################################################
+# Make some figure for the distribution of the widths of the 95% CIs for the models
+## In order to see how the width of the CIs change
 
 
 ################################################################################
@@ -1144,29 +1475,29 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
   tmp_map_$mu <- lambda_[lambda_$time_id == 3, ]$mu
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "3")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 3")
   
   #### Plot year 7
   tmp_map_$mu <- lambda_[lambda_$time_id == 7, ]$mu
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "7")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 7")
   
   #### Plot year 11
   tmp_map_$mu <- lambda_[lambda_$time_id == 11, ]$mu
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "11")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 11")
   
   #### Plot year 13
   tmp_map_$mu <- lambda_[lambda_$time_id == 13, ]$mu
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "13")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 13")
   return(ggarrange(plt1, plt2, plt3, plt4, 
                    ncol = 4, nrow = 1, 
                    common.legend = T,
-                   legend = "bottom"))
+                   legend = "right"))
 }
 
 plt_true_counts_four_years <- function(scenario_name, 
@@ -1195,46 +1526,47 @@ plt_true_counts_four_years <- function(scenario_name,
   tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 3, ]$sampled_counts
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "3")
+                        hardcoded_bins = hardcoded_bins_count, title = "year 3")
   
   
   #### Plot year 7
   tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 7, ]$sampled_counts
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "7")
+                        hardcoded_bins = hardcoded_bins_count, title = "year 7")
   
   #### Plot year 11
   tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 11, ]$sampled_counts
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "11")
+                        hardcoded_bins = hardcoded_bins_count, title = "year 11")
   
   #### Plot year 13
   tmp_map_$sampled_counts <- lambda_[lambda_$time_id == 13, ]$sampled_counts
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sampled_counts,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_count, title = "13")
+                        hardcoded_bins = hardcoded_bins_count, title = "year 13")
   
   return(ggarrange(plt1, plt2, plt3, plt4, 
                    ncol = 4, nrow = 1, 
                    common.legend = T,
-                   legend = "bottom"))
+                   legend = "right"))
 }
 
 
 scale_col = heat.colors(30, rev=TRUE)
 scale = scale_col[seq(3, 30, length.out = 12)]
 
+#### SC2
 plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", 
                                           dataset_id = dataset_id_2,
                                           admin_map = second_level_admin_map,
                                           scale_col = scale_col,
                                           scale = scale)
 
-# Save as sc2_true_rate 8.5 by 3.5
+# Save as sc2_true_rate 8.5 by 3
 annotate_figure(plt5, 
-                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated rate per 100 for years: )'), 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated rate per 100 for )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 14))
@@ -1248,13 +1580,79 @@ plt5 <- plt_true_counts_four_years(scenario_name = "sc2",
                                           scale_col = scale_col,
                                           scale = scale)
 
-# Save as sc2_true_count 8.5 by 3.5
+# Save as sc2_true_count 8.5 by 3
 annotate_figure(plt5,
-                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated counts for years: )'), 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated counts for )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 14))
 
+
+#### SC4
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc4", 
+                                          dataset_id = dataset_id_2,
+                                          admin_map = second_level_admin_map,
+                                          scale_col = scale_col,
+                                          scale = scale)
+
+# Save as sc4_true_rate 8.5 by 3
+annotate_figure(plt5, 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{lin, short}$, Simulated rate per 100 for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+
+
+plt5 <- plt_true_counts_four_years(scenario_name = "sc4", 
+                                   dataset_id = dataset_id_2,
+                                   admin_map = second_level_admin_map,
+                                   scale_col = scale_col,
+                                   scale = scale)
+
+# Save as sc4_true_count 8.5 by 3
+annotate_figure(plt5,
+                top = text_grob(TeX(r'(Scenario: ADM4$_{lin, short}$, Simulated counts for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+#### SC6
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc6", 
+                                          dataset_id = dataset_id_2,
+                                          admin_map = second_level_admin_map,
+                                          scale_col = scale_col,
+                                          scale = scale)
+
+# Save as sc6_true_rate 8.5 by 3
+annotate_figure(plt5, 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, short}$, Simulated rate per 100 for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+
+
+plt5 <- plt_true_counts_four_years(scenario_name = "sc6", 
+                                   dataset_id = dataset_id_2,
+                                   admin_map = second_level_admin_map,
+                                   scale_col = scale_col,
+                                   scale = scale)
+
+# Save as sc6_true_count 8.5 by 3
+annotate_figure(plt5,
+                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, short}$, Simulated counts for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+
+
+#####################
 
 # AND the fitted pred. count and standard deviation ()
 # Plot the best improper vs best proper four or three years
@@ -1288,30 +1686,30 @@ plt_fitted_rate_four_years <- function(model,
   tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "3")
+                        hardcoded_bins = hardcoded_bins, title = "year 3")
   
   #### Plot year 7
   tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "7")
+                        hardcoded_bins = hardcoded_bins, title = "year 7")
   
   #### Plot year 11
   tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "11")
+                        hardcoded_bins = hardcoded_bins, title = "year 11")
   
   #### Plot year 13
   tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "13")
+                        hardcoded_bins = hardcoded_bins, title = "year 13")
   
   plt <- ggarrange(plt1, plt2, plt3, plt4, 
                    ncol = 4, nrow = 1, 
                    common.legend = T, 
-                   legend = "bottom")
+                   legend = "right")
   
   plt <- annotate_figure(plt,
                   top = text_grob(overall_title, 
@@ -1351,30 +1749,30 @@ plt_fitted_rate_sd_four_years <- function(model,
   tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "3")
+                        hardcoded_bins = hardcoded_bins, title = "year 3")
   
   #### Plot year 7
   tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "7")
+                        hardcoded_bins = hardcoded_bins, title = "year 7")
   
   #### Plot year 11
   tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "11")
+                        hardcoded_bins = hardcoded_bins, title = "year 11")
   
   #### Plot year 13
   tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "13")
+                        hardcoded_bins = hardcoded_bins, title = "year 13")
   
   plt <- ggarrange(plt1, plt2, plt3, plt4, 
                    ncol = 4, nrow = 1, 
                    common.legend = T, 
-                   legend = "bottom")
+                   legend = "right")
   
   plt <- annotate_figure(plt,
                          top = text_grob(overall_title, 
@@ -1414,38 +1812,132 @@ hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd 
 ### Improper
 
 ## Plot the mean rate 
-# Save as sc2_mean_fitted_rate_Imp 8.5 by 3.5
+# Save as sc2_mean_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of Improper1_typeIV for years)'))
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of Improper1_typeIV for )'))
 
 ## Plot the sd of the rate
-# Save as sc2_sd_fitted_rate_Imp 8.5 by 3.5
+# Save as sc2_sd_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of Improper1_typeIV for years)'))
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of Improper1_typeIV for )'))
 
 
 
 ### Proper
 
 ## Plot the mean rate
-# Save as sc2_mean_fitted_rate_prop 8.5 by 3.5
+# Save as sc2_mean_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of proper2_onlyInt for years)'))
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of proper2_onlyInt for )'))
 
 ## Plot the sd of the rate
-# Save as sc2_sd_fitted_rate_prop 8.5 by 3.5
+# Save as sc2_sd_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of proper2_onlyInt for years)'))
+                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of proper2_onlyInt for )'))
 
 
 
 
 ##### 
 #SC4
+
+scenario_name = "sc4"
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+best_imp_model <- Improper1_typeIV_ADM4
+best_prop_model <- proper2_onlyInt_ADM4  
+
+hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$mean * 100),
+                                     max(best_prop_model$summary.fitted.values$mean * 100), 
+                                     length.out = 12), 2)
+
+
+hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd * 100),
+                                   max(best_prop_model$summary.fitted.values$sd * 100), 
+                                   length.out = 12), 2)
+
+### Improper
+
+## Plot the mean rate 
+# Save as sc4_mean_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{lin, short}$, fitted rate per 100 of Improper1_typeIV for )'))
+
+## Plot the sd of the rate
+# Save as sc4_sd_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{lin, short}$, sd of rate per 100 of Improper1_typeIV for )'))
+
+
+
+### Proper
+
+## Plot the mean rate
+# Save as sc4_mean_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{lin, short}$, fitted rate per 100 of proper2_onlyInt for )'))
+
+## Plot the sd of the rate
+# Save as sc4_sd_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{lin, short}$, sd of rate per 100 of proper2_onlyInt for )'))
+
+
+##### 
+#SC6
+
+scenario_name = "sc6"
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+best_imp_model <- Improper1_typeIV_ADM4
+best_prop_model <- proper2_onlyInt_ADM4  
+
+hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$mean * 100),
+                                     max(best_prop_model$summary.fitted.values$mean * 100), 
+                                     length.out = 12), 2)
+
+
+hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd * 100),
+                                   max(best_prop_model$summary.fitted.values$sd * 100), 
+                                   length.out = 12), 2)
+
+### Improper
+
+## Plot the mean rate 
+# Save as sc6_mean_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{cp, short}$, fitted rate per 100 of Improper1_typeIV for )'))
+
+## Plot the sd of the rate
+# Save as sc6_sd_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{cp, short}$, sd of rate per 100 of Improper1_typeIV for )'))
+
+
+
+### Proper
+
+## Plot the mean rate
+# Save as sc6_mean_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{cp, short}$, fitted rate per 100 of proper2_onlyInt for )'))
+
+## Plot the sd of the rate
+# Save as sc6_sd_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{cp, short}$, sd of rate per 100 of proper2_onlyInt for )'))
 
 
 

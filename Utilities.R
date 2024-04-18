@@ -206,7 +206,6 @@ timeseries_plt <- function(geofacet_grid,
                           pred_to_plot,
                           title){
   
-  print("GUUUURKA")
   
   # Function that plots for select regions the fitted linear predictor of
   # the provided model along w. corresponding 95% CI's
@@ -355,20 +354,6 @@ wrapper_timeseries_plt <- function(ADM_grid,
   
   timeseries_plt(ADM_grid, pred_to_plot, title)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -820,7 +805,8 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 15, hjust = 0.5),
+      theme(plot.title = element_text(size = 15, hjust = 0.5,
+                                      vjust = -0.1),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
             axis.ticks = element_blank(),
@@ -832,7 +818,7 @@ heatmap_areas <- function(map_w_values,
       guides(fill=guide_legend(title=NULL,
                                reverse = TRUE, 
                                label.position = "right",
-                               nrow = 1)) + #Remove colorbar title
+                               ncol = 1)) + #Remove colorbar title
       binned_scale( #Scaling the color
         aesthetics = "fill",
         scale_name = "gradientn",
