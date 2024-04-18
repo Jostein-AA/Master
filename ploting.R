@@ -1342,11 +1342,303 @@ annotate_figure(plt,  top = text_grob("Model: proper1_noInt",
 
 ##### Temporal
 
+plt_temporal_hyperpar_imp <- function(rw1_model,
+                                      rw2_model){
+  
+  # Transform from precision to standard deviation
+  std_temporal_rw1 <-inla.tmarginal(function(x) sqrt(1/x),
+                                rw1_model$marginals.hyperpar$`Precision for time_id`)
+  
+  std_temporal_rw2 <-inla.tmarginal(function(x) sqrt(1/x),
+                                    rw2_model$marginals.hyperpar$`Precision for time_id`)
+  
+  # Format for plotting
+  std_temporal_df <- data.frame(x_axis = c(std_temporal_rw1[, 1], std_temporal_rw2[, 1]),
+                                y_axis = c(std_temporal_rw1[, 2], std_temporal_rw2[, 2]), 
+                                type = c(rep("RW1", length(std_temporal_rw1[, 1])),
+                                         rep("RW2", length(std_temporal_rw2[, 1]))))
+ 
+                                
+  
+  phi_temporal_df <- data.frame(x_axis = c(rw1_model$marginals.hyperpar$`Phi for time_id`[, 1],
+                                           rw2_model$marginals.hyperpar$`Phi for time_id`[, 1]),
+                                y_axis = c(rw1_model$marginals.hyperpar$`Phi for time_id`[, 2],
+                                           rw2_model$marginals.hyperpar$`Phi for time_id`[, 2]),
+                                type = c(rep("RW1", length(rw1_model$marginals.hyperpar$`Phi for time_id`[, 1])),
+                                         rep("RW2", length(rw2_model$marginals.hyperpar$`Phi for time_id`[, 1]))))
+  
+  
+  
+  #Extract how much of the standard deviation is captured by the structured effect
+  posterior_samples_rw1 = inla.hyperpar.sample(10000, rw1_model) #Sample the posterior
+  posterior_samples_rw2 = inla.hyperpar.sample(10000, rw2_model) #Sample the posterior
+  
+  std_explained_rw1 = rep(0, 10000); std_explained_rw2 = rep(0, 10000)
+  for(i in 1:10000){
+    std_explained_rw1[i] = sqrt(posterior_samples_rw1[i, 2] * 
+                              as.numeric(1/posterior_samples_rw1[i, 1]))
+    std_explained_rw2[i] = sqrt(posterior_samples_rw2[i, 2] * 
+                                  as.numeric(1/posterior_samples_rw2[i, 1]))
+  }
+  
+  
+  sigma_sqrtPhi.df <- data.frame(x_axis = c(std_explained_rw1, std_explained_rw2),
+                                 type = c(rep("RW1", 10000), rep("RW2", 10000)))
+  
+  
+  std_temporal_plot <- ggplot(data=std_temporal_df) + 
+    stat_density(aes(x = x_axis, fill = type),
+                 adjust = 1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) + 
+    xlab(expression(sigma)) + ylab(TeX("$f(*)$")) #expression(f(sigma)) 
+  
+  
+  phi_temporal_plot <- ggplot(data=phi_temporal_df) + 
+    stat_density(aes(x=x_axis, fill = type),
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(phi)) + ylab("") #expression(f(lambda))
+  
+  
+  sigma_phi.plot <- ggplot(data=sigma_sqrtPhi.df) + 
+    stat_density(aes(x=x_axis, fill = type),
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(TeX("$\\sigma\\sqrt{\\phi}$")) + #"$\\left(\\frac{\\phi}{\\tau}\\right)^{1/2}$"
+    ylab("")
+
+  
+  plt <- ggarrange(std_temporal_plot, phi_temporal_plot, sigma_phi.plot,
+                   ncol = 3, nrow = 1,
+                   common.legend = T, legend = "top")
+  
+  return(
+    annotate_figure(plt, top = text_grob("Temporal hyperparameters of improper models", 
+                                       color = "black", size = 14))
+    )
+}
+
+### SC2
+load("diagnostics_sc2.RData")
+
+# Save as sc2_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+### SC4
+load("diagnostics_sc4.RData")
+
+# Save as sc4_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+### SC6
+load("diagnostics_sc6.RData")
+
+# Save as sc6_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+### SC8
+load("diagnostics_sc8.RData")
+
+# Save as sc8_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+### SC10
+load("diagnostics_sc10.RData")
+
+# Save as sc10_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+### SC12
+load("diagnostics_sc12.RData")
+
+# Save as sc12_hyperparameters_temporal_imp 9 by 3
+plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
+                          Improper2_typeI_ADM4)
+
+
+
+
+plt_temporal_hyperpar_prop <- function(ar1_model,
+                                      ar2_model){
+  
+  
+  # Transform from precision to standard deviation
+  std_temporal_ar1 <-inla.tmarginal(function(x) sqrt(1/x),
+                                    ar1_model$marginals.hyperpar$`Precision for time_id.copy`)
+  
+  std_temporal_ar2 <-inla.tmarginal(function(x) sqrt(1/x),
+                                    ar2_model$marginals.hyperpar$`Precision for time_id.copy`)
+  
+  # Format for plotting
+  std_temporal_df <- data.frame(x_axis = c(std_temporal_ar1[, 1], std_temporal_ar2[, 1]),
+                                y_axis = c(std_temporal_ar1[, 2], std_temporal_ar2[, 2]), 
+                                type = c(rep("RW1", length(std_temporal_ar1[, 1])),
+                                         rep("RW2", length(std_temporal_ar2[, 1]))))
+  
+  
+  
+  
+  
+  
+  
+  
+  rho_temporal_df <- data.frame(x_axis = c(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 1],
+                                           ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 1]),
+                                y_axis = c(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 2],
+                                           ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 2]),
+                                type = c(rep("RW1", length(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 1])),
+                                         rep("RW2", length(ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 1]))))
+  
+  
+  
+  std_temporal_plot <- ggplot(data=std_temporal_df) + 
+    stat_density(aes(x = x_axis, fill = type),
+                 adjust = 1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) + 
+    xlab(expression(sigma)) + ylab(TeX("$f(*)$")) #expression(f(sigma)) 
+  
+  
+  rho_temporal_plot <- ggplot(data=rho_temporal_df) + 
+    stat_density(aes(x=x_axis, fill = type),
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(phi)) + ylab("") #expression(f(lambda))
+  
+  
+  plt <- ggarrange(std_temporal_plot, rho_temporal_plot,
+                   ncol = 3, nrow = 1,
+                   common.legend = T, legend = "top")
+  
+  return(
+    annotate_figure(plt, top = text_grob("Temporal hyperparameters of improper models", 
+                                         color = "black", size = 14))
+  )
+}
+
+
+
 
 ##### Spatial
 
+plt_spatial_hyperpar_imp <- function(model){
+  
+  # Transform from precision to standard deviation
+  std_spatial <-inla.tmarginal(function(x) sqrt(1/x),
+                                model$marginals.hyperpar$`Precision for area_id`)
+  
+  # Format for plotting
+  std_spatial_df <- data.frame(x_axis = std_spatial[, 1],
+                                y_axis = std_spatial[, 2])
+  
+  
+  
+  phi_spatial_df <- data.frame(x_axis = model$marginals.hyperpar$`Phi for area_id`[, 1], 
+                                y_axis = model$marginals.hyperpar$`Phi for area_id`[, 2])
+  
+  #Extract how much of the standard deviation is captured by the structured effect
+  posterior_samples = inla.hyperpar.sample(10000, model) #Sample the posterior
+  
+  #Precision for county, Phi for county col 3 and 4 respectively
+  std_explained = rep(0, 10000)
+  for(i in 1:10000){
+    std_explained[i] = sqrt(posterior_samples[i, 4] * as.numeric(1/posterior_samples[i, 3]))
+  }
+  
+  sigma_sqrtPhi.df <- data.frame(x_axis = std_explained)
+  
+  std_temporal_plot <- ggplot(data=std_spatial_df) + 
+    stat_density(aes(x = x_axis), fill = "#F8766D",
+                 adjust = 1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) + 
+    xlab(expression(sigma)) + ylab(TeX("$f(*)$")) #expression(f(sigma)) 
+  
+  
+  phi_temporal_plot <- ggplot(data=phi_spatial_df) + 
+    stat_density(aes(x=x_axis), fill = "#F8766D",
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(phi)) + ylab("") #expression(f(lambda))
+  
+  
+  sigma_phi.plot <- ggplot(data=sigma_sqrtPhi.df) + 
+    stat_density(aes(x=x_axis), fill = "#F8766D",
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(TeX("$\\sigma\\sqrt{\\phi}$")) + #"$\\left(\\frac{\\phi}{\\tau}\\right)^{1/2}$"
+    ylab("")
+  
+  
+  plt <- ggarrange(std_temporal_plot, phi_temporal_plot, sigma_phi.plot,
+                   ncol = 3, nrow = 1,
+                   common.legend = T, legend = "top")
+  
+  return(
+    annotate_figure(plt, top = text_grob("Spatial hyperparameters of improper models", 
+                                         color = "black", size = 14))
+  )
+}
+
+### SC2
+load("diagnostics_sc2.RData")
+
+# Save as sc2_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
+### SC4
+load("diagnostics_sc4.RData")
+
+# Save as sc4_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
+### SC6
+load("diagnostics_sc6.RData")
+
+# Save as sc6_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
+### SC8
+load("diagnostics_sc8.RData")
+
+# Save as sc8_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
+### SC10
+load("diagnostics_sc10.RData")
+
+# Save as sc10_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
+### SC12
+load("diagnostics_sc12.RData")
+
+# Save as sc12_hyperparameters_spatial_imp 9 by 3
+plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
+
 
 ##### Interaction
+
+
 
 
 
