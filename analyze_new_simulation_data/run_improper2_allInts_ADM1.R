@@ -1,0 +1,5 @@
+source("analyze_new_simulation_data/analyze_Improper2_noInt_ADM1.R")
+source("analyze_new_simulation_data/analyze_Improper2_typeI_ADM1.R")
+source("analyze_new_simulation_data/analyze_Improper2_typeII_ADM1.R")
+source("analyze_new_simulation_data/analyze_Improper2_typeIII_ADM1.R")
+source("analyze_new_simulation_data/analyze_Improper2_typeIV_ADM1.R")

@@ -18,6 +18,7 @@ tT = 13
 n_sim = 100
 E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
+n_ADMnew <- nrow(new_map)
 n_ADM4 <- nrow(second_level_admin_map)
 
 dataset_id = 3 
@@ -2285,6 +2286,14 @@ plt_true_counts_four_years <- function(scenario_name,
 
 scale_col = heat.colors(30, rev=TRUE)
 scale = scale_col[seq(3, 30, length.out = 12)]
+
+#temp
+plt_true_discrete_rate_four_years(scenario_name = "sc13", 
+                                  dataset_id = 1,
+                                  admin_map = new_map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
 
 #### SC2
 plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", 
