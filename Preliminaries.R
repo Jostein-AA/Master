@@ -29,6 +29,8 @@ first_level_admin_map <- read_sf('./Shapefiles/Germany_first_level_unpacked/')[,
 germany_border <- read_sf('./Shapefiles/Germany_border/')[, c('geometry')]
 Population_data <- read_excel('./Data/germany_population.xlsx')
 
+new_map <- read_sf('./Shapefiles/DEU_adm/DEU_2/')[, c("ID_2", "NAME_2", "geometry")]
+
 ## Make sure no NA's in the map!
 second_level_admin_map <- na.omit(second_level_admin_map)
 
@@ -90,6 +92,7 @@ second_level_admin_map$ID_2 = 1:nrow(second_level_admin_map)
 ## Load in structures
 nb_second_level <- spdep::poly2nb(second_level_admin_map, queen = FALSE)
 nb_first_level <- spdep::poly2nb(st_make_valid(first_level_admin_map), queen = FALSE)
+nb_new_level <- spdep::poly2nb(st_make_valid(new_map), queen = FALSE)
 
 ## Get the coordinate system used
 crs_ = st_crs(germany_border, parameters = TRUE)
@@ -97,10 +100,11 @@ crs_ = st_crs(germany_border, parameters = TRUE)
 #Remove things we do not wish to keep going forward
 rm(list = c('temp', 'i', 'NAME_2', 'TYPE_2', 'Population_data'))
 
-save(crs_, nb_first_level, nb_second_level,
+save(crs_, nb_first_level, nb_second_level, nb_new_level,
      germany_border,
      first_level_admin_map,
      second_level_admin_map,
+     new_map,
      file = "maps_and_nb.RData")
 
 print("Maps done")
@@ -182,6 +186,12 @@ first_level_area_id_mapping <- st_join(yxt_geom, st_make_valid(first_level_admin
                                         join = st_within)$ID_1
 
 yxt_geom$first_level_area_id_mapping = first_level_area_id_mapping
+
+## Find mapping to each region in new map
+new_level_area_id_mapping <- st_join(yxt_geom, st_make_valid(new_map),
+                                       join = st_within)$ID_2
+
+yxt_geom$new_level_area_id_mapping = new_level_area_id_mapping
 
 ## Find mapping to each region in second_level_admin_map
 second_level_area_id_mapping = rep(NA, nrow(yxt_geom))

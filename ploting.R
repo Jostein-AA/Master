@@ -1470,35 +1470,51 @@ plt_temporal_hyperpar_imp(Improper1_noInt_ADM4,
 
 
 plt_temporal_hyperpar_prop <- function(ar1_model,
-                                      ar2_model){
+                                      ar2_model,
+                                      std = T){
+  
+  if(std){
+    std_temporal_ar1 <-inla.tmarginal(function(x) sqrt(1/x),
+                                      ar1_model$marginals.hyperpar$`Precision for time_id.copy`)
+    
+    std_temporal_ar2 <-inla.tmarginal(function(x) sqrt(1/x),
+                                      ar2_model$marginals.hyperpar$`Precision for time_id.copy`)
+    xlab = expression(sigma)
+    
+  } else { # If problems
+    std_temporal_ar1 <- ar1_model$marginals.hyperpar$`Precision for time_id.copy`
+    
+    std_temporal_ar2 <- ar2_model$marginals.hyperpar$`Precision for time_id.copy`
+    xlab = expression(tau)
+  }
   
   
   # Transform from precision to standard deviation
-  std_temporal_ar1 <-inla.tmarginal(function(x) sqrt(1/x),
-                                    ar1_model$marginals.hyperpar$`Precision for time_id.copy`)
   
-  std_temporal_ar2 <-inla.tmarginal(function(x) sqrt(1/x),
-                                    ar2_model$marginals.hyperpar$`Precision for time_id.copy`)
+  
   
   # Format for plotting
   std_temporal_df <- data.frame(x_axis = c(std_temporal_ar1[, 1], std_temporal_ar2[, 1]),
                                 y_axis = c(std_temporal_ar1[, 2], std_temporal_ar2[, 2]), 
-                                type = c(rep("RW1", length(std_temporal_ar1[, 1])),
-                                         rep("RW2", length(std_temporal_ar2[, 1]))))
+                                type = c(rep("AR1", length(std_temporal_ar1[, 1])),
+                                         rep("AR2", length(std_temporal_ar2[, 1]))))
   
+  std_temporal_ar1_df <- data.frame(x_axis = std_temporal_ar1[, 1],
+                                y_axis = std_temporal_ar1[, 2])
   
-  
-  
-  
-  
+  std_temporal_ar2_df <- data.frame(x_axis = std_temporal_ar2[, 1],
+                                    y_axis = std_temporal_ar2[, 2])
   
   
   rho_temporal_df <- data.frame(x_axis = c(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 1],
-                                           ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 1]),
+                                           ar2_model$marginals.hyperpar$`PACF1 for time_id.copy`[, 1],
+                                           ar2_model$marginals.hyperpar$`PACF2 for time_id.copy`[, 1]),
                                 y_axis = c(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 2],
-                                           ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 2]),
-                                type = c(rep("RW1", length(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 1])),
-                                         rep("RW2", length(ar2_model$marginals.hyperpar$`Rho for time_id.copy`[, 1]))))
+                                           ar2_model$marginals.hyperpar$`PACF1 for time_id.copy`[, 2],
+                                           ar2_model$marginals.hyperpar$`PACF2 for time_id.copy`[, 2]),
+                                type = c(rep("AR1: rho", length(ar1_model$marginals.hyperpar$`Rho for time_id.copy`[, 1])),
+                                         rep("AR2: rho 1", length(ar2_model$marginals.hyperpar$`PACF1 for time_id.copy`[, 1])),
+                                         rep("AR2: rho 2", length(ar2_model$marginals.hyperpar$`PACF2 for time_id.copy`[, 1]))))
   
   
   
@@ -1508,8 +1524,12 @@ plt_temporal_hyperpar_prop <- function(ar1_model,
     theme_bw() +
     theme(axis.title=element_text(size=14)) +
     labs(fill = NULL) + 
-    xlab(expression(sigma)) + ylab(TeX("$f(*)$")) #expression(f(sigma)) 
+    xlab(xlab) + ylab(TeX("$f(*)$")) +  #expression(f(sigma)) 
+    guides(fill=guide_legend(title=NULL, 
+                             label.position = "top",
+                             nrow = 1))
   
+ 
   
   rho_temporal_plot <- ggplot(data=rho_temporal_df) + 
     stat_density(aes(x=x_axis, fill = type),
@@ -1517,19 +1537,78 @@ plt_temporal_hyperpar_prop <- function(ar1_model,
     theme_bw() +
     theme(axis.title=element_text(size=14)) +
     labs(fill = NULL) +
-    xlab(expression(phi)) + ylab("") #expression(f(lambda))
+    xlab(expression(rho)) + ylab("") + #expression(f(lambda))
+    guides(fill=guide_legend(title=NULL, 
+                             label.position = "top",
+                             nrow = 1))
+  rho_temporal_plot <- rho_temporal_plot + scale_fill_manual(values = c("#F8766D",
+                                                                         "#00BFC4", 
+                                                                         "#33cc33"),
+                       labels = unname(TeX(c(" AR1: $\\rho$",
+                                             " AR2: $\\rho_{1}$",
+                                             " AR2: $\\rho_{2}$"))))
   
   
   plt <- ggarrange(std_temporal_plot, rho_temporal_plot,
-                   ncol = 3, nrow = 1,
-                   common.legend = T, legend = "top")
+                   ncol = 2, nrow = 1,
+                   common.legend = F,
+                   legend = "top")
   
   return(
-    annotate_figure(plt, top = text_grob("Temporal hyperparameters of improper models", 
+    annotate_figure(plt, top = text_grob("Temporal hyperparameters of proper models", 
                                          color = "black", size = 14))
   )
 }
 
+### SC2
+load("diagnostics_sc2.RData")
+
+# Save as sc2_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_full_ADM4,
+                           proper2_full_ADM4,
+                           std = F)
+
+### SC4
+load("diagnostics_sc4.RData")
+
+# Save as sc4_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_noInt_ADM4,
+                           proper2_noInt_ADM4,
+                           std = T)
+
+
+### SC6
+load("diagnostics_sc6.RData")
+
+# Save as sc6_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_noInt_ADM4,
+                           proper2_noInt_ADM4,
+                           std = F)
+
+### SC8
+load("diagnostics_sc8.RData")
+
+# Save as sc8_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_full_ADM4,
+                           proper2_full_ADM4,
+                           std = F)
+
+### SC10
+load("diagnostics_sc10.RData")
+
+# Save as sc10_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_noInt_ADM4,
+                           proper2_noInt_ADM4,
+                           std = T)
+
+
+### SC12
+load("diagnostics_sc12.RData")
+
+# Save as sc12_hyperparameters_temporal_prop 6 by 3
+plt_temporal_hyperpar_prop(proper1_noInt_ADM4,
+                           proper2_noInt_ADM4,
+                           std = F)
 
 
 
@@ -1636,15 +1715,373 @@ load("diagnostics_sc12.RData")
 plt_spatial_hyperpar_imp(Improper1_noInt_ADM4)
 
 
+
+plt_spatial_hyperpar_prop <- function(model){
+  
+  
+  # Transform from precision to standard deviation
+  std_spatial <-inla.tmarginal(function(x) sqrt(1/x),
+                               model$marginals.hyperpar$`Precision for area_id`)
+  
+  # Format for plotting
+  std_spatial_df <- data.frame(x_axis = std_spatial[, 1],
+                               y_axis = std_spatial[, 2])
+  
+  
+  rho_spatial_df <- data.frame(x_axis = model$marginals.hyperpar$`Lambda for area_id`[, 1], 
+                               y_axis = model$marginals.hyperpar$`Lambda for area_id`[, 2])
+  
+  
+  std_temporal_plot <- ggplot(data=std_spatial_df) + 
+    stat_density(aes(x = x_axis), fill = "#F8766D",
+                 adjust = 1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) + 
+    xlab(expression(sigma)) + ylab(TeX("$f(*)$")) #expression(f(sigma)) 
+  
+  
+  rho_spatial_plot <- ggplot(data=rho_spatial_df) + 
+    stat_density(aes(x=x_axis), fill = "#F8766D",
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(rho)) + ylab("") #expression(f(lambda))
+  
+  
+  
+  plt <- ggarrange(std_temporal_plot, rho_spatial_plot,
+                   ncol = 2, nrow = 1,
+                   common.legend = T, legend = "top")
+  
+  return(
+    annotate_figure(plt, top = text_grob("Spatial hyperparameters of proper models", 
+                                         color = "black", size = 14))
+  )
+}
+
+
+### SC2
+load("diagnostics_sc2.RData")
+
+# Save as sc2_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+### SC4
+load("diagnostics_sc4.RData")
+
+# Save as sc4_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+### SC6
+load("diagnostics_sc6.RData")
+
+# Save as sc6_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+### SC8
+load("diagnostics_sc8.RData")
+
+# Save as sc8_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+### SC10
+load("diagnostics_sc10.RData")
+
+# Save as sc10_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+### SC12
+load("diagnostics_sc12.RData")
+
+# Save as sc12_hyperparameters_spatial_prop 6 by 3
+plt_spatial_hyperpar_prop(proper1_noInt_ADM4)
+
+
+
+
+
+
 ##### Interaction
 
+plt_interaction_hyperpar_imp <- function(typeI,
+                                         typeII, 
+                                         typeIII,
+                                         typeIV,
+                                         title = ""){
+  
+  # Transform from precision to standard deviation
+  std_int_I <-inla.tmarginal(function(x) sqrt(1/x),
+                           typeI$marginals.hyperpar$`Precision for space.time`)
+  
+  if(title == "Const, long"){
+    std_int_II = NULL
+  } else {
+    std_int_II <-inla.tmarginal(function(x) sqrt(1/x),
+                                typeII$marginals.hyperpar$`Precision for space.time`)
+  }
+  
+ 
+  std_int_III <-inla.tmarginal(function(x) sqrt(1/x),
+                             typeIII$marginals.hyperpar$`Precision for space.time`)
+  
+  std_int_IV <-inla.tmarginal(function(x) sqrt(1/x),
+                             typeIV$marginals.hyperpar$`Precision for space.time`)
+  
+  if(title == "Const, long"){
+    std_df <- data.frame(x_axis = c(std_int_I[, 1],
+                                    std_int_III[, 1],
+                                    std_int_IV[, 1]),
+                         type = c(rep("type I", length(std_int_I[, 1])),
+                                  rep("type III", length(std_int_III[, 1])),
+                                  rep("type IV", length(std_int_IV[, 1]))))
+    
+  } else {
+    std_df <- data.frame(x_axis = c(std_int_I[, 1],
+                                    std_int_II[, 1],
+                                    std_int_III[, 1],
+                                    std_int_IV[, 1]),
+                         type = c(rep("type I", length(std_int_I[, 1])),
+                                  rep("type II", length(std_int_II[, 1])),
+                                  rep("type III", length(std_int_III[, 1])),
+                                  rep("type IV", length(std_int_IV[, 1]))))
+    
+  }
+  
+  if(title == "Const, long"){
+    std_plot <- ggplot(data=std_df) + ggtitle(title) +
+      stat_density(aes(x = x_axis, fill = type),
+                   adjust = 1.5, alpha=.8, position = "identity") +
+      theme_bw() +
+      theme(axis.title=element_text(size=14)) +
+      labs(fill = NULL) + 
+      xlab(expression(sigma)) + ylab(TeX("$f(\\sigma)$")) + #expression(f(sigma)) 
+      scale_fill_manual(values=c("#F8766D", "#00BFC4", "#C77CFF"))
+  } else {
+    std_plot <- ggplot(data=std_df) + ggtitle(title) +
+      stat_density(aes(x = x_axis, fill = type),
+                   adjust = 1.5, alpha=.8, position = "identity") +
+      theme_bw() +
+      theme(axis.title=element_text(size=14)) +
+      labs(fill = NULL) + 
+      xlab(expression(sigma)) + ylab(TeX("$f(\\sigma)$")) #expression(f(sigma)) 
+    
+  }
+  
+  
+  
+  
+   return(std_plot)
+}
+
+### SC2
+load("diagnostics_sc2.RData")
+
+sc2_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                             Improper1_typeII_ADM4,
+                             Improper2_typeIII_ADM4,
+                             Improper1_typeIV_ADM4,
+                             title = "Const, short")
+
+
+### SC4
+load("diagnostics_sc4.RData")
+
+sc4_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                                               Improper1_typeII_ADM4,
+                                               Improper2_typeIII_ADM4,
+                                               Improper1_typeIV_ADM4,
+                                               title = "Lin, short")
+
+### SC6
+load("diagnostics_sc6.RData")
+
+sc6_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                                               Improper1_typeII_ADM4,
+                                               Improper2_typeIII_ADM4,
+                                               Improper1_typeIV_ADM4,
+                                               title = "CP, short")
 
 
 
+plt <- ggarrange(sc2_int_hp_imp, sc4_int_hp_imp, sc6_int_hp_imp,
+          ncol = 3, nrow = 1, 
+          common.legend = T,
+          legend = "top")
+
+# Save as interactions_hyperpars_short_imp 9 by 3
+annotate_figure(plt, top = text_grob("Marginal SD of interactions of improper models", 
+                                     color = "black", size = 14))
+
+### SC8
+load("diagnostics_sc8.RData")
+
+sc8_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                                               Improper2_typeII_ADM4,
+                                               Improper2_typeIII_ADM4,
+                                               Improper1_typeIV_ADM4,
+                                               title = "Const, long")
+
+
+### SC10
+load("diagnostics_sc10.RData")
+
+sc10_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                                               Improper1_typeII_ADM4,
+                                               Improper2_typeIII_ADM4,
+                                               Improper1_typeIV_ADM4,
+                                               title = "Lin, long")
+
+### SC12
+load("diagnostics_sc12.RData")
+
+sc12_int_hp_imp <- plt_interaction_hyperpar_imp(Improper2_typeI_ADM4,
+                                               Improper1_typeII_ADM4,
+                                               Improper2_typeIII_ADM4,
+                                               Improper1_typeIV_ADM4,
+                                               title = "CP, long")
 
 
 
+plt <- ggarrange(sc10_int_hp_imp, sc12_int_hp_imp, sc8_int_hp_imp,
+                 ncol = 3, nrow = 1, 
+                 common.legend = T,
+                 legend = "top")
 
+
+# Save as interactions_hyperpars_long_imp 9 by 3
+annotate_figure(plt, top = text_grob("Marginal SD of interactions of improper models", 
+                                     color = "black", size = 14))
+
+
+
+plt_interaction_hyperpar_prop <- function(prop1_onlyInt,
+                                          prop2_onlyInt,
+                                          prop1_full,
+                                          prop2_full,
+                                         title = ""){
+  
+  # Transform from precision to standard deviation
+  std_int_1_onlyInt <-inla.tmarginal(function(x) sqrt(1/x),
+                             prop1_onlyInt$marginals.hyperpar$`Precision for area_id`)
+  
+  std_int_2_onlyInt <-inla.tmarginal(function(x) sqrt(1/x),
+                              prop2_onlyInt$marginals.hyperpar$`Precision for area_id`)
+  
+  std_int_1_full <-inla.tmarginal(function(x) sqrt(1/x),
+                               prop1_full$marginals.hyperpar$`Precision for area_id.copy`)
+  
+  std_int_2_full <-inla.tmarginal(function(x) sqrt(1/x),
+                              prop2_full$marginals.hyperpar$`Precision for area_id.copy`)
+  
+  
+  std_df <- data.frame(x_axis = c(std_int_1_onlyInt[, 1],
+                                  std_int_2_onlyInt[, 1],
+                                  std_int_1_full[, 1],
+                                  std_int_2_full[, 1]),
+                       type = c(rep("Proper1_onlyInt", length(std_int_1_onlyInt[, 1])),
+                                rep("Proper2_onlyInt", length(std_int_2_onlyInt[, 1])),
+                                rep("Proper1_full", length(std_int_1_full[, 1])),
+                                rep("Proper2_full", length(std_int_2_full[, 1]))))
+  
+  
+  
+  rho_spatial_df <- data.frame(x_axis = c(prop1_onlyInt$marginals.hyperpar$`Lambda for area_id`[, 1],
+                                          prop2_onlyInt$marginals.hyperpar$`Lambda for area_id`[, 1],
+                                          prop1_full$marginals.hyperpar$`Lambda for area_id.copy`[, 1], 
+                                          prop2_full$marginals.hyperpar$`Lambda for area_id.copy`[, 1]),
+                               type = c(rep("Proper1_onlyInt", length(prop1_onlyInt$marginals.hyperpar$`Lambda for area_id`[, 1])),
+                                        rep("Proper2_onlyInt", length(prop2_onlyInt$marginals.hyperpar$`Lambda for area_id`[, 1])),
+                                        rep("Proper1_full", length(prop1_full$marginals.hyperpar$`Lambda for area_id.copy`[, 1])),
+                                        rep("Proper2_full", length(prop2_full$marginals.hyperpar$`Lambda for area_id.copy`[, 1]))))
+  
+  
+  rho1_temporal_df <- data.frame(x_axis = c(prop1_onlyInt$marginals.hyperpar$`GroupRho for area_id`[, 1],
+                                          prop2_onlyInt$marginals.hyperpar$`Group PACF1 for area_id`[, 1],
+                                          prop1_full$marginals.hyperpar$`GroupRho for area_id.copy`[, 1], 
+                                          prop2_full$marginals.hyperpar$`Group PACF1 for area_id.copy`[, 1]),
+                               type = c(rep("Proper1_onlyInt", length(prop1_onlyInt$marginals.hyperpar$`GroupRho for area_id`[, 1])),
+                                        rep("Proper2_onlyInt", length(prop2_onlyInt$marginals.hyperpar$`Group PACF1 for area_id`[, 1])),
+                                        rep("Proper1_full", length(prop1_full$marginals.hyperpar$`GroupRho for area_id.copy`[, 1])),
+                                        rep("Proper2_full", length(prop2_full$marginals.hyperpar$`Group PACF1 for area_id.copy`[, 1]))))
+  
+  rho2_temporal_df <- data.frame(x_axis = c(prop2_onlyInt$marginals.hyperpar$`Group PACF2 for area_id`[, 1],
+                                            prop2_full$marginals.hyperpar$`Group PACF2 for area_id.copy`[, 1]),
+                                 type = c(rep("Proper2_onlyInt", length(prop2_onlyInt$marginals.hyperpar$`Group PACF2 for area_id`[, 1])),
+                                          rep("Proper2_full", length(prop2_full$marginals.hyperpar$`Group PACF2 for area_id.copy`[, 1]))))
+  
+  
+  
+  
+  
+  std_plot <- ggplot(data=std_df) + ggtitle(title) +
+    stat_density(aes(x = x_axis, fill = type),
+                 adjust = 1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) + 
+    xlab(expression(sigma)) + ylab(TeX("$f(\\sigma)$")) #expression(f(sigma)) 
+  
+  
+  rho_spatial_plot <- ggplot(data=rho_spatial_df) + 
+    stat_density(aes(x=x_axis, fill = type), 
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(rho[s])) + ylab("") #expression(f(lambda))
+  
+  rho1_temporal_plot <- ggplot(data=rho1_temporal_df) + 
+    stat_density(aes(x=x_axis, fill = type), 
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(rho[1])) + ylab("") #expression(f(lambda))
+  
+  rho2_temporal_plot <- ggplot(data=rho2_temporal_df) + 
+    stat_density(aes(x=x_axis, fill = type), 
+                 adjust=1.5, alpha=.8, position = "identity") +
+    theme_bw() +
+    theme(axis.title=element_text(size=14)) +
+    labs(fill = NULL) +
+    xlab(expression(rho[2])) + ylab("") +  #expression(f(lambda))
+    scale_fill_manual(values=c("#00BFC4", "#C77CFF"))
+  
+  return(ggarrange(std_plot, rho_spatial_plot,
+                   rho1_temporal_plot, rho2_temporal_plot,
+                   ncol = 2, nrow = 2,
+                   common.legend = T,
+                   legend = "top"))
+}
+
+### SC2
+load("diagnostics_sc2.RData")
+
+# Save as sc2_proper_interactions_hyperparams 6 by 6
+plt_interaction_hyperpar_prop(proper1_onlyInt_ADM4,
+                              proper2_onlyInt_ADM4,
+                              proper1_full_ADM4,
+                              proper2_full_ADM4)
+
+### SC4
+load("diagnostics_sc4.RData")
+
+# Save as sc4_proper_interactions_hyperparams 6 by 6
+plt_interaction_hyperpar_prop(proper1_onlyInt_ADM4,
+                              proper2_onlyInt_ADM4,
+                              proper1_full_ADM4,
+                              proper2_full_ADM4)
+
+### SC6
+load("diagnostics_sc6.RData")
+
+# Save as sc6_proper_interactions_hyperparams 6 by 6
+plt_interaction_hyperpar_prop(proper1_onlyInt_ADM4,
+                              proper2_onlyInt_ADM4,
+                              proper1_full_ADM4,
+                              proper2_full_ADM4)
 
 
 
