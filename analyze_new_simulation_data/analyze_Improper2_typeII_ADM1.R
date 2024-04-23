@@ -62,13 +62,13 @@ scaled_RW_prec <- inla.scale.model(RW2_prec,
                                         e = 0))
 
 #Get precision matric for type II interaction by Kronecker product
-typeII_prec_first_level <- scaled_RW_prec %x% diag(nrow(new_level_admin_map))
+typeII_prec_first_level <- scaled_RW_prec %x% diag(nrow(new_map))
 
 
 
 #Get sum-to-zero constraints for type II interaction
 typeII_constraints_first_level = constraints_maker(type = "II", 
-                                                   n = nrow(new_level_admin_map), 
+                                                   n = nrow(new_map), 
                                                    t = tT,
                                                    rw = "RW2",
                                                    prec_matrix = typeII_prec_first_level)

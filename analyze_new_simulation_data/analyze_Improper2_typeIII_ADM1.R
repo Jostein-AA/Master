@@ -58,7 +58,7 @@ base_formula_first_level <- sampled_counts ~ 1 + f(time_id,
 
 #Get sum-to-zero constraints for type II interaction
 typeIII_constraints_first_level = constraints_maker(type = "III", 
-                                                    n = nrow(new_level_admin_map), 
+                                                    n = nrow(new_map), 
                                                     t = tT)
 
 

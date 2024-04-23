@@ -59,7 +59,7 @@ base_formula_first_level <- sampled_counts ~ 1 + f(time_id,
 
 #Get sum-to-zero constraints for type IV interaction
 typeIV_constraints_first_level = constraints_maker(type = "IV", 
-                                                   n = nrow(new_level_admin_map), 
+                                                   n = nrow(new_map), 
                                                    t = tT)
 
 
@@ -81,7 +81,7 @@ typeIV_formula_first_level <- update(base_formula_first_level,
                                     model = "generic0",
                                     Cmatrix = typeIV_prec_first_level,
                                     extraconstr = typeIV_constraints_first_level,
-                                    rankdef = (nrow(new_level_admin_map) + tT - 1), 
+                                    rankdef = (nrow(new_map) + tT - 1), 
                                     hyper = interaction_hyper))
 
 ################################################################################

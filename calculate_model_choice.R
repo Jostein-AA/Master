@@ -25,6 +25,7 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
 
 scenario_names_ADM1 = c("sc1", "sc3", "sc5", "sc7", "sc9", "sc11")
 scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+scenario_names_new = c("sc13", "sc14", "sc15", "sc16", "sc17", "sc18")
 
 
 ################################################################################
@@ -192,7 +193,7 @@ calc_mse_is_count_one_model_one_scenario_ADM1 <- function(model_name,
 }
 
 
-## Function that takes one model, one scenario, and calculates all the MSEs and IS' for ADM1
+## Function that takes one model, one scenario, and calculates all the MSEs and IS' for ADM4
 calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
                                                           scenario_name,
                                                           n_sim){
@@ -319,6 +320,138 @@ calc_mse_is_count_one_model_one_scenario_ADM4 <- function(model_name,
 }
 
 
+
+
+## Function that takes one model, one scenario, and calculates all the MSEs and IS' for ADM1
+calc_mse_is_count_one_model_one_scenario_new <- function(model_name,
+                                                         scenario_name,
+                                                         n_sim){
+  
+  
+  ### Initialize data frame to store the mse's and is's for each data set
+  model_choice_for_counts <- data.frame(mse_1_year_ahead = rep(NA, n_sim), mse_2_year_ahead = rep(NA, n_sim),
+                                        mse_3_year_ahead = rep(NA, n_sim), total_mse = rep(NA, n_sim), 
+                                        IS_1_year_ahead = rep(NA, n_sim), IS_2_year_ahead = rep(NA, n_sim), 
+                                        IS_3_year_ahead = rep(NA, n_sim), total_IS = rep(NA, n_sim))
+  
+  model_choice_for_rates <- data.frame(mse_1_year_ahead = rep(NA, n_sim), mse_2_year_ahead = rep(NA, n_sim),
+                                       mse_3_year_ahead = rep(NA, n_sim), total_mse = rep(NA, n_sim), 
+                                       IS_1_year_ahead = rep(NA, n_sim), IS_2_year_ahead = rep(NA, n_sim), 
+                                       IS_3_year_ahead = rep(NA, n_sim), total_IS = rep(NA, n_sim))
+  
+  ## Find the number of files containing results
+  
+  predictions_dir = paste("./results/", model_name, "/",
+                          scenario_name, sep = "")
+  
+  
+  num_files <- length(list.files(predictions_dir))
+  
+  print(paste(model_name, scenario_name, num_files, sep = " - "))
+  
+  file_base_name = paste("/", model_name, "_", scenario_name, "_", sep = "")
+  file_ending = ".RData"
+  
+  ## Iterate over data sets in scenario
+  
+  ### Initialize progressbar
+  pb <- txtProgressBar(min = 1, max = n_sim, style = 3)
+  
+  #### First load in the entire simulated scenario (i.e. each of the simulated data sets of the scenario)
+  load(paste("./Simulated_data/", scenario_name, "/", scenario_name, "_data.RData",
+             sep = ""))
+  lambda_df <- lambda.df[, c("space.time", "area_id", "time_id", "E_it")]
+  
+  #### Take the years predicted on
+  years_pred_on <- 11:13
+  
+  #### Count how many data sets we open (i.e. if any are corrupted or something)
+  successes = 0
+  for(i in 1:n_sim){
+    
+    ## Should probably do a try-catch thing opening the files
+    marginals = read_file(paste(predictions_dir, file_base_name, toString(i), file_ending,
+                                sep = ""))
+    
+    ### If failure: jump to next
+    if(is.null(marginals)){
+      next
+    }
+    
+    ### If not failure: count it as successfully opened!
+    successes = successes + 1
+    
+    ### Load in the data: both counts (sampled_counts) and rate (lambda_it)
+    lambda_df$sampled_counts <- lambda.df$sampled_counts[, i]
+    lambda_df$lambda_it <- lambda.df$lambda[, i]
+    
+    #### For each year calculate the MSE and IS that year
+    for(year in years_pred_on){
+      ## Extract the predicted marginals for this year
+      one_year_margs <- marginals[((year - years_pred_on[1]) * nrow(new_map) + 1):((year - years_pred_on[1] + 1) * nrow(new_map))]
+      
+      ## Extract the sampled counts for this year
+      one_year_sampled_counts = lambda_df$sampled_counts[((year - 1) * nrow(new_map) + 1):(year * nrow(new_map))]
+      
+      ## Extract the sampled rates for this year
+      one_year_sampled_rates = lambda_df$lambda_it[((year - 1) * nrow(new_map) + 1):(year * nrow(new_map))]
+      
+      ## MSE for count in year ahead (1, 2, or 3 years ahead)
+      model_choice_for_counts[i, year - years_pred_on[1] + 1] =  count_mse_one_year_one_dataset(one_year_sampled_counts,
+                                                                                                one_year_margs,
+                                                                                                E_it)
+      ## MSE for rate in year ahead (1, 2, or 3 years ahead)
+      model_choice_for_rates[i, year - years_pred_on[1] + 1] = rate_mse_one_year_one_dataset(one_year_sampled_rates, 
+                                                                                             one_year_margs)
+      
+      ## IS for count in year ahead (1, 2, or 3 years ahead)
+      model_choice_for_counts[i, year - years_pred_on[1] + 5] =  count_IS_one_year_one_dataset(one_year_sampled_counts, 
+                                                                                               one_year_margs, 
+                                                                                               E_it)
+      
+      ## IS for rate in year ahead (1, 2, or 3 years ahead)
+      model_choice_for_rates[i, year - years_pred_on[1] + 5] = rate_IS_one_year_one_dataset(one_year_sampled_rates,
+                                                                                            one_year_margs)
+      
+    }
+    
+    #Get the total MSE for count
+    model_choice_for_counts[i, 4] = mean(as.numeric(model_choice_for_counts[i, 1:3]))
+    
+    #Get the total MSE for rate
+    model_choice_for_rates[i, 4] = mean(as.numeric(model_choice_for_rates[i, 1:3]))
+    
+    #Get the total IS for count
+    model_choice_for_counts[i, 8] = mean(as.numeric(model_choice_for_counts[i, 5:7]))
+    
+    #Get the total IS for rate
+    model_choice_for_rates[i, 8] = mean(as.numeric(model_choice_for_rates[i, 5:7]))
+    
+    print(model_choice_for_counts[i, ])
+    print(model_choice_for_rates[i, ])
+    
+    ## Update progressbar
+    setTxtProgressBar(pb, i)
+  }
+  
+  ## Close the progressbar
+  close(pb) 
+  
+  ### Check that number of successes equals number of files found
+  if(successes != num_files){
+    print("Number of successes not equal to number of files...")
+    Sys.sleep(30)
+  }
+  
+  filename = paste("./results/model_choice/", "model_choice_", model_name, "_", 
+                   scenario_name, ".RData", sep = "")
+  
+  save(model_choice_for_counts,
+       model_choice_for_rates,
+       file = filename)
+}
+
+
 ################################################################################
 # Implement log-score
 
@@ -340,6 +473,15 @@ for(model_name in model_names){
 for(model_name in model_names){
   for(scenario_name in scenario_names_ADM4){
     calc_mse_is_count_one_model_one_scenario_ADM4(model_name = model_name,
+                                                  scenario_name = scenario_name,
+                                                  n_sim)
+  }
+}
+
+### Iterate over each model for each scenario on new_map to calculate the model choice data frames
+for(model_name in model_names){
+  for(scenario_name in scenario_names_new){
+    calc_mse_is_count_one_model_one_scenario_new(model_name = model_name,
                                                   scenario_name = scenario_name,
                                                   n_sim)
   }
@@ -509,13 +651,22 @@ for(scenario_name in scenario_names_ADM1){
 
 #####
 # ADM4 results
+model_choice_names = c("MSE (1)", "MSE (2)", "MSE (3)",
+                       "MSE (total)",
+                       "IS (1)", "IS (2)", "IS (3)",
+                       "IS (total)")
 
-model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
-                "Improper1_typeIII", "Improper1_typeIV",
-                "Improper2_noInt", "Improper2_typeI", "Improper2_typeII",
-                "Improper2_typeIII", "Improper2_typeIV",
-                "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
-                "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
+best_models_count_ADM4 = data.frame(model = rep("", 8 * 6),
+                               scenario = c(rep("sc2", 8),
+                                            rep("sc4", 8),
+                                            rep("sc6", 8),
+                                            rep("sc8", 8),
+                                            rep("sc10", 8),
+                                            rep("sc12", 8)),
+                               model_choice = rep(c("MSE (1)", "MSE (2)", "MSE (3)",
+                                                    "MSE (total)",
+                                                    "IS (1)", "IS (2)", "IS (3)",
+                                                    "IS (total)"), 8 * 6))
 
 # For counts
 for(scenario_name in scenario_names_ADM4){
@@ -568,6 +719,16 @@ for(scenario_name in scenario_names_ADM4){
     model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 7, ]$value = tmp2_[7]
     model_choice_counts.df[model_choice_counts.df$Model == model_name & model_choice_counts.df$model_choice == 8, ]$value = tmp2_[8]
     
+  }
+  
+  for(i in 1:8){
+    min1 <- min(model_choice_counts.df[model_choice_counts.df$model_choice == i, ]$value)
+    
+    model_name = model_choice_counts.df[model_choice_counts.df$model_choice == i & model_choice_counts.df$value == min1, ]$Model
+    
+    #Insert the model w. the lowest value for this
+    best_models_count_ADM4[best_models_count_ADM4$scenario == scenario_name & 
+                             best_models_count_ADM4$model_choice == model_choice_names[i], 1] = model_name
   }
   
   #Make caption and label for latex table

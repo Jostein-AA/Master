@@ -1021,7 +1021,9 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
                                         n_ADM,
                                         tT,
                                         title,
-                                        ylim){
+                                        ylim,
+                                        ylab_ = T,
+                                        y_breaks = NULL){
   
   #
   years = 1:tT
@@ -1051,7 +1053,12 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
     tmp$median[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 5] * scale_long
     tmp$u_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 6] * scale_long
     
-    ylab = expression(alpha[t])
+    if(ylab_){
+      ylab = expression(alpha[t])
+    } else {
+      ylab = NULL
+    }
+    
     
   }else{ # If proper
     fixed_effect_short <- years * model_on_short_range$summary.fixed$mean[2]
@@ -1065,24 +1072,35 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
     tmp$l_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id.copy[1:tT, 4] + fixed_effect_long
     tmp$median[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id.copy[1:tT, 5] + fixed_effect_long
     tmp$u_quant[(tT+1):(2*tT)]<- model_on_long_range$summary.random$time_id.copy[1:tT, 6] + fixed_effect_long
-  
-    ylab = expression(alpha[t] + beta*t)
+    
+    if(ylab_){
+      ylab = expression(alpha[t] + beta*t)
+    } else {
+      ylab = NULL
+    }
   }
   
   #Make a plot
   plt <- ggplot(data = tmp) + ggtitle(title) +
     theme_bw() +
     theme(axis.title=element_text(size=14)) +
-    geom_line(aes(years, median, col = range), linewidth = 1.5) +
-    geom_line(aes(years, l_quant, col = range), linewidth = 0.9, linetype = "dashed") + 
-    geom_line(aes(years, u_quant, col = range), linewidth = 0.9, linetype = "dashed") + 
+    geom_line(aes(years, median, col = range), linewidth = 1) +
+    geom_line(aes(years, l_quant, col = range), linewidth = 0.6, linetype = "dashed") + 
+    geom_line(aes(years, u_quant, col = range), linewidth = 0.6, linetype = "dashed") + 
     geom_vline(xintercept = 10.5, linetype = "dashed", 
-               color = "darkgrey", linewidth = 0.75) +
+               color = "darkgrey", linewidth = 0.6) +
     xlab("Year") + ylab(ylab) + 
-    ylim(ylim)
+    ylim(ylim) + guides(col = guide_legend(title="Spatial range"))
+  
+  if(is.null(y_breaks)){
+    return(plt)
+  } else {
+    plt <- plt + scale_y_continuous(breaks = y_breaks)
+    return(plt)
+  }
   
   
-  return(plt)
+  
 }
 
 #######
@@ -1102,7 +1120,7 @@ plt_const_imp <- plot_fitted_temporal_trends(model_on_short_range,
                                              n_ADM4,
                                              tT,
                                              "Constant temporal trend",
-                                             ylim = c(-0.15, 0.12))
+                                             ylim = c(-0.5, 0.5))
 
 # Linear trend
 load("diagnostics_sc4.RData")
@@ -1118,7 +1136,8 @@ plt_lin_imp <- plot_fitted_temporal_trends(model_on_short_range,
                             n_ADM4,
                             tT,
                             "Linear temporal trend",
-                            ylim = c(-0.15, 0.12))
+                            ylim = c(-0.5, 0.5),
+                            ylab = F)
 
 # CP
 load("diagnostics_sc6.RData")
@@ -1134,7 +1153,8 @@ plt_cp_imp <- plot_fitted_temporal_trends(model_on_short_range,
                             n_ADM4,
                             tT,
                             "Change point temporal trend",
-                            ylim = c(-0.15, 0.12))
+                            ylim = c(-0.5, 0.5),
+                            ylab = F)
 
 # Save as temporal_trends_improper 9 by 3
 ggarrange(plt_const_imp, plt_lin_imp, plt_cp_imp,
@@ -1173,7 +1193,8 @@ plt_lin_prop <- plot_fitted_temporal_trends(model_on_short_range,
                                            n_ADM4,
                                            tT,
                                            "Linear temporal trend",
-                                           ylim = c(-0.5, 0.5))
+                                           ylim = c(-0.5, 0.5),
+                                           ylab = F)
 
 # CP
 load("diagnostics_sc6.RData")
@@ -1189,7 +1210,10 @@ plt_cp_prop <- plot_fitted_temporal_trends(model_on_short_range,
                                           n_ADM4,
                                           tT,
                                           "Change point temporal trend",
-                                          ylim = c(-0.5, 0.5))
+                                          ylim = c(-0.5, 0.55),
+                                          ylab = F,
+                                          y_breaks = c(-0.5, -0.25, 0,
+                                                       0.25, 0.5))
 
 # Save as temporal_trends_proper 9 by 3
 ggarrange(plt_const_prop, plt_lin_prop, plt_cp_prop,
@@ -2289,6 +2313,13 @@ scale = scale_col[seq(3, 30, length.out = 12)]
 
 #temp
 plt_true_discrete_rate_four_years(scenario_name = "sc13", 
+                                  dataset_id = 1,
+                                  admin_map = new_map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+
+plt_true_discrete_rate_four_years(scenario_name = "sc14", 
                                   dataset_id = 1,
                                   admin_map = new_map,
                                   scale_col = scale_col,

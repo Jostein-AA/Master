@@ -71,7 +71,7 @@ typeIV_prec_first_level <- scaled_RW_prec%x% scaled_besag_prec_first_level
 
 #Get sum-to-zero constraints for type IV interaction
 typeIV_constraints_first_level = constraints_maker(type = "IV", 
-                                                   n = nrow(new_level_admin_map), 
+                                                   n = nrow(new_map), 
                                                    t = tT,
                                                    rw = "RW2",
                                                    prec_matrix = typeIV_prec_first_level)
