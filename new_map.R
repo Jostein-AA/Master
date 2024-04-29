@@ -39,5 +39,46 @@ ggplot(data = map) +
   guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right"))
 
 
+#temp
+scale_col = heat.colors(30, rev=TRUE)
+scale = scale_col[seq(3, 30, length.out = 12)]
+
+plt_true_discrete_rate_four_years(scenario_name = "sc13", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+
+plt_true_discrete_rate_four_years(scenario_name = "sc14", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+plt_true_discrete_rate_four_years(scenario_name = "sc15", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+plt_true_discrete_rate_four_years(scenario_name = "sc16", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+plt_true_discrete_rate_four_years(scenario_name = "sc17", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
+plt_true_discrete_rate_four_years(scenario_name = "sc18", 
+                                  dataset_id = 1,
+                                  admin_map = map,
+                                  scale_col = scale_col,
+                                  scale = scale)
+
 
 

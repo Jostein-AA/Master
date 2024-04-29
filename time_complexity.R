@@ -1583,32 +1583,33 @@ for(model_name in unique(to_plot_time_complex$model_name)){
 
 
 ### ADM 1
-ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM1", ],
-       aes(x = time, y = model_name)) +
-  geom_boxplot() +
+comp_time_ADM1_plt <- ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM1", ],
+       aes(x = time, y = model_name)) + #, 
+  geom_boxplot(fill = "#00BFC4",outlier.shape = NA) +
   theme_bw() + 
   theme(
     legend.position="none",
     plot.title = element_text(size=11)
   ) +
-  ggtitle("Model run-times on ADM1") +
-  xlab("")
+  ggtitle("Computational time on ADM1 map:\n n = 16, T = 13") +
+  xlab("Computation time (s)") + 
+  ylab("Model")
 
-ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM1", ],
-       aes(x = time, y = model_name, fill = stat(x))) +
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_fill_viridis_c(name = "Computation time (sec)", option = "C") +
-  theme_bw() +
-  labs(title = 'Computational time in seconds on ADM1')
+comp_time_ADM4_plt <-ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM4", ],
+       aes(x = time, y = model_name)) + #, 
+  geom_boxplot(fill = "#00BFC4", outlier.shape = NA) +
+  theme_bw() + 
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=11)
+  ) +
+  ggtitle("Computational time on ADM4 map:\n n = 402, T = 13") +
+  xlab("Computation time (s)") + 
+  ylab("Model")
 
-ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM4", ],
-       aes(x = time, y = model_name, fill = stat(x))) +
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_fill_viridis_c(name = "Computation time (sec)", option = "C") +
-  theme_bw() +
-  labs(title = 'Computational time in seconds on ADM4')
-
-
+# Save as comp_time_plot 8 by 3 
+ggarrange(comp_time_ADM1_plt, comp_time_ADM4_plt,
+          ncol = 2, nrow = 1)
 
 
 

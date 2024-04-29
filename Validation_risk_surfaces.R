@@ -10,6 +10,7 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
+#########################
 
 ## Save plots for validation of risk-surface
 load("./Data/Simulated_risk_surfaces/sc1_risk_surfaces.RData")
@@ -180,6 +181,93 @@ plots_for_GIF(risk_surface.list = risk_surface.list,
 
 
 gif_name = "sc12.gif"
+make_GIF(dir, gif_name)
+
+
+################
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc13.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_13/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+
+gif_name = "sc13.gif"
+make_GIF(dir, gif_name)
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc14.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_14/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+gif_name = "sc14.gif"
+make_GIF(dir, gif_name)
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc15.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_15/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+
+gif_name = "sc15.gif"
+make_GIF(dir, gif_name)
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc16.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_16/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+
+gif_name = "sc16.gif"
+make_GIF(dir, gif_name)
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc17.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_17/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+
+gif_name = "sc17.gif"
+make_GIF(dir, gif_name)
+
+
+## Save plots for validation of risk-surface
+load("./Data/Simulated_risk_surfaces/sc18.RData")
+risk_surface.list$values <- risk_surface.list$values[, 1]
+
+dir = "./Plots/scenario_18/"
+plots_for_GIF(risk_surface.list = risk_surface.list,
+              polygons = polygon_grid2,
+              t_axis = t_axis,
+              filename_base = dir)
+
+
+gif_name = "sc18.gif"
 make_GIF(dir, gif_name)
 
 

@@ -362,10 +362,6 @@ ridgeplot_counts <- function(model_names, scenario_name,
 
 
 
-
-
-
-
 ridgeplot_rates <- function(model_names, scenario_name,
                              one_2_3_or_total, xlab,
                             xlim){
@@ -525,6 +521,250 @@ ridgeplot_counts_and_rates_all_years("sc11", c(8, 27), c(0.02, 0.1))
 
 #Save as 15 by 15 sc12_IS_ridgeplot_all
 ridgeplot_counts_and_rates_all_years("sc12", c(12, 20), c(0.02, 0.12))
+
+
+###
+# Make ridgeplot w. MSE and IS for rates
+ridgeplot_mse_is_rates <- function(to_plot.df, 
+                                   value_to_plot, 
+                                   one_2_3_or_total, 
+                                   IS_or_MSE = "IS", 
+                                   xlab, 
+                                   xlim){
+  
+  
+  to_plot.df$value_to_plot = value_to_plot
+  
+  if(one_2_3_or_total == 1 & IS_or_MSE == "IS"){
+    ylab = "Model"
+    axis.text.y = element_text(size = 10)
+    title = "1 year ahead"
+  } else if(one_2_3_or_total == 2 & IS_or_MSE == "IS"){
+    ylab = NULL
+    axis.text.y = element_blank()
+    title = "2 years ahead"
+  } else if(one_2_3_or_total == 3 & IS_or_MSE == "IS"){
+    ylab = NULL
+    axis.text.y = element_blank()
+    title = "3 years ahead"
+  } else if(one_2_3_or_total == 1 & IS_or_MSE == "MSE"){
+    ylab = "Model"
+    axis.text.y = element_text(size = 10)
+    title = "1 year ahead"
+  } else if(one_2_3_or_total == 2 & IS_or_MSE == "MSE"){
+    ylab = NULL
+    axis.text.y = element_blank()
+    title = "2 years ahead"
+  } else if(one_2_3_or_total == 3 & IS_or_MSE == "MSE"){
+    ylab = NULL
+    axis.text.y = element_blank()
+    title = "3 years ahead"
+  }
+  
+  return(ggplot(data = to_plot.df, 
+                aes(x = value_to_plot, 
+                    y = model_name, 
+                    fill = model_name)) + 
+          ggtitle(title) +
+              geom_density_ridges() +
+              theme_ridges() + 
+              theme(legend.position = "none",
+                    axis.text.y = axis.text.y,
+                    axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+                    axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+                    axis.text.x = element_text(size = 10),
+                    axis.title=element_text(size=13)) + 
+              xlab(xlab) + 
+              ylab(ylab) +
+              xlim(xlim[1], xlim[2]))
+}
+
+ridgeplot_mse_is_rates_all_years <- function(model_names,
+                                             scenario_name, 
+                                             xlim_mse, 
+                                             xlim_is,
+                                             presentation = F){
+  
+  model_name = model_names[1]
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_rates
+  
+  to_plot_ridge.df <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                                 IS_1_year_ahead = tmp_$IS_1_year_ahead,
+                                 IS_2_year_ahead = tmp_$IS_2_year_ahead,
+                                 IS_3_year_ahead = tmp_$IS_3_year_ahead,
+                                 IS_tot = tmp_$total_IS,
+                                 mse_1_year_ahead = tmp_$mse_1_year_ahead,
+                                 mse_2_year_ahead = tmp_$mse_2_year_ahead,
+                                 mse_3_year_ahead = tmp_$mse_3_year_ahead,
+                                 MSE_tot = tmp_$total_mse)
+  
+  
+  
+  
+  for(model_name in model_names[2:length(model_names)]){
+    ### Load in Model choice data
+    load(paste("./results/model_choice/model_choice_", 
+               model_name, "_", 
+               scenario_name, ".RData",
+               sep = ""))
+    
+    tmp_ <- model_choice_for_rates
+    
+    tmp2_ <- data.frame(model_name = rep(model_name, nrow(tmp_)),
+                        IS_1_year_ahead = tmp_$IS_1_year_ahead,
+                        IS_2_year_ahead = tmp_$IS_2_year_ahead,
+                        IS_3_year_ahead = tmp_$IS_3_year_ahead,
+                        IS_tot = tmp_$total_IS,
+                        mse_1_year_ahead = tmp_$mse_1_year_ahead,
+                        mse_2_year_ahead = tmp_$mse_2_year_ahead,
+                        mse_3_year_ahead = tmp_$mse_3_year_ahead,
+                        MSE_tot = tmp_$total_mse)
+    
+    
+    to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
+  }
+  
+  if(presentation){
+    # "Improper1_noInt",
+    # "Improper1_typeIV",
+    # "proper2_onlyInt",
+    # "proper2_propInt_Improp_temporal"
+    
+    to_plot_ridge.df[to_plot_ridge.df$model_name == "Improper1_noInt", ]$model_name = "Improper1 noInt"
+    to_plot_ridge.df[to_plot_ridge.df$model_name == "Improper1_typeIV", ]$model_name = "Improper1 typeIV"
+    to_plot_ridge.df[to_plot_ridge.df$model_name == "proper2_onlyInt", ]$model_name = "Proper2 onlyInt"
+    to_plot_ridge.df[to_plot_ridge.df$model_name == "proper2_propInt_Improp_temporal", ]$model_name = "Proper2 & RW1"
+  }
+  
+  plt1 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$mse_1_year_ahead,
+                                 one_2_3_or_total = 1, 
+                                 IS_or_MSE = "MSE",
+                                 xlab = "MSE predicted rate 1 year ahead", xlim_mse)
+  plt2 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$mse_2_year_ahead,
+                                 one_2_3_or_total = 2, 
+                                 IS_or_MSE = "MSE",
+                                 xlab = "MSE predicted rate 2 years ahead", xlim_mse)
+  
+  plt3 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$mse_3_year_ahead,
+                                 one_2_3_or_total = 3, 
+                                 IS_or_MSE = "MSE",
+                                 xlab = "MSE predicted rate 3 years ahead", xlim_mse)
+  
+  plt4 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$IS_1_year_ahead,
+                                 one_2_3_or_total = 1, 
+                                 IS_or_MSE = "IS",
+                                 xlab = "IS predicted rate 1 year ahead", xlim_is)
+  
+  plt5 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$IS_2_year_ahead,
+                                 one_2_3_or_total = 2,
+                                 IS_or_MSE = "IS",
+                                 xlab = "IS predicted rate 2 years ahead", xlim_is)
+  
+  
+  plt6 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
+                                 value_to_plot = to_plot_ridge.df$IS_3_year_ahead,
+                                 one_2_3_or_total = 3,
+                                 IS_or_MSE = "IS",
+                                 xlab = "IS predicted rate 3 years ahead", xlim_is)
+  
+  
+  plt <- ggarrange(plt1, plt2, plt3, 
+                   plt4, plt5, plt6,
+                   widths = c(1.35, 1, 1),
+                   ncol = 3, nrow = 2, common.legend = F)
+  
+  
+  
+  return(plt)
+}
+
+
+
+
+model_names <- c("Improper1_noInt",
+                 "Improper1_typeIV",
+                 "proper2_onlyInt",
+                 "proper2_propInt_Improp_temporal")
+
+# Save as results_for_master_presentation 15 by 15?
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc2", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11),
+                                 presentation = T)
+
+
+
+#Save as 15 by 15 sc2_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc2", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc4_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc4", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc6_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc6", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc8_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc8", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc10_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc10", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc12_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc12", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+
+
+#Save as 15 by 15 sc13_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc13", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc14_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc14", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc15_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc15", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc16_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc16", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc17_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc17", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
+
+#Save as 15 by 15 sc18_IS_ridgeplot_all
+ridgeplot_mse_is_rates_all_years(model_names = model_names,
+                                 "sc18", xlim_mse = c(0.35, 3.5), 
+                                 xlim_is = c(2, 11))
 
 
 
@@ -821,16 +1061,12 @@ wrapper_plt_predcount_vs_true_count(ADM1_grid, scenario_name, dataset_id = datas
 dataset_id_2 = 4
 
 ADM4_grid <- data.frame(
-  code = c("1", "50", "100", "150", "200", "250", "300", "350", "400",
-           "93", "106", "354"),
-  name = c("Alb-Donau-K.", "Ansbach",
-           "Munchen", "Oberhavel",
-           "Celle", "Dusseldorf", 
-           "Bad Kreuznach", "Stendal",
-           "Wartburgkreis", "Luchow-Dannenberg",
-           "Nurnberg", "Dresden"),
-  row = c(1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3),
-  col = c(1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4),
+  code = c(250, 350, 354, 150,
+           11, 166, 106, 99),
+  name = c("Dusseldorf", "Stendal", "Dresden", "Oberhavel",
+           "Freiburg", "Frankfurt", "Nurnberg", "Munchen"),
+  row = c(1, 1, 1, 1, 2, 2, 2, 2),
+  col = c(1, 2, 3, 4, 1, 2, 3, 4),
   stringsAsFactors = FALSE)
 
 
@@ -844,10 +1080,15 @@ title = "Scenario: const trend, short range (ADM4)"             #TeX(r'(ADM1$_{c
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-# Save as timeseries_sc2 10 by 8.5
+# Save as timeseries_sc2_imp 10 by 6.5
 wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
                        Improper1_typeIV_ADM4, improper = T,
                        title = paste("Model: Improper1_typeIV", title, sep = "   "))
+
+# Save as timeseries_sc2_prop 10 by 6.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper1_full_ADM4, improper = F,
+                       title = paste("Model: proper1_full", title, sep = "   "))
 
 
 ### SC4
@@ -858,10 +1099,16 @@ title = "Scenario: linear trend, short range (ADM4)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-# Save as timeseries_sc4 10 by 8.5
+# Save as timeseries_sc4_imp 10 by 6.5
 wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                       proper1_onlyInt_ADM4, improper = F,
-                       title = paste("Model: proper1_onlyInt", title, sep = "   "))
+                       Improper2_typeII_ADM4, improper = T,
+                       title = paste("Model: Improper2_typeII", title, sep = "   "))
+
+
+# Save as timeseries_sc4_prop 10 by 6.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper2_onlyInt_ADM4, improper = F,
+                       title = paste("Model: proper2_onlyInt", title, sep = "   "))
 
 
 
@@ -873,10 +1120,15 @@ title = "Scenario: change point, short range (ADM4)"             #TeX(r'(ADM1$_{
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-# Save as timeseries_sc6 10 by 8.5
+# Save as timeseries_sc6_imp 10 by 6.5
 wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
-                       proper2_onlyInt_ADM4, improper = F,
-                       title = paste("Model: proper2_onlyInt", title, sep = "   "))
+                       Improper1_typeII_ADM4, improper = T,
+                       title = paste("Model: Improper1_typeII", title, sep = "   "))
+
+# Save as timeseries_sc6_prop 10 by 6.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper2_full_ADM4, improper = F,
+                       title = paste("Model: proper2_full", title, sep = "   "))
 
 
 ### SC8
@@ -2120,6 +2372,32 @@ plt_interaction_hyperpar_prop(proper1_onlyInt_ADM4,
 
 #####################
 # Plot the continuous risk surface in one time interval (first and last)
+## Load in a specific scenario
+
+
+# filename = paste(dir, "sc2_risk_surfaces.RData", sep = "")
+# load(filename)
+# col_names <- colnames(risk_surface.list)[colnames(risk_surface.list) != "values"]
+# tmp_ = risk_surface.list[, col_names]
+# tmp_$values = risk_surface.list$values[, 1]
+# rm(risk_surface.list)
+# 
+# ## get the times
+# t_axis_indices = which(3 - 1 < t_axis & 
+#                          t_axis <= 3)
+# 
+# 
+# 
+# ### Plot the continuous true risk surface for times within time_interval
+# Save as cont_risk_for_presentation 6 by 6
+# heatmap_points(tmp_,
+#               polygon_grid2,
+#               second_level_admin_map,
+#               t_axis[t_axis_indices[1]],
+#               title = "A simulated continuous risk-surface",
+#               legends.title = "Risk")
+
+
 
 dir = "./Data/Simulated_risk_surfaces/"
 #####
@@ -2253,6 +2531,26 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
                    common.legend = T,
                    legend = "right"))
 }
+# 
+# load(paste("Simulated_data/", "sc2", "/",
+#            "sc2", "_data.RData", sep = ""))
+# 
+# lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+# lambda_$lambda_it <- lambda.df$lambda_it[, 1]
+# lambda_$mu <- lambda_$lambda_it * lambda_$E_it
+# lambda_$sampled_counts <- lambda.df$sampled_counts[, 1]
+# 
+# tmp_ <- second_level_admin_map
+# tmp_$to_plot <- lambda_[lambda_$time_id == 1, ]$sampled_counts
+# 
+# min_ = min(tmp_$to_plot); max_ = max(tmp_$to_plot)
+# hardcoded_bins = round(seq(min_, max_, length.out = 8), 0)
+# 
+# heatmap_areas(tmp_, value = tmp_$to_plot, 
+#               scale_col = scale_col, scale = scale,
+#               hardcoded_bins = hardcoded_bins, 
+#               title = "Kaka")
+
 
 plt_true_counts_four_years <- function(scenario_name, 
                                               dataset_id,
@@ -2311,19 +2609,7 @@ plt_true_counts_four_years <- function(scenario_name,
 scale_col = heat.colors(30, rev=TRUE)
 scale = scale_col[seq(3, 30, length.out = 12)]
 
-#temp
-plt_true_discrete_rate_four_years(scenario_name = "sc13", 
-                                  dataset_id = 1,
-                                  admin_map = new_map,
-                                  scale_col = scale_col,
-                                  scale = scale)
 
-
-plt_true_discrete_rate_four_years(scenario_name = "sc14", 
-                                  dataset_id = 1,
-                                  admin_map = new_map,
-                                  scale_col = scale_col,
-                                  scale = scale)
 
 
 #### SC2
@@ -2418,6 +2704,36 @@ annotate_figure(plt5,
                                 face = "bold", 
                                 size = 14))
 
+
+#### SC12
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc12", 
+                                          dataset_id = dataset_id_2,
+                                          admin_map = second_level_admin_map,
+                                          scale_col = scale_col,
+                                          scale = scale)
+
+# Save as sc12_true_rate 8.5 by 3
+annotate_figure(plt5, 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, long}$, Simulated rate per 100 for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
+
+
+
+
+plt5 <- plt_true_counts_four_years(scenario_name = "sc12", 
+                                   dataset_id = dataset_id_2,
+                                   admin_map = second_level_admin_map,
+                                   scale_col = scale_col,
+                                   scale = scale)
+
+# Save as sc12_true_count 8.5 by 3
+annotate_figure(plt5,
+                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, long}$, Simulated counts for )'), 
+                                color = "black", 
+                                face = "bold", 
+                                size = 14))
 
 
 
@@ -2707,6 +3023,57 @@ plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = se
 plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                               scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
                               overall_title = TeX(r'(Scenario: ADM4$_{cp, short}$, sd of rate per 100 of proper2_onlyInt for )'))
+
+
+
+##### 
+#SC12
+
+scenario_name = "sc12"
+load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
+
+best_imp_model <- Improper1_typeIV_ADM4
+best_prop_model <- proper2_onlyInt_ADM4  
+
+hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$mean * 100),
+                                     max(best_prop_model$summary.fitted.values$mean * 100), 
+                                     length.out = 12), 2)
+
+
+hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd * 100),
+                                   max(best_prop_model$summary.fitted.values$sd * 100), 
+                                   length.out = 12), 2)
+
+### Improper
+
+## Plot the mean rate 
+# Save as sc12_mean_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{cp, long}$, fitted rate per 100 of Improper1_typeIV for )'))
+
+## Plot the sd of the rate
+# Save as sc12_sd_fitted_rate_Imp 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{cp, long}$, sd of rate per 100 of Improper1_typeIV for )'))
+
+
+
+### Proper
+
+## Plot the mean rate
+# Save as sc12_mean_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                           scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
+                           overall_title = TeX(r'(Scenario: ADM4$_{cp, long}$, fitted rate per 100 of proper2_onlyInt for )'))
+
+## Plot the sd of the rate
+# Save as sc12_sd_fitted_rate_prop 8.5 by 3
+plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+                              scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
+                              overall_title = TeX(r'(Scenario: ADM4$_{cp, long}$, sd of rate per 100 of proper2_onlyInt for )'))
+
 
 
 

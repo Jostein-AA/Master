@@ -8,11 +8,11 @@ source("Utilities.R")
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
-#load("temporal_B_spline.RData")
-#load("spatial_B_splines.RData")
-#load("B_spline_basis.RData")
-#load("penalization_matrices.RData")
-#load("scaled_tensor_prod_smooths_cov_matrices.RData")
+load("temporal_B_spline.RData")
+load("spatial_B_splines.RData")
+load("B_spline_basis.RData")
+load("penalization_matrices.RData")
+load("scaled_tensor_prod_smooths_cov_matrices.RData")
 
 # Define the intercept (is constant across all scenarios)
 intercept = log(0.1)
@@ -21,7 +21,7 @@ intercept = log(0.1)
 n_sim = 100
 
 # Seed
-seed = 134563
+seed = 2276543
 
 ################################################################################
 # Scenario 1: first-level admin map, const. temporal trend (w. greater temporal variation),
@@ -31,44 +31,27 @@ seed = 134563
 seed = seed + 1
 
 ## Get the risk-field
-#Lambda_st = simulate_risk_surface(seed,
-#                                  Bst_20, 
-#                                  Bs_20,
-#                                  Sigma_st_12,
-#                                  kt,
-#                                  ks_20,
-#                                  intercept, temporal_trend = 1,
-#                                  n_sim = n_sim)
-
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
+                                  Bs_20,
+                                  Sigma_st_13,
+                                  kt,
+                                  ks_20,
+                                  intercept, temporal_trend = 1,
+                                  sig_st = 0.05,
+                                  n_sim = n_sim)
 
 
 ## Add risk-values to yxt_grid w. geoms
-#risk_surface.list = yxt_geom
-#risk_surface.list$values = Lambda_st
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
 
 ## Drop points outside Germany
-#risk_surface.list = risk_surface.list[within_germany_indices, ]
+risk_surface.list = risk_surface.list[within_germany_indices, ]
 
 ## Reset the indices (Necessary!)
-#indices_risk_surface.list = nrow(risk_surface.list)
-#rownames(risk_surface.list) = 1:indices_risk_surface.list
-
-load("Simulated_risk_surfaces/sc1_risk_surfaces.RData")
-
-yxt_geom_ = yxt_geom
-
-## Drop points outside Germany
-yxt_geom_ = yxt_geom_[within_germany_indices, ]
-
-## Reset the indices (Necessary!)
-indices_risk_surface.list = nrow(yxt_geom_)
-rownames(yxt_geom_) = 1:indices_risk_surface.list
-
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
-
-
-
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 
 #Integrate to get the lambda_it values
@@ -113,23 +96,44 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_1")
+print("Scenario_13")
 
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc13.RData")
 
 save(lambda.df,
      file = "./Simulated_data/sc13/sc13_data.RData")
 
 ################################################################################
-# Scenario 3: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
+# Scenario 14: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
 # greater spatial variation
 
 # Update seed
 seed = seed + 1
 
-load("Simulated_risk_surfaces/sc3_risk_surfaces.RData")
+## Get the risk-field
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
+                                  Bs_20,
+                                  Sigma_st_1415,
+                                  kt,
+                                  ks_20,
+                                  intercept, temporal_trend = 2,
+                                  sig_st = 0.05, beta1_t = 0.014, 
+                                  t_axis = t_axis,
+                                  n_sim = n_sim)
 
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
+
+## Add risk-values to yxt_grid w. geoms
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
+
+## Drop points outside Germany
+risk_surface.list = risk_surface.list[within_germany_indices, ]
+
+## Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 
 #Integrate to get the lambda_it values
@@ -173,24 +177,47 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_3")
+print("Scenario_14")
+
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc14.RData")
+
+
 save(lambda.df,
      file = "./Simulated_data/sc14/sc14_data.RData")
 
 
 
 ################################################################################
-# Scenario 5: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
+# Scenario 15: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
 # greater spatial variation
 
 # Update seed
 seed = seed + 1
 
-load("Simulated_risk_surfaces/sc5_risk_surfaces.RData")
+## Get the risk-field
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_20, 
+                                  Bs_20,
+                                  Sigma_st_1415,
+                                  kt,
+                                  ks_20,
+                                  intercept, temporal_trend = 3,
+                                  sig_st = 0.05, beta1_t = 0.02, beta2_t = 0.015, 
+                                  t_axis = t_axis,
+                                  n_sim = n_sim)
 
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
 
+## Add risk-values to yxt_grid w. geoms
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
+
+## Drop points outside Germany
+risk_surface.list = risk_surface.list[within_germany_indices, ]
+
+## Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(new_map) * tT),
@@ -233,7 +260,10 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_5")
+print("Scenario_15")
+
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc15.RData")
 
 
 save(lambda.df,
@@ -241,18 +271,33 @@ save(lambda.df,
 
 
 ################################################################################
-# Scenario 7: second_level_admin_map, const. temporal trend (w. greater temporal variation),
+# Scenario 16: second_level_admin_map, const. temporal trend (w. greater temporal variation),
 # smaller spatial variation
 
 # Update seed
 seed = seed + 1
 
+## Get the risk-field
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
+                                  Bs_10,
+                                  Sigma_st_16,
+                                  kt,
+                                  ks_10,
+                                  intercept, temporal_trend = 1,
+                                  n_sim = n_sim)
 
-load("Simulated_risk_surfaces/sc7_risk_surfaces.RData")
 
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
+## add the risk-values to yxt_grid
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
 
+## Drop points outside Germany
+risk_surface.list = risk_surface.list[within_germany_indices, ]
+
+## Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(new_map) * tT),
@@ -295,26 +340,44 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_7")
+print("Scenario_16")
 
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc16.RData")
 
 save(lambda.df,
      file = "./Simulated_data/sc16/sc16_data.RData")
 
 
 ################################################################################
-# Scenario 9: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
+# Scenario 17: second_level_admin_map2, increasing temporal trend (w. smaller temporal variation),
 # smaller spatial variation
 
 # Update seed
 seed = seed + 1
 
+## Get the risk-field
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
+                                  Bs_10,
+                                  Sigma_st_1718,
+                                  kt,
+                                  ks_10,
+                                  intercept, temporal_trend = 2, beta1_t = 0.014, 
+                                  t_axis = t_axis,
+                                  n_sim = n_sim)
 
-load("Simulated_risk_surfaces/sc9_risk_surfaces.RData")
 
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
+## add the risk-values to yxt_grid
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
 
+## Drop points outside Germany
+risk_surface.list = risk_surface.list[within_germany_indices, ]
+
+## Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(new_map) * tT),
@@ -357,7 +420,10 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_9")
+print("Scenario_17")
+
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc17.RData")
 
 
 save(lambda.df,
@@ -366,17 +432,35 @@ save(lambda.df,
 
 
 ################################################################################
-# Scenario 11: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
+# Scenario 18: second_level_admin_map2, change-point temporal trend (w. smaller temporal variation),
 # smaller spatial variation
 
 # Update seed
 seed = seed + 1
 
+## Get the risk-field
+Lambda_st = simulate_risk_surface(seed,
+                                  Bst_10, 
+                                  Bs_10,
+                                  Sigma_st_1718,
+                                  kt,
+                                  ks_10,
+                                  intercept, temporal_trend = 3, 
+                                  beta1_t = 0.02, beta2_t = 0.015, 
+                                  t_axis = t_axis,
+                                  n_sim = n_sim)
 
-load("Simulated_risk_surfaces/sc11_risk_surfaces.RData")
 
-## Add new map area-id
-risk_surface.list$new_level_area_id_mapping = yxt_geom_$new_level_area_id_mapping
+## add the risk-values to yxt_grid
+risk_surface.list = yxt_geom
+risk_surface.list$values = Lambda_st
+
+## Drop points outside Germany
+risk_surface.list = risk_surface.list[within_germany_indices, ]
+
+## Reset the indices (Necessary!)
+indices_risk_surface.list = nrow(risk_surface.list)
+rownames(risk_surface.list) = 1:indices_risk_surface.list
 
 #Integrate to get the lambda_it values
 lambda.df <- data.frame(area_id = rep(0, nrow(new_map) * tT),
@@ -419,7 +503,10 @@ seed = seed + 1
 lambda.df$sampled_counts = sample_counts(seed, lambda.df)
 
 
-print("Scenario_11")
+print("Scenario_18")
+
+save(risk_surface.list,
+     file = "./Simulated_risk_surfaces/sc18.RData")
 
 
 save(lambda.df,

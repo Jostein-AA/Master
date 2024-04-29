@@ -833,7 +833,8 @@ heatmap_points <- function(risk_surface.list,
                            polygons,
                            admin_map,
                            t,
-                           title){
+                           title,
+                           legends.title = NULL){
   
   ## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
   tmp_ = data.frame(values = risk_surface.list$values, 
@@ -872,7 +873,9 @@ heatmap_points <- function(risk_surface.list,
           legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
           legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
           panel.spacing = unit(1, 'lines')) +
-    guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
+    guides(fill=guide_legend(title = legends.title, 
+                             reverse = TRUE, 
+                             label.position = "right")) + #Remove colorbar title
     binned_scale( #Scaling the color
       aesthetics = "fill",
       scale_name = "gradientn",

@@ -416,17 +416,39 @@ tau_s = 20; tau_t = 80 #1) spatial and 2) temporal smoothness parameters
 Pst_sc_9101112 <- tau_s *(It %x% Py_10 %x% Ix_10 + It %x% Iy_10 %x% Px_10) + 
                   tau_t * (Pt %x% Iy_10 %x% Ix_10)
 
+### Scenario 13
+tau_s = 10; tau_t = 10 #1) spatial and 2) temporal smoothness parameters
+Pst_sc_13 <- tau_s *(It %x% Py_20 %x% Ix_20 + It %x% Iy_20 %x% Px_20) + 
+  tau_t * (Pt %x% Iy_20 %x% Ix_20)
+
+### Scenario 14, 15
+tau_s = 10; tau_t = 20 #1) spatial and 2) temporal smoothness parameters
+Pst_sc_1415 <- tau_s *(It %x% Py_20 %x% Ix_20 + It %x% Iy_20 %x% Px_20) + 
+  tau_t * (Pt %x% Iy_20 %x% Ix_20)
+
+### Scenario 16
+tau_s = 10; tau_t = 10 #1) spatial and 2) temporal smoothness parameters
+Pst_sc_16 <- tau_s *(It %x% Py_10 %x% Ix_10 + It %x% Iy_10 %x% Px_10) + 
+  tau_t * (Pt %x% Iy_10 %x% Ix_10)
+
+### Scenario 17, 18
+tau_s = 10; tau_t = 20 #1) spatial and 2) temporal smoothness parameters
+Pst_sc_1718 <- tau_s *(It %x% Py_10 %x% Ix_10 + It %x% Iy_10 %x% Px_10) + 
+  tau_t * (Pt %x% Iy_10 %x% Ix_10)
+
 save(Pst_sc_12,
      Pst_sc_3456,
      Pst_sc_78,
      Pst_sc_9101112,
+     Pst_sc_13,
+     Pst_sc_1415,
+     Pst_sc_16,
+     Pst_sc_1718,
      file = "penalization_matrices.RData")
 
 print("Penalization matrices made done")
 
 ## Scale the penalization matrices
-
-
 scaled_Pst_sc_12 <- INLA::inla.scale.model(Pst_sc_12, 
                                            constr = list(A = matrix(1,1,dim(Pst_sc_12)[1]), 
                                                          e = 0))
@@ -443,11 +465,31 @@ scaled_Pst_sc_9101112 <- INLA::inla.scale.model(Pst_sc_9101112,
                                              constr = list(A = matrix(1,1,dim(Pst_sc_9101112)[1]), 
                                                            e = 0))
 
+scaled_Pst_sc_13 <- INLA::inla.scale.model(Pst_sc_13, 
+                                           constr = list(A = matrix(1,1,dim(Pst_sc_13)[1]), 
+                                                         e = 0))
+
+scaled_Pst_sc_1415 <- INLA::inla.scale.model(Pst_sc_1415, 
+                                             constr = list(A = matrix(1,1,dim(Pst_sc_1415)[1]), 
+                                                           e = 0))
+
+scaled_Pst_sc_16 <- INLA::inla.scale.model(Pst_sc_16, 
+                                           constr = list(A = matrix(1,1,dim(Pst_sc_16)[1]), 
+                                                         e = 0))
+
+scaled_Pst_sc_1718 <- INLA::inla.scale.model(Pst_sc_1718, 
+                                                constr = list(A = matrix(1,1,dim(Pst_sc_1718)[1]), 
+                                                              e = 0))
+
 
 save(scaled_Pst_sc_12,
      scaled_Pst_sc_3456,
      scaled_Pst_sc_78,
      scaled_Pst_sc_9101112,
+     scaled_Pst_sc_13,
+     scaled_Pst_sc_1415,
+     scaled_Pst_sc_16,
+     scaled_Pst_sc_1718,
      file = "scaled_penalization_matrices.RData")
 
 
@@ -461,10 +503,23 @@ print("Sigma_st_78")
 Sigma_st_9101112 <- ginv(as.matrix(scaled_Pst_sc_9101112))
 print("Sigma_st_9101112")
 
+Sigma_st_13      <- ginv(as.matrix(scaled_Pst_sc_13))
+print("Sigma_st_13")
+Sigma_st_1415    <- ginv(as.matrix(scaled_Pst_sc_1415))
+print("Sigma_st_1415")
+Sigma_st_16      <- ginv(as.matrix(scaled_Pst_sc_16))
+print("Sigma_st_16")
+Sigma_st_1718 <- ginv(as.matrix(scaled_Pst_sc_1718))
+print("Sigma_st_1718")
+
 save(Sigma_st_12,
      Sigma_st_3456,
      Sigma_st_78,
      Sigma_st_9101112,
+     Sigma_st_13,
+     Sigma_st_1415,
+     Sigma_st_16,
+     Sigma_st_1718,
      file = "scaled_tensor_prod_smooths_cov_matrices.RData")
 
 

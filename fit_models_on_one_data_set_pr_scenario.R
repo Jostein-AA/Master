@@ -14,9 +14,14 @@ n_sim = 100
 E_it = 100
 n_ADM1 <- nrow(first_level_admin_map)
 n_ADM4 <- nrow(second_level_admin_map)
+n_ADMnew <- nrow(new_map)
 
 dataset_id = 3
-dataset_id_2 = 10
+dataset_id_2 = 4
+dataset_id_new = 2
+
+# Set a maximum run-time of 750 sec
+inla.setOption(inla.timeout = 750)
 
 ################################################################################
 # Specify the hyperpriors
@@ -61,9 +66,6 @@ spatial_hyper_proper = list(prec= list(prior = 'pc.prec',
 interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
 
 ################################################################################
-
-
-
 # Specify the precision matrices
 
 ### Specify the RW1 precision matrix
@@ -107,6 +109,18 @@ scaled_besag_prec_second_level <- INLA::inla.scale.model(Besag_prec_second_level
                                                          constr = list(A = matrix(1,1,dim(Besag_prec_second_level)[1]), 
                                                                        e = 0))
 
+### Make precision matrix for Besag on ADMnew
+matrix4inla <- nb2mat(nb_new_level, style="B")
+mydiag = rowSums(matrix4inla)
+matrix4inla <- -matrix4inla
+diag(matrix4inla) <- mydiag
+Besag_prec_new_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+
+### get scaled Besag on ADM4
+scaled_besag_prec_new_level <- INLA::inla.scale.model(Besag_prec_new_level, 
+                                                         constr = list(A = matrix(1,1,dim(Besag_prec_new_level)[1]), 
+                                                                       e = 0))
+
 
 # For interactions
 #Get precision matric for type II interaction by Kronecker product
@@ -115,10 +129,14 @@ typeII_prec_1_first_level <- scaled_RW1_prec %x% diag(nrow(first_level_admin_map
 
 typeII_prec_1_second_level <- scaled_RW1_prec %x% diag(nrow(second_level_admin_map))
 
+typeII_prec_1_new_level <- scaled_RW1_prec %x% diag(nrow(new_map))
+
 ### w. RW2
 typeII_prec_2_first_level <- scaled_RW2_prec %x% diag(nrow(first_level_admin_map))
 
 typeII_prec_2_second_level <- scaled_RW2_prec %x% diag(nrow(second_level_admin_map))
+
+typeII_prec_2_new_level <- scaled_RW2_prec %x% diag(nrow(new_map))
 
 
 #Get precision matric for type III interaction by Kronecker product
@@ -126,20 +144,23 @@ typeIII_prec_first_level <- diag(tT) %x% scaled_besag_prec_first_level
 
 typeIII_prec_second_level <- diag(tT) %x% scaled_besag_prec_second_level
 
+typeIII_prec_new_level <- diag(tT) %x% scaled_besag_prec_new_level
+
 #Get type IV interaction precision matrix
 ### w. RW1
 typeIV_prec_1_first_level <- scaled_RW1_prec %x% scaled_besag_prec_first_level
 typeIV_prec_1_second_level <- scaled_RW1_prec %x% scaled_besag_prec_second_level
+typeIV_prec_1_new_level <- scaled_RW1_prec %x% scaled_besag_prec_new_level
 
 ### w. RW2
 typeIV_prec_2_first_level <- scaled_RW2_prec %x% scaled_besag_prec_first_level
 typeIV_prec_2_second_level <- scaled_RW2_prec %x% scaled_besag_prec_second_level
+typeIV_prec_2_new_level <- scaled_RW2_prec %x% scaled_besag_prec_new_level
 
 
 ################################################################################
 
 # Specify all the constraints and the precision matrices of the interactions
-
 
 #Get sum-to-zero constraints for type II interaction
 ### w. RW1
@@ -150,6 +171,11 @@ typeII_constraints_1_first_level = constraints_maker(type = "II",
 typeII_constraints_1_second_level = constraints_maker(type = "II", 
                                                       n = nrow(second_level_admin_map), 
                                                       t = tT)
+
+typeII_constraints_1_new_level = constraints_maker(type = "II", 
+                                                      n = nrow(new_map), 
+                                                      t = tT)
+
 ### w. RW2
 typeII_constraints_2_first_level = constraints_maker(type = "II", 
                                                      n = nrow(first_level_admin_map), 
@@ -163,6 +189,12 @@ typeII_constraints_2_second_level = constraints_maker(type = "II",
                                                       rw = "RW2",
                                                       prec_matrix = typeII_prec_2_second_level)
 
+typeII_constraints_2_new_level = constraints_maker(type = "II", 
+                                                      n = nrow(new_map), 
+                                                      t = tT,
+                                                      rw = "RW2",
+                                                      prec_matrix = typeII_prec_2_new_level)
+
 
 #Get sum-to-zero constraints for type II interaction
 typeIII_constraints_first_level = constraints_maker(type = "III", 
@@ -173,6 +205,10 @@ typeIII_constraints_second_level = constraints_maker(type = "III",
                                                      n = nrow(second_level_admin_map), 
                                                      t = tT)
 
+typeIII_constraints_new_level = constraints_maker(type = "III", 
+                                                     n = nrow(new_map), 
+                                                     t = tT)
+
 #Get sum-to-zero constraints for type IV interaction
 ### w. RW1
 typeIV_constraints_1_first_level = constraints_maker(type = "IV", 
@@ -181,6 +217,10 @@ typeIV_constraints_1_first_level = constraints_maker(type = "IV",
 
 typeIV_constraints_1_second_level = constraints_maker(type = "IV", 
                                                       n = nrow(second_level_admin_map), 
+                                                      t = tT)
+
+typeIV_constraints_1_new_level = constraints_maker(type = "IV", 
+                                                      n = nrow(new_map), 
                                                       t = tT)
 
 ### w. RW2
@@ -195,6 +235,12 @@ typeIV_constraints_2_second_level = constraints_maker(type = "IV",
                                                       t = tT,
                                                       rw = "RW2",
                                                       prec_matrix = typeIV_prec_2_second_level)
+
+typeIV_constraints_2_new_level = constraints_maker(type = "IV", 
+                                                      n = nrow(new_map), 
+                                                      t = tT,
+                                                      rw = "RW2",
+                                                      prec_matrix = typeIV_prec_2_new_level)
 
 ################################################################################
 # Specify all the formulas
@@ -263,6 +309,38 @@ Improper2_noInt_ADM4_formula <- sampled_counts ~ 1 + f(time_id,
     graph = Besag_prec_second_level,
     hyper = spatial_hyper)
 
+## Specify base-formula on ADMnew
+### w. RW1
+Improper1_noInt_ADMnew_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                       model = 'bym2',
+                                                       scale.model = T, 
+                                                       constr = T, 
+                                                       rankdef = 1,
+                                                       graph = RW1_prec,
+                                                       hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper)
+
+### w. RW2
+Improper2_noInt_ADMnew_formula <- sampled_counts ~ 1 + f(time_id, 
+                                                       model = 'bym2',
+                                                       scale.model = T, 
+                                                       constr = T, 
+                                                       graph = RW2_prec,
+                                                       hyper = temporal_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper)
+
 
 ## Specify all the formulas w. interactions
 
@@ -278,6 +356,12 @@ Improper1_typeI_ADM4_formula <- update(Improper1_noInt_ADM4_formula,
                                               model = "iid", 
                                               hyper = interaction_hyper ))
 
+Improper1_typeI_ADMnew_formula <- update(Improper1_noInt_ADMnew_formula,  
+                                       ~. + f(space.time,
+                                              model = "iid", 
+                                              hyper = interaction_hyper ))
+
+
 ### w. RW2
 Improper2_typeI_ADM1_formula <- update(Improper2_noInt_ADM1_formula,  
                                        ~. + f(space.time,
@@ -285,6 +369,11 @@ Improper2_typeI_ADM1_formula <- update(Improper2_noInt_ADM1_formula,
                                               hyper = interaction_hyper ))
 
 Improper2_typeI_ADM4_formula <- update(Improper2_noInt_ADM4_formula,  
+                                       ~. + f(space.time,
+                                              model = "iid", 
+                                              hyper = interaction_hyper ))
+
+Improper2_typeI_ADMnew_formula <- update(Improper2_noInt_ADMnew_formula,  
                                        ~. + f(space.time,
                                               model = "iid", 
                                               hyper = interaction_hyper ))
@@ -308,6 +397,14 @@ Improper1_typeII_ADM4_formula <- update(Improper1_noInt_ADM4_formula,
                                                rankdef = nrow(second_level_admin_map), 
                                                hyper = interaction_hyper))
 
+Improper1_typeII_ADMnew_formula <- update(Improper1_noInt_ADMnew_formula, 
+                                        ~. + f(space.time, 
+                                               model = "generic0", 
+                                               Cmatrix = typeII_prec_1_new_level, 
+                                               extraconstr = typeII_constraints_1_new_level, 
+                                               rankdef = nrow(new_map), 
+                                               hyper = interaction_hyper))
+
 ### w. RW2
 Improper2_typeII_ADM1_formula <- update(Improper2_noInt_ADM1_formula, 
                                         ~. + f(space.time, 
@@ -321,6 +418,13 @@ Improper2_typeII_ADM4_formula <- update(Improper2_noInt_ADM4_formula,
                                                model = "generic0", 
                                                Cmatrix = typeII_prec_2_second_level, 
                                                extraconstr = typeII_constraints_2_second_level, 
+                                               hyper = interaction_hyper))
+
+Improper2_typeII_ADMnew_formula <- update(Improper2_noInt_ADMnew_formula, 
+                                        ~. + f(space.time, 
+                                               model = "generic0", 
+                                               Cmatrix = typeII_prec_2_new_level, 
+                                               extraconstr = typeII_constraints_2_new_level, 
                                                hyper = interaction_hyper))
 
 # Get typeIII formula
@@ -341,6 +445,14 @@ Improper1_typeIII_ADM4_formula <- update(Improper1_noInt_ADM4_formula,
                                                 rankdef = tT, 
                                                 hyper = interaction_hyper))
 
+Improper1_typeIII_ADMnew_formula <- update(Improper1_noInt_ADMnew_formula, 
+                                         ~. + f(space.time, 
+                                                model = "generic0", 
+                                                Cmatrix = typeIII_prec_new_level, 
+                                                extraconstr = typeIII_constraints_new_level, 
+                                                rankdef = tT, 
+                                                hyper = interaction_hyper))
+
 ### w. RW2
 Improper2_typeIII_ADM1_formula <- update(Improper2_noInt_ADM1_formula, 
                                          ~. + f(space.time, 
@@ -355,6 +467,14 @@ Improper2_typeIII_ADM4_formula <- update(Improper2_noInt_ADM4_formula,
                                                 model = "generic0", 
                                                 Cmatrix = typeIII_prec_second_level, 
                                                 extraconstr = typeIII_constraints_second_level, 
+                                                rankdef = tT, 
+                                                hyper = interaction_hyper))
+
+Improper2_typeIII_ADMnew_formula <- update(Improper2_noInt_ADMnew_formula, 
+                                         ~. + f(space.time, 
+                                                model = "generic0", 
+                                                Cmatrix = typeIII_prec_new_level, 
+                                                extraconstr = typeIII_constraints_new_level, 
                                                 rankdef = tT, 
                                                 hyper = interaction_hyper))
 
@@ -377,6 +497,14 @@ Improper1_typeIV_ADM4_formula <- update(Improper1_noInt_ADM4_formula,
                                                rankdef = (nrow(second_level_admin_map) + tT - 1), 
                                                hyper = interaction_hyper))
 
+Improper1_typeIV_ADMnew_formula <- update(Improper1_noInt_ADMnew_formula,
+                                        ~. + f(space.time, 
+                                               model = "generic0",
+                                               Cmatrix = typeIV_prec_1_new_level,
+                                               extraconstr = typeIV_constraints_1_new_level,
+                                               rankdef = (nrow(new_map) + tT - 1), 
+                                               hyper = interaction_hyper))
+
 ### w. RW2
 Improper2_typeIV_ADM1_formula <- update(Improper2_noInt_ADM1_formula,
                                         ~. + f(space.time, 
@@ -390,6 +518,13 @@ Improper2_typeIV_ADM4_formula <- update(Improper2_noInt_ADM4_formula,
                                                model = "generic0",
                                                Cmatrix = typeIV_prec_2_second_level,
                                                extraconstr = typeIV_constraints_2_second_level,
+                                               hyper = interaction_hyper))
+
+Improper2_typeIV_ADMnew_formula <- update(Improper2_noInt_ADMnew_formula,
+                                        ~. + f(space.time, 
+                                               model = "generic0",
+                                               Cmatrix = typeIV_prec_2_new_level,
+                                               extraconstr = typeIV_constraints_2_new_level,
                                                hyper = interaction_hyper))
 
 
@@ -412,6 +547,15 @@ proper1_noInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper)
 
+proper1_noInt_ADMnew_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar1",
+    hyper = ar1_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper)
+
 proper1_onlyInt_ADM1_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
@@ -425,6 +569,15 @@ proper1_onlyInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_second_level,
+    hyper = spatial_hyper_proper,
+    group = time_id, 
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1))
+
+proper1_onlyInt_ADMnew_formula <- sampled_counts ~ 1 + time_id + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar1",
@@ -462,6 +615,22 @@ proper1_full_ADM4_formula <- sampled_counts ~ 1 + time_id +
     control.group = list(model = "ar1",
                          hyper = group_hyper_ar1))
 
+proper1_full_ADMnew_formula <- sampled_counts ~ 1 + time_id + 
+  f(time_id.copy,
+    model = "ar1",
+    hyper = ar1_hyper) +
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper) + 
+  f(area_id.copy, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper,
+    group = time_id, 
+    control.group = list(model = "ar1",
+                         hyper = group_hyper_ar1))
+
 proper1_iid_ADM1_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar1",
@@ -481,6 +650,18 @@ proper1_iid_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_second_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
+
+proper1_iid_ADMnew_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar1",
+    hyper = ar1_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
     hyper = spatial_hyper_proper) + 
   f(space.time,
     model = "iid", 
@@ -507,6 +688,16 @@ proper2_noInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
     graph = Besag_prec_second_level,
     hyper = spatial_hyper_proper)
 
+proper2_noInt_ADMnew_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar",
+    order = 2,
+    hyper = ar2_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper)
+
 proper2_onlyInt_ADM1_formula <- sampled_counts ~ 1 + time_id + 
   f(area_id, 
     model = "besagproper2",
@@ -521,6 +712,16 @@ proper2_onlyInt_ADM4_formula <- sampled_counts ~ 1 + time_id +
   f(area_id, 
     model = "besagproper2",
     graph = Besag_prec_second_level,
+    hyper = spatial_hyper_proper,
+    group = time_id, 
+    control.group = list(model = "ar", 
+                         order = 2,
+                         hyper = group_hyper_ar2))
+
+proper2_onlyInt_ADMnew_formula <- sampled_counts ~ 1 + time_id + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
     hyper = spatial_hyper_proper,
     group = time_id, 
     control.group = list(model = "ar", 
@@ -564,6 +765,24 @@ proper2_full_ADM4_formula <- sampled_counts ~ 1 + time_id +
                          order = 2,
                          hyper = group_hyper_ar2))
 
+proper2_full_ADMnew_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar",
+    order = 2,
+    hyper = ar2_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper) + 
+  f(area_id.copy, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper,
+    group = time_id, 
+    control.group = list(model = "ar", 
+                         order = 2,
+                         hyper = group_hyper_ar2))
+
 proper2_iid_ADM1_formula <- sampled_counts ~ 1 + time_id +
   f(time_id.copy,
     model = "ar",
@@ -590,7 +809,18 @@ proper2_iid_ADM4_formula <- sampled_counts ~ 1 + time_id +
     model = "iid", 
     hyper = interaction_hyper )
 
-
+proper2_iid_ADMnew_formula <- sampled_counts ~ 1 + time_id +
+  f(time_id.copy,
+    model = "ar",
+    order = 2,
+    hyper = ar2_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper_proper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
 
 
 ################################################################################
@@ -612,95 +842,76 @@ for(scenario_name in scenario_names_ADM1){
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
   
   # Fit each model to the data set
-  time_ = Sys.time()
   Improper1_noInt_ADM1 <- inla(Improper1_noInt_ADM1_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_noInt_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_noInt_ADM1 <- inla(Improper2_noInt_ADM1_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_noInt_ADM1 <- Sys.time() - time_ 
-  
-  time_ = Sys.time()  
+   
   Improper1_typeI_ADM1 <- inla(Improper1_typeI_ADM1_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeI_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeI_ADM1 <- inla(Improper2_typeI_ADM1_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeI_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper1_typeII_ADM1 <- inla(Improper1_typeII_ADM1_formula, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeII_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeII_ADM1 <- inla(Improper2_typeII_ADM1_formula, 
                               data = lambda, 
                               family = "poisson",
                               E = E_it, #E_it
                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeII_ADM1 <- Sys.time() - time_ 
-  
-  time_ = Sys.time()  
+   
   Improper1_typeIII_ADM1 <- inla(Improper1_typeIII_ADM1_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeIII_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeIII_ADM1 <- inla(Improper2_typeIII_ADM1_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeIII_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper1_typeIV_ADM1 <- inla(Improper1_typeIV_ADM1_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeIV_ADM1 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeIV_ADM1 <- inla(Improper2_typeIV_ADM1_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeIV_ADM1 <- Sys.time() - time_ 
+   
   
   print(paste("Improper models done for", scenario_name))
   
@@ -715,95 +926,49 @@ for(scenario_name in scenario_names_ADM1){
   
   print("reordering of lambda done")
   
-  time_ = Sys.time()
   proper1_noInt_ADM1 <- inla(proper1_noInt_ADM1_formula, 
                          data = lambda, 
                          family = "poisson",
                          E = E_it, #E_it
                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_noInt_ADM1 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper2_noInt_ADM1 <- inla(proper2_noInt_ADM1_formula, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_noInt_ADM1 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper1_onlyInt_ADM1 <- inla(proper1_onlyInt_ADM1_formula, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_onlyInt_ADM1 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper2_onlyInt_ADM1 <- inla(proper2_onlyInt_ADM1_formula, 
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_onlyInt_ADM1 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper1_full_ADM1 <- inla(proper1_full_ADM1_formula, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_full_ADM1 <- Sys.time() - time_
-  
-  time_ = Sys.time()
+ 
   proper2_full_ADM1 <- inla(proper2_full_ADM1_formula, 
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_full_ADM1 <- Sys.time() - time_ 
   
-  # Get timecomplexity into dataframe to save
-  time_complexity_ADM1 <- data.frame(model_name = c("Improper1_noInt",
-                                                    "Improper1_typeI",
-                                                    "Improper1_typeII",
-                                                    "Improper1_typeIII",
-                                                    "Improper1_typeIV",
-                                                    "Improper2_noInt",
-                                                    "Improper2_typeI",
-                                                    "Improper2_typeII",
-                                                    "Improper2_typeIII",
-                                                    "Improper2_typeIV",
-                                                    "proper1_noInt",
-                                                    "proper1_onlyInt",
-                                                    "proper1_full",
-                                                    "proper2_noInt",
-                                                    "proper2_onlyInt",
-                                                    "proper2_full"),
-                                    time = c(time_Improper1_noInt_ADM1,
-                                             time_Improper2_noInt_ADM1,
-                                             time_Improper1_typeI_ADM1,
-                                             time_Improper2_typeI_ADM1,
-                                             time_Improper1_typeII_ADM1,
-                                             time_Improper2_typeII_ADM1,
-                                             time_Improper1_typeIII_ADM1,
-                                             time_Improper2_typeIII_ADM1,
-                                             time_Improper1_typeIV_ADM1,
-                                             time_Improper2_typeIV_ADM1,
-                                             time_proper1_noInt_ADM1,
-                                             time_proper2_noInt_ADM1,
-                                             time_proper1_onlyInt_ADM1,
-                                             time_proper2_onlyInt_ADM1,
-                                             time_proper1_full_ADM1,
-                                             time_proper2_full_ADM1))
-  
-  
+   
   # Save the INLA-objects
   save(Improper1_noInt_ADM1,
        Improper2_noInt_ADM1,
@@ -821,7 +986,6 @@ for(scenario_name in scenario_names_ADM1){
        proper2_onlyInt_ADM1,
        proper1_full_ADM1,
        proper2_full_ADM1,
-       time_complexity_ADM1,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
 }
 
@@ -847,95 +1011,77 @@ for(scenario_name in scenario_names_ADM4){
   
   
   # Fit each model to the data set
-  time_ = Sys.time()
+  
   Improper1_noInt_ADM4 <- inla(Improper1_noInt_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_noInt_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_noInt_ADM4 <- inla(Improper2_noInt_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_noInt_ADM4 <- Sys.time() - time_ 
-  
-  time_ = Sys.time()  
+    
   Improper1_typeI_ADM4 <- inla(Improper1_typeI_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeI_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeI_ADM4 <- inla(Improper2_typeI_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeI_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper1_typeII_ADM4 <- inla(Improper1_typeII_ADM4_formula, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeII_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeII_ADM4 <- inla(Improper2_typeII_ADM4_formula, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeII_ADM4 <- Sys.time() - time_ 
-  
-  time_ = Sys.time()  
+   
   Improper1_typeIII_ADM4 <- inla(Improper1_typeIII_ADM4_formula, 
                                  data = lambda, 
                                  family = "poisson",
                                  E = E_it, #E_it
                                  control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                  control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeIII_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeIII_ADM4 <- inla(Improper2_typeIII_ADM4_formula, 
                                  data = lambda, 
                                  family = "poisson",
                                  E = E_it, #E_it
                                  control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                  control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeIII_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper1_typeIV_ADM4 <- inla(Improper1_typeIV_ADM4_formula, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper1_typeIV_ADM4 <- Sys.time() - time_ 
   
-  time_ = Sys.time()
   Improper2_typeIV_ADM4 <- inla(Improper2_typeIV_ADM4_formula, 
                                 data = lambda, 
                                 family = "poisson",
                                 E = E_it, #E_it
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_Improper2_typeIV_ADM4 <- Sys.time() - time_ 
+  
   
   print(paste("Improper models done for", scenario_name))
   
@@ -950,95 +1096,59 @@ for(scenario_name in scenario_names_ADM4){
   
   print("reordering of lambda done")
   
-  time_ = Sys.time()
+  
   proper1_noInt_ADM4 <- inla(proper1_noInt_ADM4_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_noInt_ADM4 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper2_noInt_ADM4 <- inla(proper2_noInt_ADM4_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_noInt_ADM4 <- Sys.time() - time_
   
-  time_ = Sys.time()
   proper1_onlyInt_ADM4 <- inla(proper1_onlyInt_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_onlyInt_ADM4 <- Sys.time() - time_
   
-  time_ = Sys.time()
+  
+  
   proper2_onlyInt_ADM4 <- inla(proper2_onlyInt_ADM4_formula, 
                                data = lambda, 
                                family = "poisson",
                                E = E_it, #E_it
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_onlyInt_ADM4 <- Sys.time() - time_
   
-  time_ = Sys.time()
+  
+  
   proper1_full_ADM4 <- inla(proper1_full_ADM4_formula, 
                             data = lambda, 
                             family = "poisson",
                             E = E_it, #E_it
                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper1_full_ADM4 <- Sys.time() - time_
   
-  time_ = Sys.time()
+  
+  
   proper2_full_ADM4 <- inla(proper2_full_ADM4_formula, 
                             data = lambda, 
                             family = "poisson",
                             E = E_it, #E_it
                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  time_proper2_full_ADM4 <- Sys.time() - time_ 
   
   
   
-  # Get timecomplexity into dataframe to save
-  time_complexity_ADM4 <- data.frame(model_name = c("Improper1_noInt",
-                                                   "Improper1_typeI",
-                                                   "Improper1_typeII",
-                                                   "Improper1_typeIII",
-                                                   "Improper1_typeIV",
-                                                   "Improper2_noInt",
-                                                   "Improper2_typeI",
-                                                   "Improper2_typeII",
-                                                   "Improper2_typeIII",
-                                                   "Improper2_typeIV",
-                                                   "proper1_noInt",
-                                                   "proper1_onlyInt",
-                                                   "proper1_full",
-                                                   "proper2_noInt",
-                                                   "proper2_onlyInt",
-                                                   "proper2_full"),
-                                    time = c(time_Improper1_noInt_ADM4,
-                                             time_Improper2_noInt_ADM4,
-                                             time_Improper1_typeI_ADM4,
-                                             time_Improper2_typeI_ADM4,
-                                             time_Improper1_typeII_ADM4,
-                                             time_Improper2_typeII_ADM4,
-                                             time_Improper1_typeIII_ADM4,
-                                             time_Improper2_typeIII_ADM4,
-                                             time_Improper1_typeIV_ADM4,
-                                             time_Improper2_typeIV_ADM4,
-                                             time_proper1_noInt_ADM4,
-                                             time_proper2_noInt_ADM4,
-                                             time_proper1_onlyInt_ADM4,
-                                             time_proper2_onlyInt_ADM4,
-                                             time_proper1_full_ADM4,
-                                             time_proper2_full_ADM4))
+  
+  
   
   
   # Save the INLA-objects
@@ -1058,7 +1168,180 @@ for(scenario_name in scenario_names_ADM4){
        proper2_onlyInt_ADM4,
        #proper1_full_ADM4,
        #proper2_full_ADM4,
-       time_complexity_ADM4,
+       file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
+  
+}
+
+#####
+# Fit the models on the new-level map
+scenario_names_ADMnew = c("sc13", "sc14", "sc15", "sc16", "sc17", "sc18")
+
+
+for(scenario_name in scenario_names_ADMnew){
+  print(paste("---", scenario_name, "---"))
+  #Load in a singular data set
+  load(paste('./Simulated_data/', scenario_name, '/', 
+             scenario_name, '_data.RData',sep = ""))
+  
+  lambda <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
+  lambda$sampled_counts = lambda.df$sampled_counts[, dataset_id_new] #Just a chosen data set
+  
+  # Set the last three years to unkown
+  lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
+  
+  
+  # Fit each model to the data set
+  Improper1_noInt_ADMnew <- inla(Improper1_noInt_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper2_noInt_ADMnew <- inla(Improper2_noInt_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper1_typeI_ADMnew <- inla(Improper1_typeI_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper2_typeI_ADMnew <- inla(Improper2_typeI_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper1_typeII_ADMnew <- inla(Improper1_typeII_ADMnew_formula, 
+                                data = lambda, 
+                                family = "poisson",
+                                E = E_it, #E_it
+                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper2_typeII_ADMnew <- inla(Improper2_typeII_ADMnew_formula, 
+                                data = lambda, 
+                                family = "poisson",
+                                E = E_it, #E_it
+                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper1_typeIII_ADMnew <- inla(Improper1_typeIII_ADMnew_formula, 
+                                 data = lambda, 
+                                 family = "poisson",
+                                 E = E_it, #E_it
+                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper2_typeIII_ADMnew <- inla(Improper2_typeIII_ADMnew_formula, 
+                                 data = lambda, 
+                                 family = "poisson",
+                                 E = E_it, #E_it
+                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper1_typeIV_ADMnew <- inla(Improper1_typeIV_ADMnew_formula, 
+                                data = lambda, 
+                                family = "poisson",
+                                E = E_it, #E_it
+                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  Improper2_typeIV_ADMnew <- inla(Improper2_typeIV_ADMnew_formula, 
+                                data = lambda, 
+                                family = "poisson",
+                                E = E_it, #E_it
+                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  print(paste("Improper models done for", scenario_name))
+  
+  # Resort the data for the proper models
+  ## Reorder due to change in space.time interaction
+  lambda <- lambda[order(lambda$area_id, decreasing = F), ]
+  rownames(lambda) <- 1:nrow(lambda)
+  
+  ## Add copies of area and time ids, INLA requires unique random effects
+  lambda$area_id.copy <- lambda$area_id
+  lambda$time_id.copy <- lambda$time_id
+  
+  print("reordering of lambda done")
+  
+  
+  proper1_noInt_ADMnew <- inla(proper1_noInt_ADMnew_formula, 
+                             data = lambda, 
+                             family = "poisson",
+                             E = E_it, #E_it
+                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper2_noInt_ADMnew <- inla(proper2_noInt_ADMnew_formula, 
+                             data = lambda, 
+                             family = "poisson",
+                             E = E_it, #E_it
+                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  proper1_onlyInt_ADMnew <- inla(proper1_onlyInt_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  
+  proper2_onlyInt_ADMnew <- inla(proper2_onlyInt_ADMnew_formula, 
+                               data = lambda, 
+                               family = "poisson",
+                               E = E_it, #E_it
+                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  
+  proper1_full_ADMnew <- inla(proper1_full_ADMnew_formula, 
+                            data = lambda, 
+                            family = "poisson",
+                            E = E_it, #E_it
+                            control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                            control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  
+  proper2_full_ADMnew <- inla(proper2_full_ADMnew_formula, 
+                            data = lambda, 
+                            family = "poisson",
+                            E = E_it, #E_it
+                            control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                            control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  
+  # Save the INLA-objects
+  save(Improper1_noInt_ADMnew,
+       Improper2_noInt_ADMnew,
+       Improper1_typeI_ADMnew,
+       Improper2_typeI_ADMnew,
+       Improper1_typeII_ADMnew,
+       Improper2_typeII_ADMnew,
+       Improper1_typeIII_ADMnew,
+       Improper2_typeIII_ADMnew,
+       Improper1_typeIV_ADMnew,
+       Improper2_typeIV_ADMnew,
+       proper1_noInt_ADMnew,
+       proper2_noInt_ADMnew,
+       proper1_onlyInt_ADMnew,
+       proper2_onlyInt_ADMnew,
+       proper1_full_ADMnew,
+       proper2_full_ADMnew,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
   
 }
