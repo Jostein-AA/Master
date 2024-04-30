@@ -66,7 +66,7 @@ typeV_prior_ADMnew$response = lambda_$sampled_counts
 makemyprior_inla_obj <- inference_inla(#formula = typeV_formula,
                                        typeV_prior_ADMnew, 
                                        #data = lambda_, 
-                                       verbose = T,
+                                       #verbose = T,
                                        E = lambda_$E_it, 
                                        control.predictor = list(compute = TRUE,
                                                                 link = 1),       #For predictions
@@ -74,8 +74,10 @@ makemyprior_inla_obj <- inference_inla(#formula = typeV_formula,
                                                               return.marginals.predictor=TRUE))
 
 
+#Lag prior for kun tid, kun for rom, kun for rom-tid
 
 
+evaL_joint_prior
 
 #plot(makemyprior_inla_obj$inla)
 #makemyprior_inla_obj$inla$marginals.fitted.values

@@ -1476,22 +1476,22 @@ model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
                                                   "proper1_noInt",
                                                   "proper1_onlyInt",
                                                   "proper1_full",
-                                                  "proper1_iid",
+                                                  #"proper1_iid",
                                                   "proper2_noInt",
                                                   "proper2_onlyInt",
-                                                  "proper2_full",
-                                                  "proper2_iid"), 6),
-                                    model_choice = c(rep(1, 18),rep(2, 18),
-                                                     rep(3, 18),rep(4, 18),
-                                                     rep(5, 18),rep(6, 18)),
-                                    value = 1:(6 * 18))
+                                                  "proper2_full" #, "proper2_iid"
+                                                  ), 6),
+                                    model_choice = c(rep(1, 16),rep(2, 16),
+                                                     rep(3, 16),rep(4, 16),
+                                                     rep(5, 16),rep(6, 16)),
+                                    value = 1:(6 * 16))
 
 for(i in 1:length(scenario_names_new)){
   
   scenario_name = scenario_names_new[i]
   print(scenario_name)
   
-  for(model_name in model_names){
+  for(model_name in unique(model_choice_rates.df$Model)){
     #Load in the model_choice data
     load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
                sep = ""))

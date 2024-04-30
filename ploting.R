@@ -9,6 +9,7 @@ library("geofacet")
 library(ggh4x)
 library(ggridges)
 library(latex2exp)
+library(geoR)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
@@ -155,6 +156,43 @@ ggarrange(plt_first_level, NULL, plt_second_level,
 
 
 
+plt1 <- ggplot() + 
+  geom_sf(data = first_level_admin_map,
+          aes(),
+          alpha = 0.05,
+          color = "black") +
+  theme(plot.title = element_text(size = 15,  hjust = 0.5),
+        axis.title.x = element_blank(), #Remove axis and background grid
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank(),
+        plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+        legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        panel.spacing = unit(1, 'lines')) +
+  guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right"))
+
+plt2 <- ggplot() + 
+  geom_sf(data = second_level_admin_map,
+          aes(),
+          alpha = 0.05,
+          color = "black") +
+  theme(plot.title = element_text(size = 15,  hjust = 0.5),
+        axis.title.x = element_blank(), #Remove axis and background grid
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank(),
+        plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+        legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        panel.spacing = unit(1, 'lines')) +
+  guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right"))
+
+# For the presentation save as maps_for_presentation 6 by 3
+ggarrange(plt1, plt2, ncol = 2)
+
+
+
 
 plt_polygon_grid <- ggplot(data = polygon_grid2) + 
   geom_sf(aes(), 
@@ -245,6 +283,162 @@ ggarrange(plt1, plt3, plt5,
           ncol = 3, nrow = 4,
           common.legend = T, 
           legend = "top")
+
+
+# For presentation
+temporal_pattern.df <- data.frame(year = 1:13,
+                                  const = rep(exp(log(0.1)), 13) * 100,
+                                  lin = exp(log(0.1) + 0.014 * 1:13) * 100,
+                                  cp = c(exp(log(0.1) + 0.02 * 1:7) * 100, 
+                                         exp(log(0.1) + (0.02 * 7) - 0.015 * (8-7):(13-7)) * 100))
+plt1 <- ggplot(data = temporal_pattern.df,
+       aes(x = year, y = const)) + 
+          geom_line() + 
+          ylim(9, 12.5) + 
+          ylab("Rate per 100") + 
+  theme_bw() + 
+  theme(axis.title=element_text(size=15),
+        strip.text.x = element_text(size = 9))
+
+plt2 <- ggplot(data = temporal_pattern.df,
+       aes(x = year, y = lin)) + 
+        geom_line()+ 
+        ylim(9, 12.5) + 
+        ylab(NULL) + 
+  theme_bw() + 
+  theme(axis.title=element_text(size=15),
+        strip.text.x = element_text(size = 9))
+
+plt3 <- ggplot(data = temporal_pattern.df,
+       aes(x = year, y = cp)) + 
+        geom_line() + 
+        ylim(9, 12.5) + 
+        ylab(NULL) + 
+  theme_bw() + 
+  theme(axis.title=element_text(size=15),
+        strip.text.x = element_text(size = 9))
+
+# Save as temporal_trends_presentation 9 by 3
+plt <- ggarrange(plt1, plt2, plt3, ncol = 3)
+plt
+
+### Get plots of spatial range...
+
+# Extract two risk-surfaces for single time-point
+
+load("Data/Simulated_risk_surfaces/sc2_risk_surfaces.RData")
+risk_surface.list_sc2_t1 <- risk_surface.list[risk_surface.list$t == t_axis[1], ]
+risk_surface.list_sc2_t1$values = risk_surface.list[risk_surface.list$t == t_axis[1], ]$values[, 1]
+risk_surface.list_sc2_t1$values = log(risk_surface.list_sc2_t1$values) - log(0.1)
+rm(risk_surface.list)
+
+coords = matrix(0, nrow = nrow(risk_surface.list_sc2_t1), ncol = 2)
+coords[, 1] = risk_surface.list_sc2_t1$x; coords[, 2] = risk_surface.list_sc2_t1$y
+
+risk_surface.list_sc2_t1$coords = coords
+
+load("Data/Simulated_risk_surfaces/sc8_risk_surfaces.RData")
+risk_surface.list_sc8_t1 <- risk_surface.list[risk_surface.list$t == t_axis[1], ]
+risk_surface.list_sc8_t1$values = risk_surface.list[risk_surface.list$t == t_axis[1], ]$values[, 1]
+risk_surface.list_sc8_t1$values = log(risk_surface.list_sc8_t1$values) - log(0.1)
+rm(risk_surface.list)
+
+coords = matrix(0, nrow = nrow(risk_surface.list_sc8_t1), ncol = 2)
+coords[, 1] = risk_surface.list_sc8_t1$x; coords[, 2] = risk_surface.list_sc8_t1$y
+
+risk_surface.list_sc8_t1$coords = coords
+
+# Sample a set of indices for the risk_surfaces
+#indices_to_use <- sample(1:nrow(risk_surface.list_sc8_t1), 1000, replace = F)
+indices_to_usem = 1:nrow(risk_surface.list_sc8_t1)
+
+# Find the distances between the sampled points
+dist_matrix = matrix(0, ncol = length(indices_to_use), nrow = length(indices_to_use))
+for(i in 1:length(indices_to_use)){
+  for(j in 1:length(indices_to_use)){
+    dist_matrix[i, j] = norm(c(risk_surface.list_sc8_t1$coords[i, 1] - risk_surface.list_sc8_t1$coords[j, 1],
+                               risk_surface.list_sc8_t1$coords[i, 2] - risk_surface.list_sc8_t1$coords[j, 2]),
+                             type = "F")
+  }
+}
+
+distances = sort(unique(dist_matrix[1, ]))
+
+
+
+
+#Est. semi-variogram
+# est_semi_var_sc2 <- variog(geodata = risk_surface.list_sc2_t1,
+#                          coords = risk_surface.list_sc2_t1$coords,
+#                          data = risk_surface.list_sc2_t1$values)
+# 
+# est_semi_var_sc8 <- variog(geodata = risk_surface.list_sc8_t1,
+#                            coords = risk_surface.list_sc8_t1$coords,
+#                            data = risk_surface.list_sc8_t1$values)
+# 
+# est_semi_var_df = data.frame(x_axis = c(est_semi_var_sc2$u, est_semi_var_sc8$u),
+#                              y_axis = c(est_semi_var_sc2$v, est_semi_var_sc8$v),
+#                              type = c(rep("short range", length(est_semi_var_sc2$u)),
+#                                       rep("long range", length(est_semi_var_sc8$u)))) 
+# 
+# #Plot semi_var_df
+# ggplot(data = est_semi_var_df, aes(x = x_axis, y = y_axis)) +
+#   geom_line(aes(col = type)) + 
+#   #scale_color_manual(values = c("gray","red", "blue","green")) +
+#   theme_bw() + 
+#   labs(colour = NULL) +
+#   xlab("h") + 
+#   ylab(expression(gamma(h)))
+
+
+ML_sc2_t1 <- likfit(geodata = risk_surface.list_sc2_t1[indices_to_use, ],
+                 coords = risk_surface.list_sc2_t1[indices_to_use, ]$coords,
+                 data = risk_surface.list_sc2_t1[indices_to_use, ]$values,
+                 ini.cov.pars = c(1, 1),
+                 messages = FALSE,
+                 fix.nugget = TRUE)
+
+ML_sc2_t1_est_sigma <- ML_sc2_t1$parameters.summary$values[3]
+ML_sc2_t1_est_range <- ML_sc2_t1$parameters.summary$values[4]
+
+temp_cov_sc2 = cov.spatial(0:100, 
+                         cov.model = 'exponential',#Calculate the covariance based on the distances
+                         cov.pars = c(1, 
+                                      ML_sc2_t1_est_range))
+
+
+ML_sc8_t1 <- likfit(geodata = risk_surface.list_sc8_t1[indices_to_use, ],
+                    coords = risk_surface.list_sc8_t1[indices_to_use, ]$coords,
+                    data = risk_surface.list_sc8_t1[indices_to_use, ]$values,
+                    ini.cov.pars = c(0.1, 1),
+                    messages = TRUE,
+                    fix.nugget = TRUE)
+
+
+ML_sc8_t1_est_sigma <- ML_sc8_t1$parameters.summary$values[3]
+ML_sc8_t1_est_range <- ML_sc8_t1$parameters.summary$values[4]
+
+
+temp_cov_sc8 = cov.spatial(0:100, 
+                           cov.model = 'exponential',#Calculate the covariance based on the distances
+                           cov.pars = c(1, 
+                                        ML_sc8_t1_est_range))
+
+spatial_correlation.df = data.frame(distances = c(0:100, 0:100),
+                                    corrs = c(temp_cov_sc2,
+                                              temp_cov_sc8),
+                                    type = c(rep("Short", length(0:100)),
+                                             rep("Long", length(0:100))))
+
+# For presentation: spatial_range_presentation 3 by 3
+ggplot(data = spatial_correlation.df, aes(distances, corrs)) + 
+  geom_line(aes(col = type)) + 
+  guides(col=guide_legend(title="Range: ", 
+                          label.position = "right")) +
+  theme_bw() + 
+  theme(legend.position="top") +
+  ylab("Correlation") +
+  xlab("Distance")
 
 ################################################################################
 # Create ridgeplots for the interval scores 1, 2, and 3 years ahead for both count and rate
@@ -537,19 +731,19 @@ ridgeplot_mse_is_rates <- function(to_plot.df,
   
   if(one_2_3_or_total == 1 & IS_or_MSE == "IS"){
     ylab = "Model"
-    axis.text.y = element_text(size = 10)
-    title = "1 year ahead"
+    axis.text.y = element_text(size = 15)
+    title = NULL
   } else if(one_2_3_or_total == 2 & IS_or_MSE == "IS"){
     ylab = NULL
     axis.text.y = element_blank()
-    title = "2 years ahead"
+    title = NULL
   } else if(one_2_3_or_total == 3 & IS_or_MSE == "IS"){
     ylab = NULL
     axis.text.y = element_blank()
-    title = "3 years ahead"
+    title = NULL
   } else if(one_2_3_or_total == 1 & IS_or_MSE == "MSE"){
     ylab = "Model"
-    axis.text.y = element_text(size = 10)
+    axis.text.y = element_text(size = 15)
     title = "1 year ahead"
   } else if(one_2_3_or_total == 2 & IS_or_MSE == "MSE"){
     ylab = NULL
@@ -570,10 +764,13 @@ ridgeplot_mse_is_rates <- function(to_plot.df,
               theme_ridges() + 
               theme(legend.position = "none",
                     axis.text.y = axis.text.y,
-                    axis.title.y = element_text(hjust = 0.5, vjust = 0.5),
+                    axis.title.y = element_text(hjust = 0.5, vjust = 0.5,
+                                                size = 15),
                     axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
-                    axis.text.x = element_text(size = 10),
-                    axis.title=element_text(size=13)) + 
+                    axis.text.x = element_text(size = 15),
+                    axis.title = element_text(size=15),
+                    plot.title = element_text(size = 15, hjust = 0.5,
+                                              face = "plain")) + 
               xlab(xlab) + 
               ylab(ylab) +
               xlim(xlim[1], xlim[2]))
@@ -645,37 +842,37 @@ ridgeplot_mse_is_rates_all_years <- function(model_names,
                                  value_to_plot = to_plot_ridge.df$mse_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "MSE",
-                                 xlab = "MSE predicted rate 1 year ahead", xlim_mse)
+                                 xlab = "MSE predicted rate", xlim_mse)
   plt2 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_2_year_ahead,
                                  one_2_3_or_total = 2, 
                                  IS_or_MSE = "MSE",
-                                 xlab = "MSE predicted rate 2 years ahead", xlim_mse)
+                                 xlab = "MSE predicted rate", xlim_mse)
   
   plt3 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_3_year_ahead,
                                  one_2_3_or_total = 3, 
                                  IS_or_MSE = "MSE",
-                                 xlab = "MSE predicted rate 3 years ahead", xlim_mse)
+                                 xlab = "MSE predicted rate", xlim_mse)
   
   plt4 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "IS",
-                                 xlab = "IS predicted rate 1 year ahead", xlim_is)
+                                 xlab = "IS predicted rate", xlim_is)
   
   plt5 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_2_year_ahead,
                                  one_2_3_or_total = 2,
                                  IS_or_MSE = "IS",
-                                 xlab = "IS predicted rate 2 years ahead", xlim_is)
+                                 xlab = "IS predicted rate", xlim_is)
   
   
   plt6 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_3_year_ahead,
                                  one_2_3_or_total = 3,
                                  IS_or_MSE = "IS",
-                                 xlab = "IS predicted rate 3 years ahead", xlim_is)
+                                 xlab = "IS predicted rate", xlim_is)
   
   
   plt <- ggarrange(plt1, plt2, plt3, 
@@ -690,13 +887,13 @@ ridgeplot_mse_is_rates_all_years <- function(model_names,
 
 
 
-
+# Only for master presentation!
 model_names <- c("Improper1_noInt",
                  "Improper1_typeIV",
                  "proper2_onlyInt",
                  "proper2_propInt_Improp_temporal")
 
-# Save as results_for_master_presentation 15 by 15?
+# Save as results_for_master_presentation 12.5 by 7.5?
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
                                  "sc2", xlim_mse = c(0.35, 3.5), 
                                  xlim_is = c(2, 11),
