@@ -8,69 +8,52 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
-n_ADM4 <- nrow(second_level_admin_map)
+n_ADMnew <- nrow(new_map)
 
 ################################################################################
 # Create formulas
 
 ## Specify priors for hyperparameters of proper models
 #---
-### Temporal hyperparameters (prec. of AR2 and AR2's autocorrelation param) w. corresponding priors: penalized constraint 
-ar_hyper = list(prec = list(prior = 'pc.prec', 
-                            param = c(1, 0.01)),
-                pacf1 = list(prior = 'pc.cor1', 
-                             param = c(0.5, 0.5 + 1E-2)),
-                pacf2 = list(prior = 'pc.cor0',
-                             param = c(0.5, 0.5)))
+### Temporal hyperparameters (prec. of AR1 and AR1's mixing param) w. corresponding priors: penalized constraint 
+ar1_hyper = list(prec = list(prior = 'pc.prec', 
+                             param = c(1, 0.01)), 
+                 rho = list(prior = 'pc.cor1', 
+                            param = c(0.5, 0.5 + 1E-2))) #, mean = list(prior = 'normal', param = c(0, 1), fixed = TRUE)) 
 
-RW1_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5)))
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
-                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
 
+### Interaction hyperparameter and prior (Precision of interaction)
+interaction_hyper = list(theta=list(prior="pc.prec", param=c(1,0.01)))
 
-### Group hyper
-group_hyper = list(pacf1 = list(prior = 'pc.cor1', 
-                                param = c(0.5, 0.5 + 1E-2)),
-                   pacf2 = list(prior = 'pc.cor0',
-                                param = c(0.5, 0.5)))
 #---
 
 ## Specify precision matrices
 #---
-### Specify the RW1 precision matrix
-RW1_prec <- INLA:::inla.rw(n = tT, order = 1, 
-                           scale.model = FALSE, sparse = TRUE)
-
-### Make precision matrix for Besag on ADM4
-matrix4inla <- nb2mat(nb_second_level, style="B")
+### Make precision matrix for Besag on ADM1
+matrix4inla <- nb2mat(nb_new_level, style="B")
 mydiag = rowSums(matrix4inla)
 matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
-Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+Besag_prec_new_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 #---
 
 
-#Define a model with intercept, fixed temporal effect and spatiotemporal interaction by ar1 and properbesag
-proper_onlyInt_formula_second_level <- sampled_counts ~ 1 + 
-                                          f(time_id, 
-                                            model = 'bym2',
-                                            scale.model = T, 
-                                            constr = T, 
-                                            rankdef = 1,
-                                            graph = RW1_prec,
-                                            hyper = RW1_hyper) +
-                                          f(area_id, 
-                                            model = "besagproper2",
-                                            graph = Besag_prec_second_level,
-                                            hyper = spatial_hyper,
-                                            group = time_id, 
-                                            control.group = list(model = "ar", 
-                                                                 order = 2,
-                                                                 hyper = group_hyper))
+proper1_iid_woTemporal_trend_ADMnew <- sampled_counts ~ 1 + 
+  f(time_id,
+    model = "ar1",
+    hyper = ar1_hyper) + 
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper) + 
+  f(space.time,
+    model = "iid", 
+    hyper = interaction_hyper )
 
 
 ################################################################################
@@ -85,7 +68,7 @@ tryCatch_inla <- function(data,
       ## Set an upper-time limit for inla before a timeout
       inla.setOption(inla.timeout = 750) # Set upper-time limit to 750 sec (12.5 minutes) 
       
-      tmp_ = inla(proper_onlyInt_formula_second_level, 
+      tmp_ = inla(proper1_iid_woTemporal_trend_ADMnew, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -117,10 +100,10 @@ tryCatch_inla <- function(data,
                                 sep = "")
       
       # Extract the marginals of the values predicted on
-      marginals = sort_proper_fitted(tmp_$marginals.fitted.values, n_ADM4, tT)
+      marginals = sort_proper_fitted(tmp_$marginals.fitted.values, n_ADMnew, tT)
       
       ### Extract only the years of interest
-      marginals = marginals[(n_ADM4 * 10 + 1):(n_ADM4 * 13)]
+      marginals = marginals
       
       #marginals = 
       cpo = tmp_$cpo$cpo
@@ -167,8 +150,8 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC2
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc2"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc13"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -226,8 +209,8 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC4
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc4"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc14"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -281,8 +264,8 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC6
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc6"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc15"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -337,8 +320,8 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC8
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc8"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc16"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -393,8 +376,8 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC10
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc10"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc17"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -449,8 +432,8 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC12
-model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc12"
+model_name = "proper1_iid_woTemporal_trend"
+scenario_name = "sc18"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)

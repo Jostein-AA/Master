@@ -1041,6 +1041,60 @@ model_choice_rates.df[model_choice_rates.df$model_choice == 5 & model_choice_rat
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 6, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rates.df$value == min1, ]
 
+model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_trend",
+                                                       "proper2_propInt_Improp_temporal",
+                                                       "proper2Int_imp1Effects",
+                                                       "Improper1_typeIV_woSpatial_diff_constraints",
+                                                       "proper1_noInt_noFixed"), 6), 
+model_choice = c(rep(1, 5),rep(2, 5),
+                 rep(3, 5),rep(4, 5),
+                 rep(5, 5),rep(6, 5)),
+value = 1:(6 * 5))
+
+
+
+for(i in 1:length(scenario_names_ADM1)){
+  
+  scenario_name = scenario_names_ADM1[i]
+  print(scenario_name)
+  
+  for(model_name in unique(model_choice_counts_alt.df$Model)){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_rates
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    model_choice_counts_alt.df[model_choice_counts_alt.df$Model == model_name & 
+                                 model_choice_counts_alt.df$model_choice == i, ]$value = tmp2_[8]
+    
+  }
+}
+
+#Make caption and label for latex table
+caption = "Total for ADM4 (rates) on alternative proper models"
+label = paste("model-choice-", scenario_name, sep = "")
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(Model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    
+    Heading(name = "Average IS", character.only = F)*Factor(model_choice,  #model_choice_for_counts
+                                                            levelnames = c("const, short", "lin, short", "cp, short",
+                                                                           "const, long", "lin, long", "cp, long"))*
+    Heading()*value*Heading()*identity,
+  data = model_choice_counts_alt.df),
+  caption = caption,
+  label = label
+)
+
 
 
 ################################# 
@@ -1305,16 +1359,18 @@ model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rat
 
 
 ###
-# Look at the proper models that have alternative temporal effects
+# Look at the models that have alternative effects
 model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_trend",
                                                        "proper2_propInt_Improp_temporal",
-                                                       "Improper1_typeIV_woSpatial",
-                                                       "Improper1_typeIV_woSpatial_diff_constraints"), 6),
+                                                       "proper2Int_imp1Effects",
+                                                       "Improper1_typeIV_woSpatial_diff_constraints" #, "Improper1_typeIV_woSpatial_diff_constraints" 
+                                                       ), 6), 
                                          model_choice = c(rep(1, 4),rep(2, 4),
                                                           rep(3, 4),rep(4, 4),
                                                           rep(5, 4),rep(6, 4)),
                                          value = 1:(6 * 4))
 
+scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
 
 for(i in 1:length(scenario_names_ADM4)){
   
@@ -1430,7 +1486,7 @@ latex_tabular <- latexTable(tabular(
 
 
 #Save latex table
-cat(latex_tabular, file =paste("./results/model_choice/table_counts_total_ADM1.tex", sep = ""))
+cat(latex_tabular, file =paste("./results/model_choice/table_counts_total_ADMnew.tex", sep = ""))
 
 ### Scenario 13
 min1 <- min(model_choice_counts.df[model_choice_counts.df$model_choice == 1, ]$value) 
@@ -1476,15 +1532,15 @@ model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
                                                   "proper1_noInt",
                                                   "proper1_onlyInt",
                                                   "proper1_full",
-                                                  #"proper1_iid",
+                                                  "proper1_iid",
                                                   "proper2_noInt",
                                                   "proper2_onlyInt",
-                                                  "proper2_full" #, "proper2_iid"
-                                                  ), 6),
-                                    model_choice = c(rep(1, 16),rep(2, 16),
-                                                     rep(3, 16),rep(4, 16),
-                                                     rep(5, 16),rep(6, 16)),
-                                    value = 1:(6 * 16))
+                                                  "proper2_full",
+                                                  "proper2_iid"), 6),
+                                    model_choice = c(rep(1, 18),rep(2, 18),
+                                                     rep(3, 18),rep(4, 18),
+                                                     rep(5, 18),rep(6, 18)),
+                                    value = 1:(6 * 18))
 
 for(i in 1:length(scenario_names_new)){
   
@@ -1530,7 +1586,7 @@ latex_tabular <- latexTable(tabular(
 
 
 #Save latex table
-cat(latex_tabular, file =paste("./results/model_choice/table_rates_total_ADM1.tex", sep = ""))
+cat(latex_tabular, file =paste("./results/model_choice/table_rates_total_ADMnew.tex", sep = ""))
 
 
 # Find indices of the smallest values for each scenario
@@ -1562,6 +1618,60 @@ model_choice_rates.df[model_choice_rates.df$model_choice == 5 & model_choice_rat
 ### Scenario 12
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 6, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rates.df$value == min1, ]
+
+
+model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_trend",
+                                                       "proper2_propInt_Improp_temporal",
+                                                       "proper2Int_imp1Effects",
+                                                       "Improper1_typeIV_woSpatial_diff_constraints"), 6), 
+                                         model_choice = c(rep(1, 4),rep(2, 4),
+                                                          rep(3, 4),rep(4, 4),
+                                                          rep(5, 4),rep(6, 4)),
+                                         value = 1:(6 * 4))
+
+
+
+for(i in 1:length(scenario_names_new)){
+  
+  scenario_name = scenario_names_new[i]
+  print(scenario_name)
+  
+  for(model_name in unique(model_choice_counts_alt.df$Model)){
+    #Load in the model_choice data
+    load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+               sep = ""))
+    tmp_ <- model_choice_for_rates
+    
+    #Remove potential NAs
+    tmp_ <- na.omit(tmp_)
+    
+    #Calculate the average over each data set
+    tmp2_ <- as.numeric(colMeans(tmp_))
+    
+    model_choice_counts_alt.df[model_choice_counts_alt.df$Model == model_name & 
+                                 model_choice_counts_alt.df$model_choice == i, ]$value = tmp2_[8]
+    
+  }
+}
+
+#Make caption and label for latex table
+caption = "Total for ADM4 (rates) on alternative proper models"
+label = paste("model-choice-", scenario_name, sep = "")
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(Model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    
+    Heading(name = "Average IS", character.only = F)*Factor(model_choice,  #model_choice_for_counts
+                                                            levelnames = c("const, short", "lin, short", "cp, short",
+                                                                           "const, long", "lin, long", "cp, long"))*
+    Heading()*value*Heading()*identity,
+  data = model_choice_counts_alt.df),
+  caption = caption,
+  label = label
+)
 
 
 ################################################################################

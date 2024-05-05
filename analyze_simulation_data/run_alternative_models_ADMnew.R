@@ -1,0 +1,4 @@
+source("analyze_simulation_data/properInt_impEffects_ADMnew.R")
+source("analyze_simulation_data/analyze_Improper1_typeIV_wo_spatial_main_effect_ADMnew.R")
+source("analyze_simulation_data/analyze_Proper1_iid_wo_fixed_effect_ADMnew.R")
+source("analyze_simulation_data/analyze_prop_interaction_w_improp_temporal_ADMnew.R")

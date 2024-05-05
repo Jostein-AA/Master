@@ -24,7 +24,12 @@ ar_hyper = list(prec = list(prior = 'pc.prec',
                              param = c(0.5, 0.5)))
 
 RW1_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5)))
+                 phi = list(prior = 'pc',  param = c(0.5, 0.5)))
+
+
+### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
+spatial_hyper_Imp = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
+                     phi = list(prior = 'pc', param = c(0.5, 0.5)))
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
@@ -50,27 +55,33 @@ mydiag = rowSums(matrix4inla)
 matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
 Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
-
 #---
 
 
 #Define a model with intercept, fixed temporal effect and spatiotemporal interaction by ar1 and properbesag
-proper_onlyInt_formula_second_level <- sampled_counts ~ 1 + 
-                                          f(time_id, 
-                                            model = 'bym2',
-                                            scale.model = T, 
-                                            constr = T, 
-                                            rankdef = 1,
-                                            graph = RW1_prec,
-                                            hyper = RW1_hyper) +
-                                          f(area_id, 
-                                            model = "besagproper2",
-                                            graph = Besag_prec_second_level,
-                                            hyper = spatial_hyper,
-                                            group = time_id, 
-                                            control.group = list(model = "ar", 
-                                                                 order = 2,
-                                                                 hyper = group_hyper))
+proper2Int_imp1Effect <- sampled_counts ~ 1 + 
+  f(time_id, 
+    model = 'bym2',
+    scale.model = T, 
+    constr = T, 
+    rankdef = 1,
+    graph = RW1_prec,
+    hyper = RW1_hyper) + 
+  f(area_id, 
+    model = 'bym2',
+    scale.model = T,
+    constr = T,
+    rankdef = 1,
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper_Imp) + 
+  f(area_id.copy, 
+    model = "besagproper2",
+    graph = Besag_prec_second_level,
+    hyper = spatial_hyper,
+    group = time_id, 
+    control.group = list(model = "ar", 
+                         order = 2,
+                         hyper = group_hyper))
 
 
 ################################################################################
@@ -85,7 +96,7 @@ tryCatch_inla <- function(data,
       ## Set an upper-time limit for inla before a timeout
       inla.setOption(inla.timeout = 750) # Set upper-time limit to 750 sec (12.5 minutes) 
       
-      tmp_ = inla(proper_onlyInt_formula_second_level, 
+      tmp_ = inla(proper2Int_imp1Effect, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -167,7 +178,7 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC2
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc2"
 
 ## Get the tracker-filename
@@ -226,7 +237,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC4
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc4"
 
 ## Get the tracker-filename
@@ -281,7 +292,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC6
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc6"
 
 ## Get the tracker-filename
@@ -337,7 +348,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC8
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc8"
 
 ## Get the tracker-filename
@@ -393,7 +404,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC10
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc10"
 
 ## Get the tracker-filename
@@ -449,7 +460,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC12
-model_name = "proper2_propInt_Improp_temporal"
+model_name = "proper2Int_imp1Effects"
 scenario_name = "sc12"
 
 ## Get the tracker-filename

@@ -122,6 +122,29 @@ find_ul_quants_rate_single_pred <- function(lambda_marginal){
   
 }
 
+width_CI_one_year_one_dataset <- function(lambda_marginals_one_year,
+                                          E_it = 100){
+  
+  
+  ## Find the l and u for each singular instance in a year
+  ul_each_one_year <- lapply(lambda_marginals_one_year, 
+                             FUN = function(x){
+                               return(find_ul_quants_rate_single_pred(x))
+                             })
+  
+  width_each_instance = rep(0, length(lambda_marginals_one_year))
+  
+  ### Calculate IS each area of rate per 100
+  for(i in 1:length(lambda_marginals_one_year)){
+    width_each_instance[i] = (ul_each_one_year[[i]]$u - ul_each_one_year[[i]]$l) * E_it
+  }
+  
+  ## Find the average IS this year
+  avg_width <- mean(width_each_instance)
+  return(avg_width)
+  
+}
+
 
 
 
@@ -212,21 +235,25 @@ timeseries_plt <- function(geofacet_grid,
   # against the true risk
   
   if(nrow(geofacet_grid) == 16){
-    theme <- theme(axis.title=element_text(size=12),
-                   plot.title = element_text(hjust = 0.5, size=12),
-                   strip.text.x = element_text(size = 10),
+    theme <- theme(axis.title=element_text(size=15),
+                   plot.title = element_text(hjust = 0.5, size=15),
+                   strip.text.x = element_text(size = 15),
                    legend.position = c(0.15, 1),
                    legend.justification = c("right", "top"),
                    legend.box.just = "right",
-                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+                   legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"),
+                   legend.text = element_text(size=15),
+                   axis.text=element_text(size=13))
   } else{
-    theme <- theme(axis.title=element_text(size=12),
-                   plot.title = element_text(hjust = 0.5, size=12),
-                   strip.text.x = element_text(size = 10),
+    theme <- theme(axis.title=element_text(size=15),
+                   plot.title = element_text(hjust = 0.5, size=15),
+                   strip.text.x = element_text(size = 15),
                    legend.background = element_rect(linetype = 1,
                                                     linewidth = 1,
                                                     colour = "grey"),
-                   legend.position = "bottom")
+                   legend.position = "bottom",
+                   legend.text = element_text(size=13),
+                   axis.text=element_text(size=13))
   }
   
   plt <- ggplot(data = pred_to_plot, aes(time_id)) + 
@@ -566,14 +593,15 @@ wrapper_plt_predcount_vs_true_count <- function(ADM1_grid,
 plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
                                             time_interval, t_axis,
                                             admin_map,
-                                            polygon_grid2){
+                                            polygon_grid2,
+                                            dataset_id){
   
   ## Load in a specific scenario
   filename = paste(dir, risk_surface_filename, sep = "")
   load(filename)
   col_names <- colnames(risk_surface.list)[colnames(risk_surface.list) != "values"]
   tmp_ = risk_surface.list[, col_names]
-  tmp_$values = risk_surface.list$values[, 1]
+  tmp_$values = risk_surface.list$values[, dataset_id]
   rm(risk_surface.list)
   
   ## get the times
@@ -587,22 +615,19 @@ plt_cont_risk_one_time_interval <- function(dir, risk_surface_filename,
                             polygon_grid2,
                             admin_map,
                             t_axis[t_axis_indices[1]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[1]], 1)))
+                            title = NULL)
     
     plt_2 <- heatmap_points(tmp_,
                             polygon_grid2,
                             admin_map,
                             t_axis[t_axis_indices[2]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[2]], 1)))
+                            title = NULL)
     
     plt_3 <- heatmap_points(tmp_,
                             polygon_grid2,
                             admin_map,
                             t_axis[t_axis_indices[3]],
-                            title = paste("time: ", 
-                                          round(t_axis[t_axis_indices[3]], 1)))
+                            title = NULL)
     
     
     

@@ -8,7 +8,7 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
-n_ADM4 <- nrow(second_level_admin_map)
+n_ADMnew <- nrow(new_map)
 
 ################################################################################
 # Create formulas
@@ -24,7 +24,7 @@ ar_hyper = list(prec = list(prior = 'pc.prec',
                              param = c(0.5, 0.5)))
 
 RW1_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5)))
+                 phi = list(prior = 'pc',  param = c(0.5, 0.5)))
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
@@ -45,32 +45,32 @@ RW1_prec <- INLA:::inla.rw(n = tT, order = 1,
                            scale.model = FALSE, sparse = TRUE)
 
 ### Make precision matrix for Besag on ADM4
-matrix4inla <- nb2mat(nb_second_level, style="B")
+matrix4inla <- nb2mat(nb_new_level, style="B")
 mydiag = rowSums(matrix4inla)
 matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag
-Besag_prec_second_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
+Besag_prec_new_level <- Matrix(matrix4inla, sparse = TRUE) #Make it sparse
 
 #---
 
 
 #Define a model with intercept, fixed temporal effect and spatiotemporal interaction by ar1 and properbesag
-proper_onlyInt_formula_second_level <- sampled_counts ~ 1 + 
-                                          f(time_id, 
-                                            model = 'bym2',
-                                            scale.model = T, 
-                                            constr = T, 
-                                            rankdef = 1,
-                                            graph = RW1_prec,
-                                            hyper = RW1_hyper) +
-                                          f(area_id, 
-                                            model = "besagproper2",
-                                            graph = Besag_prec_second_level,
-                                            hyper = spatial_hyper,
-                                            group = time_id, 
-                                            control.group = list(model = "ar", 
-                                                                 order = 2,
-                                                                 hyper = group_hyper))
+proper_onlyInt_formula_new_level <- sampled_counts ~ 1 + 
+  f(time_id, 
+    model = 'bym2',
+    scale.model = T, 
+    constr = T, 
+    rankdef = 1,
+    graph = RW1_prec,
+    hyper = RW1_hyper) +
+  f(area_id, 
+    model = "besagproper2",
+    graph = Besag_prec_new_level,
+    hyper = spatial_hyper,
+    group = time_id, 
+    control.group = list(model = "ar", 
+                         order = 2,
+                         hyper = group_hyper))
 
 
 ################################################################################
@@ -85,7 +85,7 @@ tryCatch_inla <- function(data,
       ## Set an upper-time limit for inla before a timeout
       inla.setOption(inla.timeout = 750) # Set upper-time limit to 750 sec (12.5 minutes) 
       
-      tmp_ = inla(proper_onlyInt_formula_second_level, 
+      tmp_ = inla(proper_onlyInt_formula_new_level, 
                   data = data, 
                   family = "poisson",
                   E = E_it, #E_it
@@ -117,10 +117,10 @@ tryCatch_inla <- function(data,
                                 sep = "")
       
       # Extract the marginals of the values predicted on
-      marginals = sort_proper_fitted(tmp_$marginals.fitted.values, n_ADM4, tT)
+      marginals = sort_proper_fitted(tmp_$marginals.fitted.values, n_ADMnew, tT)
       
       ### Extract only the years of interest
-      marginals = marginals[(n_ADM4 * 10 + 1):(n_ADM4 * 13)]
+      marginals = marginals
       
       #marginals = 
       cpo = tmp_$cpo$cpo
@@ -168,7 +168,7 @@ tryCatch_inla <- function(data,
 ################################################################################
 # SC2
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc2"
+scenario_name = "sc13"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -227,7 +227,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 ################################################################################
 # SC4
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc4"
+scenario_name = "sc14"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -282,7 +282,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 ################################################################################
 # SC6
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc6"
+scenario_name = "sc15"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -338,7 +338,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 ################################################################################
 # SC8
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc8"
+scenario_name = "sc16"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -394,7 +394,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 ################################################################################
 # SC10
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc10"
+scenario_name = "sc17"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
@@ -450,7 +450,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 ################################################################################
 # SC12
 model_name = "proper2_propInt_Improp_temporal"
-scenario_name = "sc12"
+scenario_name = "sc18"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
