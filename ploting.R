@@ -1037,6 +1037,148 @@ ridgeplot_mse_is_rates_all_years(model_names = model_names,
                                  xlim_is = c(2, 11))
 
 
+################################################################################
+# Plot the width of the CIs for one, two, and three years ahead predictions for
+model_names = c("Improper1_typeIV", "Improper2_typeI",
+                "proper1_full", "proper2_onlyInt")
+
+plt_width_CI_one_scenario <- function(to_plot.df, 
+                                      scenario_name,
+                                      legend.labels,
+                                      title,
+                                      ylab = NULL){
+  ggplot() + ggtitle(title) + 
+    geom_errorbar(data = to_plot.df[to_plot.df$scenario_name == scenario_name, ], 
+                  aes(x = one_two_three_years_ahead,
+                      ymax = 0.5 * values,
+                      ymin = -0.5 * values, 
+                      colour = model_names)) + 
+    theme_bw() + 
+    theme(axis.text = element_text(size = 15),
+          axis.title = element_text(size = 19),
+          legend.title = element_text(size = 19),
+          legend.text = element_text(size = 15)) +
+    xlab("years ahead") + 
+    ylab(ylab) + scale_colour_discrete(name="Model:",
+                                       labels=c(legend.labels[1], legend.labels[2]))
+}
+
+
+width_CIs_one_two_three_years_ahead <- function(imp_model_name,
+                                                prop_model_name,
+                                                legend.labels,
+                                                ADM){
+  
+  if(ADM == "ADM1"){
+    sc_names <- rep(c(rep("sc1", 3), rep("sc3", 3),
+                      rep("sc5", 3), rep("sc7", 3),
+                      rep("sc9", 3), rep("sc11", 3)), 2)
+    title_start = "ADM1"
+  } else if(ADM == "ADM4"){
+    sc_names <- rep(c(rep("sc2", 3), rep("sc4", 3),
+          rep("sc6", 3), rep("sc8", 3),
+          rep("sc10", 3), rep("sc12", 3)), 2)
+    title_start = "ADM4"
+  } else if (ADM == "ADMnew"){
+    sc_names <- rep(c(rep("sc13", 3), rep("sc14", 3),
+                      rep("sc15", 3), rep("sc16", 3),
+                      rep("sc17", 3), rep("sc18", 3)), 2)
+    title_start = "ADM3"
+  }
+  
+  
+  width_CIs_to_plot.df <- data.frame(model_names = c(rep(imp_model_name, 3 * 6),
+                                                     rep(prop_model_name, 3 * 6)),
+                                     one_two_three_years_ahead = rep(c(1, 2, 3), 2 * 6),
+                                     scenario_name = sc_names,
+                                     values = 1:(3 * 2 * 6))
+  
+  for(model_name in unique(width_CIs_to_plot.df$model_names)){
+    for(scenario_name in unique(width_CIs_to_plot.df$scenario_name)){
+      load(paste("results/width_CIs/width_CIs", model_name, "_", scenario_name, ".RData", sep = ""))
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == 1, ]$values = mean(width_CIs$width_CI_1_year_ahead,
+                                                                                                  na.rm = T)
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == 2, ]$values = mean(width_CIs$width_CI_2_year_ahead,
+                                                                                                  na.rm = T)
+      
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == 3, ]$values = mean(width_CIs$width_CI_3_year_ahead,
+                                                                                                  na.rm = T)
+      
+    }
+  }
+  scenario_names <- unique(width_CIs_to_plot.df$scenario_name)
+  
+  plt1 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[1],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"const, short"),
+                                    ylab = "width 95% CI")
+  
+  plt2 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[2],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"lin, short"))
+  
+  plt3 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[3],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"cp, short"))
+  
+  plt4 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[4],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"const, long"),
+                                    ylab = "width 95% CI")
+  
+  plt5 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[5],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"lin, long"))
+  
+  plt6 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[6],
+                                    legend.labels = legend.labels,
+                                    title = paste(title_start,"cp, long"))
+  
+  
+  return(ggarrange(plt1, plt2, plt3,
+                   plt4, plt5, plt6, ncol = 3, nrow = 2,
+                   common.legend = T,
+                   legend = "top"))
+  
+}
+
+
+
+
+### ADM1
+
+# Save as width_CIs_ADM1 10 by 6
+width_CIs_one_two_three_years_ahead("Improper1_typeIV", "proper1_full",
+                                    c("Improper1 typeIV", "proper1 full"),
+                                    ADM = "ADM1")
+
+
+
+### ADM4
+
+# Dataframe to plot
+
+
+# Save as width_CIs_ADM4 10 by 6
+width_CIs_one_two_three_years_ahead("Improper1_typeIV", "proper1_full",
+                                    c("Improper1 typeIV", "proper1 full"))
+
+
+
+### ADMnew
+
+
+
+
 
 ################################################################################
 # Plot the models fitted values over time for regions (for ADM1 plot all regions w. geofacet)
@@ -1409,11 +1551,19 @@ title = "Scenario: const trend, long range (ADM4)"             #TeX(r'(ADM1$_{co
 ### Load in the models for that scenario
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
-# Save as timeseries_sc8 10 by 8.5
+# Save as timeseries_sc8_imp 10 by 6.5
 wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
                        Improper1_typeIV_ADM4, 
                        improper = T,
                        title = paste("Model: Improper1_typeIV", title, sep = "   "))
+
+
+# Save as timeseries_sc8_prop 10 by 6.5
+wrapper_timeseries_plt(ADM4_grid, scenario_name, dataset_id = dataset_id_2,
+                       proper2_onlyInt_ADM4, 
+                       improper = F,
+                       title = paste("Model: proper2_onlyInt", title, sep = "   "))
+
 
 
 ### SC10
@@ -3659,7 +3809,7 @@ plt_fitted_rate_four_years <- function(model,
                   top = text_grob(overall_title, 
                                   color = "black", 
                                   face = "bold", 
-                                  size = 14))
+                                  size = 19))
   
   
   
@@ -3672,7 +3822,8 @@ plt_fitted_rate_sd_four_years <- function(model,
                                        scale_col,
                                        scale,
                                        hardcoded_bins,
-                                       overall_title){
+                                       overall_title,
+                                       which.legend = 1){
   
   #Find the number of areas
   n_ADM = nrow(admin_map)
@@ -3713,16 +3864,29 @@ plt_fitted_rate_sd_four_years <- function(model,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 13")
   
+  
+  if(which.legend == 1){
+    legend = get_legend(plt1)
+  } else if(which.legend == 2){
+    legend = get_legend(plt2)
+  } else if(which.legend == 3){
+    legend = get_legend(plt3)
+  } else if(which.legend == 4){
+    legend = get_legend(plt4)
+  }
+  
+  
   plt <- ggarrange(plt1, plt2, plt3, plt4, 
                    ncol = 4, nrow = 1, 
                    common.legend = T, 
-                   legend = "right")
+                   legend = "right",
+                   legend.grob = legend)
   
   plt <- annotate_figure(plt,
                          top = text_grob(overall_title, 
                                          color = "black", 
                                          face = "bold", 
-                                         size = 14))
+                                         size = 19))
   
   
   
@@ -3737,7 +3901,7 @@ scale = scale_col[seq(3, 30, length.out = 12)]
 # ADM1
 
 
-scenario_name = "sc1"
+scenario_name = "sc9"
 load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 
 best_imp_model <- Improper2_noInt_ADM1
@@ -3755,32 +3919,34 @@ hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd 
 ### Improper
 
 ## Plot the mean rate 
-# Save as sc1_mean_fitted_rate_Imp 8.5 by 3
+# Save as sc9_mean_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = first_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM1$_{const, short}$, fitted rate per 100 of Improper2_noInt for )'))
+                           overall_title = TeX(r'(ADM1$_{lin, long}$: posterior mean rate per 100 of Improper2_noInt for)'))
 
 ## Plot the sd of the rate
-# Save as sc1_sd_fitted_rate_Imp 8.5 by 3
+# Save as sc9_sd_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = first_level_admin_map,
                               scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                              overall_title = TeX(r'(Scenario: ADM1$_{const, short}$, sd of rate per 100 of Improper2_noInt for )'))
+                              overall_title = TeX(r'(ADM1$_{lin, long}$: posterior SD of rate per 100 of Improper2_noInt for)'),
+                              which.legend = 4)
 
 
 
 ### Proper
 
 ## Plot the mean rate
-# Save as sc1_mean_fitted_rate_prop 8.5 by 3
+# Save as sc9_mean_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_four_years(model = proper1_full_ADM1, Improper = F, admin_map = first_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM1$_{const, short}$, fitted rate per 100 of proper1_full for )'))
+                           overall_title = TeX(r'(ADM1$_{lin, long}$: posterior mean rate per 100 of proper1_full for)'))
 
 ## Plot the sd of the rate
-# Save as sc1_sd_fitted_rate_prop 8.5 by 3
+# Save as sc9_sd_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_sd_four_years(model = proper1_full_ADM1, Improper = F, admin_map = first_level_admin_map,
                               scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                              overall_title = TeX(r'(Scenario: ADM1$_{const, short}$, sd of rate per 100 of proper1_full for )'))
+                              overall_title = TeX(r'(ADM1$_{lin, long}$: posterior SD of rate per 100 of proper1_full for)'),
+                              which.legend = 3)
 
 
 
@@ -3814,13 +3980,14 @@ hardcoded_bins_sd_rate = round(seq(min(best_prop_model$summary.fitted.values$sd 
 # Save as sc2_mean_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of Improper1_typeIV for )'))
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior mean rate per 100 of Improper1_typeIV for)'))
 
 ## Plot the sd of the rate
 # Save as sc2_sd_fitted_rate_Imp 8.5 by 3
 plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of Improper1_typeIV for )'))
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior SD of rate per 100 of Improper1_typeIV for)'),
+                           which.legend = 4)
 
 
 
@@ -3830,13 +3997,14 @@ plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = 
 # Save as sc2_mean_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, fitted rate per 100 of proper2_onlyInt for )'))
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior mean rate per 100 of proper2_onlyInt for )'))
 
 ## Plot the sd of the rate
 # Save as sc2_sd_fitted_rate_prop 8.5 by 3
 plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                           overall_title = TeX(r'(Scenario: ADM4$_{const, short}$, sd of rate per 100 of proper2_onlyInt for )'))
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior SD of rate per 100 of proper2_onlyInt for )'),
+                           which.legend = 4)
 
 
 

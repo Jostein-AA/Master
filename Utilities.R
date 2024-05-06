@@ -141,6 +141,7 @@ width_CI_one_year_one_dataset <- function(lambda_marginals_one_year,
   
   ## Find the average IS this year
   avg_width <- mean(width_each_instance)
+  
   return(avg_width)
   
 }
@@ -809,7 +810,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 15, hjust = 0.5),
+      theme(plot.title = element_text(size = 19, hjust = 0.5),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
             axis.ticks = element_blank(),
@@ -817,6 +818,7 @@ heatmap_areas <- function(map_w_values,
             plot.margin =  unit(c(0, 0, 0, 0), "inches"),
             legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            legend.text = element_text(size = 15),
             panel.spacing = unit(1, 'lines')) +
       guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
       binned_scale( #Scaling the color
@@ -830,7 +832,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 15, hjust = 0.5,
+      theme(plot.title = element_text(size = 19, hjust = 0.5,
                                       vjust = -0.1),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
@@ -839,6 +841,7 @@ heatmap_areas <- function(map_w_values,
             plot.margin =  unit(c(0, 0, 0, 0), "inches"),
             legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            legend.text = element_text(size = 15),
             panel.spacing = unit(1, 'lines')) +
       guides(fill=guide_legend(title=NULL,
                                reverse = TRUE, 

@@ -103,7 +103,7 @@ print("Precision matrices made")
 
 ### Load in a singular data set
 # Load in a singular data set
-load("Simulated_data/sc2/sc2_data.RData")
+load("Simulated_data/sc4/sc4_data.RData")
 
 ### Format data for makemyprior
 lambda_ = lambda.df[, c("area_id", "time_id",
@@ -167,29 +167,30 @@ typeV_formula <- sampled_counts ~ 1 + f(time_id_iid,      # Unstructured tempora
 
 
 # Set all to NA to see what is the prior
-lambda_$sampled_counts <- NA
-res_prior <- inla(typeV_formula, 
-                  data = lambda_, 
-                  family = "poisson",
-                  verbose = T,
-                              control.expert = list(jp = inla.jp.define(
-                                prior_func,
-                                prior_data_bym2_time = prior_data_bym2_time,
-                                prior_data_bym2_space = prior_data_bym2_space,
-                                prior_data_interaction = prior_data_interaction,
-                                eval_joint_prior = makemyprior::eval_joint_prior,
-                                hd_prior_joint_lpdf = makemyprior:::hd_prior_joint_lpdf,
-                                calc_jac_logdet = makemyprior:::calc_jac_logdet,
-                                choose_prior_lpdf = makemyprior:::choose_prior_lpdf,
-                                cw_priors_lpdf = makemyprior:::cw_priors_lpdf,
-                                expit = makemyprior:::expit,
-                                get_dirichlet_parameter = makemyprior:::get_dirichlet_parameter,
-                                get_indexes = makemyprior:::get_indexes,
-                                get_indexes2 = makemyprior:::get_indexes2,
-                                hd_dirichlet_prior_lpdf = makemyprior:::hd_dirichlet_prior_lpdf,
-                                hd_pc_prior_lpdf = makemyprior:::hd_pc_prior_lpdf,
-                                eval_spline_lpdf = makemyprior:::eval_spline_lpdf
-                              )))
+#lambda_$sampled_counts <- NA
+#res_prior <- inla(typeV_formula, 
+#                  data = lambda_, 
+#                  family = "poisson",
+#                  verbose = T,
+#                  control.fixed= list(prec.intercept = 1),
+#                  control.expert = list(jp = inla.jp.define(
+#                    prior_func,
+#                    prior_data_bym2_time = prior_data_bym2_time,
+#                    prior_data_bym2_space = prior_data_bym2_space,
+#                    prior_data_interaction = prior_data_interaction,
+#                    eval_joint_prior = makemyprior::eval_joint_prior,
+#                    hd_prior_joint_lpdf = makemyprior:::hd_prior_joint_lpdf,
+#                    calc_jac_logdet = makemyprior:::calc_jac_logdet,
+#                    choose_prior_lpdf = makemyprior:::choose_prior_lpdf,
+#                    cw_priors_lpdf = makemyprior:::cw_priors_lpdf,
+#                    expit = makemyprior:::expit,
+#                    get_dirichlet_parameter = makemyprior:::get_dirichlet_parameter,
+#                    get_indexes = makemyprior:::get_indexes,
+#                    get_indexes2 = makemyprior:::get_indexes2,
+#                    hd_dirichlet_prior_lpdf = makemyprior:::hd_dirichlet_prior_lpdf,
+#                    hd_pc_prior_lpdf = makemyprior:::hd_pc_prior_lpdf,
+#                    eval_spline_lpdf = makemyprior:::eval_spline_lpdf
+#                  )))
 
 #samps <- inla.hyperpar.sample(n = 1000, res_prior) # husk at dette naa blir paa presisjons-skala, du maa regne om til
 # varianser og vekter selv!! siden vi har samples kan du transformere direkte og saa plotte sammen med prior fra makemyprior
@@ -205,6 +206,11 @@ res <- inla(typeV_formula,
             verbose = T,
             family = "poisson",
             E = lambda_$E_it,
+            control.predictor = list(compute = TRUE,
+                                     link = 1),       #For predictions
+            control.compute = list(config = TRUE, # To see constraints later
+                                   cpo = T,       # For model selection
+                                   return.marginals.predictor=TRUE),
            control.expert = list(jp = inla.jp.define(
              prior_func,
              prior_data_bym2_time = prior_data_bym2_time,
@@ -224,9 +230,9 @@ res <- inla(typeV_formula,
              eval_spline_lpdf = makemyprior:::eval_spline_lpdf
            )))
 
-plot(res)
+#plot(res)
 
-save(res_prior, res,
+save(res,
      file = "./typeV/one_dataset_fitted_typeV.RData")
 
 

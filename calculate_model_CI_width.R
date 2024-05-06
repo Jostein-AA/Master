@@ -5,8 +5,6 @@ rm(list = ls())
 source("libraries.R")
 source("Utilities.R")
 
-library(latex2exp)
-library(tables)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
@@ -117,7 +115,7 @@ calc_width_CI_one_scenario_ADM1 <- function(model_name,
       one_year_margs <- marginals[((year - 1) * n_ADM1 + 1):(year * n_ADM1)]
       
       ## MSE for count in year ahead (1, 2, or 3 years ahead)
-      width_CIs[i, year - years_pred_on[1] + 1] =  avg_width(one_year_margs, E_it)
+      width_CIs[i, year - years_pred_on[1] + 1] =  width_CI_one_year_one_dataset(one_year_margs, E_it)
       
     }
     
@@ -200,7 +198,7 @@ calc_width_CI_one_scenario_ADM4 <- function(model_name,
       one_year_margs <- marginals[((year - years_pred_on[1]) * n_ADM4 + 1):((year - years_pred_on[1] + 1) * n_ADM4)]
       
       ## MSE for count in year ahead (1, 2, or 3 years ahead)
-      width_CIs[i, year - years_pred_on[1] + 1] =  avg_width(one_year_margs, E_it)
+      width_CIs[i, year - years_pred_on[1] + 1] =  width_CI_one_year_one_dataset(one_year_margs, E_it)
       
     }
     
@@ -286,7 +284,7 @@ calc_width_CI_one_scenario_new <- function(model_name,
       one_year_margs <- marginals[((year - years_pred_on[1]) * nrow(new_map) + 1):((year - years_pred_on[1] + 1) * nrow(new_map))]
       
       ## MSE for count in year ahead (1, 2, or 3 years ahead)
-      width_CIs[i, year - years_pred_on[1] + 1] =  avg_width(one_year_margs, E_it)
+      width_CIs[i, year - years_pred_on[1] + 1] =  width_CI_one_year_one_dataset(one_year_margs, E_it)
       
     }
     

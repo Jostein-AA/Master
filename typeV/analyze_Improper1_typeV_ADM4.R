@@ -31,6 +31,8 @@ source("Utilities.R")
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
 
+n_ADM4 <- nrow(second_level_admin_map)
+
 ################################################################################
 ## Specify precision matrices
 #---
@@ -114,6 +116,36 @@ prior_func <- function(logprec){
  )
 }
 
+typeV_formula <- sampled_counts ~ 1 + f(time_id_iid,      # Unstructured temporal effect
+                                        model = "iid") + 
+  f(time_id_struct,   # Structured temporal effect
+    model = "besag", 
+    graph = RW1_prec_path,
+    scale.model = TRUE,
+    constr = T) + 
+  f(area_id_iid,      # Unstructured spatial effect
+    model = "iid") + 
+  f(area_id_struct,   # Structured spatial effect
+    model = "besag",
+    graph = Besag_prec_second_level_path,
+    scale.model = T,
+    constr = T) + 
+  f(space.time_I,     # Unstructured space-time interaction
+    model = "iid") + 
+  f(space.time_II,    # Structured time interacting w. iid space
+    model = "generic0",
+    Cmatrix = typeII_prec_second_level,
+    extraconstr = typeII_constraints_second_level,
+    rankdef = nrow(second_level_admin_map)) +
+  f(space.time_III,   # iid time interacting w. structured space
+    model = "generic0",
+    Cmatrix = typeIII_prec_second_level,
+    extraconstr = typeIII_constraints_second_level,
+    rankdef = tT) +
+  f(space.time_IV,    # Structured time interacting w. structured space
+    model = "generic0",
+    Cmatrix = typeIV_prec_second_level,
+    extraconstr = typeIV_constraints_second_level)
 
 
 
@@ -128,16 +160,34 @@ tryCatch_inla <- function(data,
     {
       inla.setOption(inla.timeout = 1500) # Set upper-time limit to 1500 sec (25 minutes) 
       
-      tmp_ = inla(, 
-                  data = data, 
+      tmp_ = inla(typeV_formula, 
+                  data = data,
                   family = "poisson",
-                  E = E_it, #E_it
+                  E = E_it,
+                  verbose = T,
                   control.predictor = list(compute = TRUE,
                                            link = 1),       #For predictions
-                  #control.family = list(control.link = list(model = "log")),
                   control.compute = list(config = TRUE, # To see constraints later
                                          cpo = T,       # For model selection
-                                         return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+                                         return.marginals.predictor=TRUE),
+                  control.expert = list(jp = inla.jp.define(
+                    prior_func,
+                    prior_data_bym2_time = prior_data_bym2_time,
+                    prior_data_bym2_space = prior_data_bym2_space,
+                    prior_data_interaction = prior_data_interaction,
+                    eval_joint_prior = makemyprior::eval_joint_prior,
+                    hd_prior_joint_lpdf = makemyprior:::hd_prior_joint_lpdf,
+                    calc_jac_logdet = makemyprior:::calc_jac_logdet,
+                    choose_prior_lpdf = makemyprior:::choose_prior_lpdf,
+                    cw_priors_lpdf = makemyprior:::cw_priors_lpdf,
+                    expit = makemyprior:::expit,
+                    get_dirichlet_parameter = makemyprior:::get_dirichlet_parameter,
+                    get_indexes = makemyprior:::get_indexes,
+                    get_indexes2 = makemyprior:::get_indexes2,
+                    hd_dirichlet_prior_lpdf = makemyprior:::hd_dirichlet_prior_lpdf,
+                    hd_pc_prior_lpdf = makemyprior:::hd_pc_prior_lpdf,
+                    eval_spline_lpdf = makemyprior:::eval_spline_lpdf
+                  )))
       
       if(tmp_$ok == FALSE){ ## INLA has crashed
         # Update tracker
@@ -160,10 +210,8 @@ tryCatch_inla <- function(data,
                                 sep = "")
       
       marginals = tmp_$marginals.fitted.values[(n_ADM4 * 10 + 1):(n_ADM4 * 13)]
-      cpo = tmp_$cpo$cpo
       
       save(marginals, 
-           cpo,
            file = filename_to_save)
     },
     error = function(cond) {
@@ -205,17 +253,22 @@ tryCatch_inla <- function(data,
 
 ################################################################################
 # SC2
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc2"
 
 ## Get the tracker-filename
 csv_tracker_filename = get_csv_tracker_filename(model_name, scenario_name)
+
+print(csv_tracker_filename)
 
 not_finished = T
 while(not_finished){
   ## Load in newest data set
   ### Start by evaluating the tracker
   data_set_id = get_first_not_yet_analyzed(model_name, scenario_name)
+  
+  print(paste("data set id:", data_set_id))
+  
   tracker.df = read.csv(csv_tracker_filename)
   
   ## If all the data sets have been analyzed for this scenario, move on!
@@ -235,10 +288,17 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
-  
   
   ## Do tryCatch
   fitted_inla <- tryCatch_inla(lambda_sc.df,
@@ -252,7 +312,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC4
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc4"
 
 ## Get the tracker-filename
@@ -282,6 +342,14 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
@@ -299,7 +367,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC6
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc6"
 
 ## Get the tracker-filename
@@ -329,6 +397,14 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
@@ -346,7 +422,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC8
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc8"
 
 ## Get the tracker-filename
@@ -376,6 +452,14 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
@@ -393,7 +477,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC10
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc10"
 
 ## Get the tracker-filename
@@ -423,6 +507,14 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
@@ -440,7 +532,7 @@ print(paste("Number of errors: ", sum(!is.na(tracker.df$error))))
 
 ################################################################################
 # SC12
-model_name = "Improper1_typeIV"
+model_name = "Improper1_typeV"
 scenario_name = "sc12"
 
 ## Get the tracker-filename
@@ -470,6 +562,14 @@ while(not_finished){
                                 "space.time")]
   
   lambda_sc.df$sampled_counts = lambda.df$sampled_counts[, data_set_id]
+  lambda_sc.df$area_id_iid = lambda_sc.df$area_id
+  lambda_sc.df$area_id_struct = lambda_sc.df$area_id
+  lambda_sc.df$time_id_iid = lambda_sc.df$time_id
+  lambda_sc.df$time_id_struct = lambda_sc.df$time_id
+  lambda_sc.df$space.time_I = lambda_sc.df$space.time
+  lambda_sc.df$space.time_II = lambda_sc.df$space.time
+  lambda_sc.df$space.time_III = lambda_sc.df$space.time
+  lambda_sc.df$space.time_IV = lambda_sc.df$space.time
   
   ## Set the last three years counts to NA for the fit
   lambda_sc.df[lambda_sc.df$time_id %in% 11:13, ]$sampled_counts = NA
