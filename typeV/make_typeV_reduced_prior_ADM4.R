@@ -16,13 +16,8 @@ library(mgcv)
 library(splines)
 library(ggfortify)
 library(crs)
-#library(magick)
 library(INLA)
-#library(bigDM)
 library(MASS)
-#library(RColorBrewer)
-#library(tmap)
-
 
 library("makemyprior")
 
@@ -69,27 +64,11 @@ RW1_prec_path <- paste0(getwd(), "/RW1_prec.graph")
 Besag_prec_second_level_path <- paste0(getwd(), "/Besag_prec_second_level.graph")
 
 
-#Get precision matric for type II interaction by Kronecker product
-typeII_prec_second_level <- scaled_RW_prec %x% diag(nrow(second_level_admin_map))
-
-#Get precision matric for type II interaction by Kronecker product
-typeIII_prec_second_level <- diag(tT) %x% scaled_besag_prec_second_level
-
 #Get type IV interaction precision matrix
 typeIV_prec_second_level <- scaled_RW_prec %x% scaled_besag_prec_second_level
 
 #---
 # Get the sum-to-zero constraints
-
-#Get sum-to-zero constraints for type II interaction
-typeII_constraints_second_level = constraints_maker(type = "II", 
-                                                    n = nrow(second_level_admin_map), 
-                                                    t = tT)
-
-#Get sum-to-zero constraints for type II interaction
-typeIII_constraints_second_level = constraints_maker(type = "III", 
-                                                     n = nrow(second_level_admin_map), 
-                                                     t = tT)
 
 #Get sum-to-zero constraints for type IV interaction
 typeIV_constraints_second_level = constraints_maker(type = "IV", 
@@ -116,28 +95,26 @@ lambda_$area_id_struct = lambda_$area_id
 lambda_$time_id_iid = lambda_$time_id
 lambda_$time_id_struct = lambda_$time_id
 lambda_$space.time_I = lambda_$space.time
-lambda_$space.time_II = lambda_$space.time
-lambda_$space.time_III = lambda_$space.time
 lambda_$space.time_IV = lambda_$space.time
 
 
 #Input for the prior_wrapper file:
-make_temporal_BYM2_prior = T
+make_temporal_BYM2_prior = F
 
-make_spatial_BYM2_prior = T
+make_spatial_BYM2_prior = F
 
-make_st_dirichlet_prior = T
+make_st_dirichlet_prior = F
 
-make_st_reduced_prior = F
+make_st_reduced_prior = T
 
 make_st_full_prior = F
+
+
 
 # Make a prior
 source("typeV/prior_wrapper.R")
 
-saveRDS(prior_data_bym2_time, "./typeV/prior_data_bym2_time_ADM4.rds")
-saveRDS(prior_data_bym2_space, "./typeV/prior_data_bym2_space_ADM4.rds")
-saveRDS(prior_data_interaction, "./typeV/prior_data_interaction_ADM4.rds")
+saveRDS(prior_data_interaction, "./typeV/prior_data_interaction_reduced_ADM4.rds")
 
 
 
@@ -230,7 +207,3 @@ saveRDS(prior_data_interaction, "./typeV/prior_data_interaction_ADM4.rds")
 # saveRDS(typeV_prior_ADM4, "./typeV/typeV_prior_ADM4.rds")
 # 
 # print("Prior saved")
-
-
-
-

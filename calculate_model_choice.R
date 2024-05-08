@@ -1363,14 +1363,15 @@ model_choice_rates.df[model_choice_rates.df$model_choice == 6 & model_choice_rat
 model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_trend",
                                                        "proper2_propInt_Improp_temporal",
                                                        "proper2Int_imp1Effects",
-                                                       "Improper1_typeIV_woSpatial_diff_constraints" #, "Improper1_typeIV_woSpatial_diff_constraints" 
-                                                       ), 6), 
-                                         model_choice = c(rep(1, 4),rep(2, 4),
-                                                          rep(3, 4),rep(4, 4),
-                                                          rep(5, 4),rep(6, 4)),
-                                         value = 1:(6 * 4))
+                                                       "Improper1_typeIV_woSpatial_diff_constraints", #, "Improper1_typeIV_woSpatial_diff_constraints" 
+                                                       "Improper1_typeV"), 6), 
+                                         model_choice = c(rep(1, 5),rep(2, 5),
+                                                          rep(3, 5),rep(4, 5),
+                                                          rep(5, 5),rep(6, 5)),
+                                         value = 1:(6 * 5))
 
-scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+#scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
+scenario_names_ADM4 = c("sc2")
 
 for(i in 1:length(scenario_names_ADM4)){
   

@@ -23,6 +23,8 @@ dataset_id_new = 2
 # Set a maximum run-time of 750 sec
 inla.setOption(inla.timeout = 750)
 
+print("gulrot")
+
 ################################################################################
 # Specify the hyperpriors
 
@@ -926,10 +928,14 @@ for(scenario_name in scenario_names_ADM1){
   
   print("reordering of lambda done")
   
+  # Make linear combination so that I can extract the actual combined temporal effect
+  lc_temporal <- inla.make.lincomb(time_id, time_id.copy)
+  
   proper1_noInt_ADM1 <- inla(proper1_noInt_ADM1_formula, 
                          data = lambda, 
                          family = "poisson",
                          E = E_it, #E_it
+                         lincomb = lc_temporal,
                          control.predictor = list(compute = TRUE, link = 1),       #For predictions
                          control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -937,6 +943,7 @@ for(scenario_name in scenario_names_ADM1){
                         data = lambda, 
                         family = "poisson",
                         E = E_it, #E_it
+                        lincomb = lc_temporal,
                         control.predictor = list(compute = TRUE, link = 1),       #For predictions
                         control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -958,6 +965,7 @@ for(scenario_name in scenario_names_ADM1){
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
+                          lincomb = lc_temporal,
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
  
@@ -965,6 +973,7 @@ for(scenario_name in scenario_names_ADM1){
                           data = lambda, 
                           family = "poisson",
                           E = E_it, #E_it
+                          lincomb = lc_temporal,
                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -1001,14 +1010,10 @@ for(scenario_name in scenario_names_ADM4){
              scenario_name, '_data.RData',sep = ""))
   
   lambda <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-  lambda$sampled_counts = lambda.df$sampled_counts[, dataset_id] #Just a chosen data set
+  lambda$sampled_counts = lambda.df$sampled_counts[, dataset_id_2] #Just a chosen data set
   
   # Set the last three years to unkown
   lambda[lambda$time_id %in% 11:13, ]$sampled_counts = NA
-  
-  
-  
-  
   
   # Fit each model to the data set
   
@@ -1019,12 +1024,12 @@ for(scenario_name in scenario_names_ADM4){
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
-  Improper2_noInt_ADM4 <- inla(Improper2_noInt_ADM4_formula, 
-                               data = lambda, 
-                               family = "poisson",
-                               E = E_it, #E_it
-                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  # Improper2_noInt_ADM4 <- inla(Improper2_noInt_ADM4_formula, 
+  #                              data = lambda, 
+  #                              family = "poisson",
+  #                              E = E_it, #E_it
+  #                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
+  #                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
     
   Improper1_typeI_ADM4 <- inla(Improper1_typeI_ADM4_formula, 
                                data = lambda, 
@@ -1054,12 +1059,12 @@ for(scenario_name in scenario_names_ADM4){
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
    
-  Improper1_typeIII_ADM4 <- inla(Improper1_typeIII_ADM4_formula, 
-                                 data = lambda, 
-                                 family = "poisson",
-                                 E = E_it, #E_it
-                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  # Improper1_typeIII_ADM4 <- inla(Improper1_typeIII_ADM4_formula, 
+  #                                data = lambda, 
+  #                                family = "poisson",
+  #                                E = E_it, #E_it
+  #                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
+  #                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
   Improper2_typeIII_ADM4 <- inla(Improper2_typeIII_ADM4_formula, 
                                  data = lambda, 
@@ -1075,13 +1080,13 @@ for(scenario_name in scenario_names_ADM4){
                                 control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                 control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
-  Improper2_typeIV_ADM4 <- inla(Improper2_typeIV_ADM4_formula, 
-                                data = lambda, 
-                                family = "poisson",
-                                E = E_it, #E_it
-                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
-  
+  # Improper2_typeIV_ADM4 <- inla(Improper2_typeIV_ADM4_formula, 
+  #                               data = lambda, 
+  #                               family = "poisson",
+  #                               E = E_it, #E_it
+  #                               control.predictor = list(compute = TRUE, link = 1),       #For predictions
+  #                               control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  # 
   
   print(paste("Improper models done for", scenario_name))
   
@@ -1096,11 +1101,14 @@ for(scenario_name in scenario_names_ADM4){
   
   print("reordering of lambda done")
   
+  # Make linear combination so that I can extract the actual combined temporal effect
+  lc_temporal <- inla.make.lincomb(time_id, time_id.copy)
   
   proper1_noInt_ADM4 <- inla(proper1_noInt_ADM4_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
+                             lincomb = lc_temporal,
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -1108,8 +1116,11 @@ for(scenario_name in scenario_names_ADM4){
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
+                             lincomb = lc_temporal,
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  
+  print("proper no ints done")
   
   proper1_onlyInt_ADM4 <- inla(proper1_onlyInt_ADM4_formula, 
                                data = lambda, 
@@ -1127,23 +1138,26 @@ for(scenario_name in scenario_names_ADM4){
                                control.predictor = list(compute = TRUE, link = 1),       #For predictions
                                control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
-  
+  print("proper only ints done")
   
   proper1_full_ADM4 <- inla(proper1_full_ADM4_formula, 
                             data = lambda, 
                             family = "poisson",
                             E = E_it, #E_it
+                            lincomb = lc_temporal,
                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
   
+  print("proper fulls done")
   
-  proper2_full_ADM4 <- inla(proper2_full_ADM4_formula, 
-                            data = lambda, 
-                            family = "poisson",
-                            E = E_it, #E_it
-                            control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                            control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
+  # proper2_full_ADM4 <- inla(proper2_full_ADM4_formula, 
+  #                           data = lambda, 
+  #                           family = "poisson",
+  #                           E = E_it, #E_it
+  #                           lincomb = lc_temporal,
+  #                           control.predictor = list(compute = TRUE, link = 1),       #For predictions
+  #                           control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
   
   
@@ -1166,7 +1180,7 @@ for(scenario_name in scenario_names_ADM4){
        proper2_noInt_ADM4,
        proper1_onlyInt_ADM4,
        proper2_onlyInt_ADM4,
-       #proper1_full_ADM4,
+       proper1_full_ADM4,
        #proper2_full_ADM4,
        file = paste('diagnostics_', scenario_name, ".RData", sep = ""))
   
@@ -1275,11 +1289,15 @@ for(scenario_name in scenario_names_ADMnew){
   
   print("reordering of lambda done")
   
+  # Make linear combination so that I can extract the actual combined temporal effect
+  lc_temporal <- inla.make.lincomb(time_id, time_id.copy)
+  
   
   proper1_noInt_ADMnew <- inla(proper1_noInt_ADMnew_formula, 
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
+                             lincomb = lc_temporal,
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -1287,6 +1305,7 @@ for(scenario_name in scenario_names_ADMnew){
                              data = lambda, 
                              family = "poisson",
                              E = E_it, #E_it
+                             lincomb = lc_temporal,
                              control.predictor = list(compute = TRUE, link = 1),       #For predictions
                              control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -1312,6 +1331,7 @@ for(scenario_name in scenario_names_ADMnew){
                             data = lambda, 
                             family = "poisson",
                             E = E_it, #E_it
+                            lincomb = lc_temporal,
                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   
@@ -1321,6 +1341,7 @@ for(scenario_name in scenario_names_ADMnew){
                             data = lambda, 
                             family = "poisson",
                             E = E_it, #E_it
+                            lincomb = lc_temporal,
                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
                             control.compute = list(config = TRUE, return.marginals.predictor=TRUE)) # Get the lin.pred.marginal
   

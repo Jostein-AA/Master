@@ -820,13 +820,17 @@ heatmap_areas <- function(map_w_values,
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.text = element_text(size = 15),
             panel.spacing = unit(1, 'lines')) +
-      guides(fill=guide_legend(title=NULL, reverse = TRUE, label.position = "right")) + #Remove colorbar title
+      guides(fill=guide_legend(title=NULL,
+                               reverse = TRUE,
+                               label.position = "right",
+                               drop = F)) + #Remove colorbar title
       binned_scale( #Scaling the color
         aesthetics = "fill",
         scale_name = "gradientn",
         palette = function(x) c(scale),
         labels = function(x){x},
-        guide = "colorscale")
+        guide = "colorscale") 
+    #+ scale_fill_manual(drop = F)
   } else {
     ggplot(data = map_w_values) +  
       geom_sf(aes(fill = to_plot), 
@@ -846,14 +850,16 @@ heatmap_areas <- function(map_w_values,
       guides(fill=guide_legend(title=NULL,
                                reverse = TRUE, 
                                label.position = "right",
-                               ncol = 1)) + #Remove colorbar title
+                               ncol = 1,
+                               drop = F)) + #Remove colorbar title
       binned_scale( #Scaling the color
         aesthetics = "fill",
         scale_name = "gradientn",
         palette = function(x) c(scale),
         labels = function(x){x},
         breaks = hardcoded_bins,
-        guide = "colorscale")
+        guide = "colorscale") 
+    #+ scale_fill_manual(drop = F)
     }
 }
 

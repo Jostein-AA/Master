@@ -1562,6 +1562,8 @@ to_plot_time_complex <- data.frame(model_name = rep(c("Improper1_noInt",
                                                       "proper2_onlyInt",
                                                       "proper1_full",
                                                       "proper2_full"), 12 * 10),
+                                   prop_improp = rep(c(rep("Improper models", 10), rep("Proper models", 6)),
+                                                     12 * 10),
                                    ADM = c(rep("ADM1", 16 * 10 * 6), rep("ADM4", 16 * 10 * 6)),
                                    scenario_name = c(rep("sc1", 16 * 10), rep("sc3", 16 * 10), rep("sc5", 16 * 10),
                                                      rep("sc7", 16 * 10), rep("sc9", 16 * 10), rep("sc11", 16 * 10),
@@ -1576,7 +1578,7 @@ for(model_name in unique(to_plot_time_complex$model_name)){
                                   3:(ncol(complete_time_complexity_df) - 1)]
     
     to_plot_time_complex[to_plot_time_complex$model_name == model_name & 
-                           to_plot_time_complex$scenario_name == scenario_name, 4] = times
+                           to_plot_time_complex$scenario_name == scenario_name, 5] = times
     
   }
 }
@@ -1584,32 +1586,40 @@ for(model_name in unique(to_plot_time_complex$model_name)){
 
 ### ADM 1
 comp_time_ADM1_plt <- ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM1", ],
-       aes(x = time, y = model_name)) + #, 
-  geom_boxplot(fill = "#00BFC4",outlier.shape = NA) +
+       aes(x = time, y = model_name, fill = prop_improp)) + #, 
+  geom_boxplot(outlier.shape = NA) + #fill = "#00BFC4",outlier.shape = NA
   theme_bw() + 
   theme(
     legend.position="none",
-    plot.title = element_text(size=11)
-  ) +
+    plot.title = element_text(size=11),
+    legend.text = element_text(size = 11)
+  ) + 
+  labs(fill = NULL) +
   ggtitle("Computational time on ADM1 map:\n n = 16, T = 13") +
   xlab("Computation time (s)") + 
   ylab("Model")
 
+to_plot_time_complex[to_plot_time_complex$ADM == "ADM4", ]$time = log(to_plot_time_complex[to_plot_time_complex$ADM == "ADM4", ]$time)
+
 comp_time_ADM4_plt <-ggplot(data = to_plot_time_complex[to_plot_time_complex$ADM == "ADM4", ],
-       aes(x = time, y = model_name)) + #, 
-  geom_boxplot(fill = "#00BFC4", outlier.shape = NA) +
+       aes(x = time, y = model_name, fill = prop_improp)) + #, 
+  geom_boxplot(outlier.shape = NA) + #fill = "#00BFC4", outlier.shape = NA
   theme_bw() + 
   theme(
     legend.position="none",
-    plot.title = element_text(size=11)
-  ) +
+    plot.title = element_text(size=11),
+    legend.text = element_text(size = 11)
+  ) + 
+  labs(fill = NULL) +
   ggtitle("Computational time on ADM4 map:\n n = 402, T = 13") +
-  xlab("Computation time (s)") + 
+  xlab("Computation time (log(s))") + 
   ylab("Model")
 
-# Save as comp_time_plot 8 by 3 
+# Save as comp_time_plot 8 by 4
 ggarrange(comp_time_ADM1_plt, comp_time_ADM4_plt,
-          ncol = 2, nrow = 1)
+          ncol = 2, nrow = 1,
+          common.legend = T,
+          legend = "top")
 
 
 
