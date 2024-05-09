@@ -12,6 +12,7 @@ library(latex2exp)
 library(geoR)
 library(paletteer)
 library('ggsci')
+library(ggstats)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
@@ -1075,11 +1076,6 @@ ridgeplot_mse_is_rates_all_years(model_names = model_names,
 plt_overall_results_all_scenarios <- function(model_names, 
                                               scenario_names){
   
-  proper1_model_names = c("proper1_noInt", "proper1_onlyInt", "proper1_iid", "proper1_full")
-  proper2_model_names = c("proper2_noInt", "proper2_onlyInt", "proper2_iid", "proper2_full")
-  improper1_model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII", "Improper1_typeIII", "Improper1_typeIV")
-  improper2_model_names = c("Improper2_noInt", "Improper2_typeI", "Improper2_typeII", "Improper2_typeIII", "Improper2_typeIV")
-  
   scenario_name = scenario_names[1]
   model_name = model_names[1]
   load(paste("./results/model_choice/model_choice_", 
@@ -1088,16 +1084,6 @@ plt_overall_results_all_scenarios <- function(model_names,
              sep = ""))
   
   tmp_ <- model_choice_for_rates
-  
-  # if(model_name %in% proper1_model_names){
-  #   model_type = "proper1"
-  # } else if(model_name %in% proper2_model_names){
-  #   model_type = "proper2"
-  # } else if(model_name %in% improper1_model_names){
-  #   model_type = "improper1"
-  # } else if(model_name %in% improper2_model_names){
-  #   model_type = "improper2"
-  # }
   
   to_plot.df <- data.frame(model_name = model_name,
                            scenario_name = scenario_name,
@@ -1119,16 +1105,6 @@ plt_overall_results_all_scenarios <- function(model_names,
       
       tmp_ <- model_choice_for_rates
       
-      # if(model_name %in% proper1_model_names){
-      #   model_type = "proper1"
-      # } else if(model_name %in% proper2_model_names){
-      #   model_type = "proper2"
-      # } else if(model_name %in% improper1_model_names){
-      #   model_type = "improper1"
-      # } else if(model_name %in% improper2_model_names){
-      #   model_type = "improper2"
-      # }
-      
       tmp2_ <- data.frame(model_name = model_name,
                           scenario_name = scenario_name,
                           IS_tot = mean(tmp_$total_IS, na.rm = TRUE))
@@ -1138,82 +1114,56 @@ plt_overall_results_all_scenarios <- function(model_names,
     }
   }
   
-  plt <- ggplot(data = to_plot.df, aes(x = scenario_name,
+  level_order = scenario_names
+  
+  plt <- ggplot(data = to_plot.df, aes(x = factor(scenario_name, 
+                                                  level = level_order),
                                        y = IS_tot,
                                        fill = model_name,
                                        shape = model_name)) + 
                   geom_point(size = 3,
                            position = position_dodge(0.5),
                            alpha = 1.5) + 
+    geom_stripped_cols(odd = "#00FF0022", even = "#FF000022", alpha = .05) +
     theme_bw() + 
-    scale_shape_manual(name = "Models",
-                      labels = c("Improper1_noInt",  "Improper1_typeI", 
-                                  "Improper1_typeII", "Improper1_typeIII", 
-                                   "Improper1_typeIV", "Improper2_noInt", 
-                                   "Improper2_typeI", "Improper2_typeII",
-                                   "Improper2_typeIII", "Improper2_typeIV",
-                                   "proper1_noInt", "proper1_onlyInt", 
-                                   "proper1_full", "proper1_iid",
-                                   "proper2_noInt", "proper2_onlyInt", 
-                                   "proper2_full", "proper2_iid"),
-                        values = c(24, 24, 24, 24, 24,
-                                   25, 25, 25, 25, 25,
-                                   23, 23, 23, 23, 23,
-                                   22, 22, 22, 22, 22)) + 
-    scale_fill_manual(name = "Models",
-                      labels = c("Improper1_noInt",  "Improper1_typeI", 
-                                 "Improper1_typeII", "Improper1_typeIII", 
-                                 "Improper1_typeIV", "Improper2_noInt", 
-                                 "Improper2_typeI", "Improper2_typeII",
-                                 "Improper2_typeIII", "Improper2_typeIV",
-                                 "proper1_noInt", "proper1_onlyInt", 
-                                 "proper1_full", "proper1_iid",
-                                 "proper2_noInt", "proper2_onlyInt", 
-                                 "proper2_full", "proper2_iid"),
-                      values = c("#5050FFFF", 
-                                 "#CE3D32FF", 
-                                 "#749B58FF",
-                                 "#F0E685FF", 
-                                 "#466983FF", 
-                                 "#5DB1DDFF",
-                                 "#802268FF", 
-                                 "#FFC20AFF", 
-                                 "#924822FF",
-                                 "#E4AF69FF", 
-                                 "#D595A7FF", 
-                                 "#0A0722FF",
-                                 "#D94D3DFF", 
-                                 "#F2EA69FF", 
-                                 "#1E0C45FF",
-                                 "#00CC99FF", 
-                                 "#990033FF", 
-                                 "#0A47FFFF"))
-  
-  # plt <- plt +  guides(colour = guide_legend("Models"),
-  #                      shape = guide_legend("Models"))
+    theme(axis.text = element_text(size = 16),
+          axis.title = element_text(size = 17.5),
+          legend.title = element_text(size = 16.5),
+          legend.text = element_text(size = 15),
+          legend.position = "top") + 
+  scale_shape_manual(name = "Models",
+                     values = c(Improper1_noInt = 24,  Improper1_typeI = 24,
+                                Improper1_typeII = 24, Improper1_typeIII = 24,
+                                 Improper1_typeIV = 24, Improper2_noInt = 25,
+                                 Improper2_typeI = 25, Improper2_typeII = 25,
+                                 Improper2_typeIII = 25, Improper2_typeIV = 25,
+                                 proper1_noInt = 23, proper1_onlyInt = 23,
+                                 proper1_full = 23, proper1_iid = 23,
+                                 proper2_noInt = 22, proper2_onlyInt = 22,
+                                 proper2_full = 22, proper2_iid = 22)) +
+  scale_fill_manual(name = "Models",
+                    values = c(Improper1_noInt = "#5050FFFF",  Improper1_typeI = "#CE3D32FF",
+                               Improper1_typeII = "#749B58FF", Improper1_typeIII = "#F0E685FF",
+                               Improper1_typeIV = "#466983FF", Improper2_noInt = "#5DB1DDFF",
+                               Improper2_typeI = "#802268FF", Improper2_typeII = "#FFC20AFF",
+                               Improper2_typeIII = "#924822FF", Improper2_typeIV = "#E4AF69FF",
+                               proper1_noInt = "#D595A7FF", proper1_onlyInt = "#0A0722FF",
+                               proper1_full = "#D94D3DFF", proper1_iid = "#F2EA69FF",
+                               proper2_noInt = "#1E0C45FF", proper2_onlyInt = "#00CC99FF",
+                               proper2_full = "#990033FF", proper2_iid = "#0A47FFFF")) + 
+    xlab("Scenarios on ADM4 map") + 
+    ylab(TeX(r'(Average IS $\left(\widehat{\lambda_{11,12,13}E_{11,12,13}}\right)$)')) + 
+    scale_x_discrete(labels = c("Const, Short", "Lin, Short", "CP, Short",
+                                "Const, Long", "Lin, Long", "CP, Long")) + 
+    guides(shape = guide_legend(nrow = 3),
+      fill = guide_legend(nrow = 3))
+    
   
   return(plt)
 }
 
 
-
-#library(scales) 
-#hue_pal()(18)
- 
-#paletteer_c("viridis::inferno", n=18)
-#paletteer_c("ggsci::pal_igv", n=18)
-#?ggsci::pal_igv()
-#show_col(pal_igv("default")(36))
-
-#show_col(hue_pal()(31))
-
-#scale_shape_manual(values = c("proper1" = 23,
-#                              "proper2" = 22,
-#                              "improper1" = 24,
-#                              "improper2" = 25)) + 
-#scale_fill_manual(values = c()) + 
-
-#Save as overall_ADM4_results 12 by 6
+#Save as overall_ADM4_results 15 by 15
 plt_overall_results_all_scenarios(model_names = model_names,
                                   scenario_names = scenario_names_ADM4)
 
