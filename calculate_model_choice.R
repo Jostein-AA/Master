@@ -1370,8 +1370,7 @@ model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_t
                                                           rep(5, 5),rep(6, 5)),
                                          value = 1:(6 * 5))
 
-#scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
-scenario_names_ADM4 = c("sc2", "sc4", "sc6")
+scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
 
 for(i in 1:length(scenario_names_ADM4)){
   
