@@ -35,6 +35,38 @@
 ##! TODO
 ##!}
 
+inla.sens.distance = function(muMarg, sdMarg, skMarg, prob, robMarg, nGrid, extraLen = 20)
+{
+  ## Estimate required integration grid
+  sdMax = max(sdMarg)
+  xs = seq(-1, 1, length.out = nGrid)*sdMax*extraLen + mean(muMarg)
+  
+  ## Iterate through \theta values
+  yO = vector(mode = "numeric", length = nGrid)
+  yR = yO
+  for(idxT in 1:length(muMarg)){
+    ## Use precomputed table of standard robust distribution
+    xx = (xs - muMarg[idxT])/sdMarg[idxT]
+    yy = exp(spline(x = robMarg$x, y = robMarg$y, xout = xx)$y)/sdMarg[idxT]
+    
+    ## Remove the extrapolated values
+    yy[(xx < min(robMarg$x)) | (xx > max(robMarg$x))] = 0
+    
+    ## Add original and robust to their respective mixtures
+    yO = yO + prob[idxT]*dnorm(xs, mean = muMarg[idxT], sd = sdMarg[idxT])
+    yR = yR + prob[idxT]*yy
+  }
+  
+  ##  Calculate KLD between original and added uncertainty
+  intG = yR*log(yR/yO)
+  intG[yR == 0] = 0
+  KLD = sum((intG[-nGrid] + intG[-1])*(xs[2]-xs[1])/2)
+  
+  ## Convert to distance and return value
+  return(sqrt(2*KLD))
+}
+
+
 inla.sens = function(inlaObj, 
                      lambda = 0.3, 
                      nThreads = NULL, 
@@ -150,13 +182,21 @@ inla.sens = function(inlaObj,
   ## Calculate distance between original marginal posterior and
   ## posterior with uncertainty added in each conditional density
   ## x_i | \theta, y
-  inla.require("doParallel")
+  
+  require("doParallel")
+  require("foreach")
+  
+  ##inla.require("doParallel")
+  ##inla.require("foreach")
+  
   if(is.null(nThreads)){
     doParallel::registerDoParallel()
   } else{
     doParallel::registerDoParallel(nThreads)
   }
-  inla.require("foreach")
+  
+  
+  
   nWorkers = foreach::getDoParWorkers()
   breaks = floor(seq(1, nLatent+1, length.out = nWorkers+1))
   ds = foreach::foreach(idxW = 1:nWorkers, .combine = 'c') %dopar%{
@@ -258,36 +298,35 @@ inla.sens = function(inlaObj,
   return(res)
 }
 
-inla.sens.distance = function(muMarg, sdMarg, skMarg, prob, robMarg, nGrid, extraLen = 20)
-{
-  ## Estimate required integration grid
-  sdMax = max(sdMarg)
-  xs = seq(-1, 1, length.out = nGrid)*sdMax*extraLen + mean(muMarg)
-  
-  ## Iterate through \theta values
-  yO = vector(mode = "numeric", length = nGrid)
-  yR = yO
-  for(idxT in 1:length(muMarg)){
-    ## Use precomputed table of standard robust distribution
-    xx = (xs - muMarg[idxT])/sdMarg[idxT]
-    yy = exp(spline(x = robMarg$x, y = robMarg$y, xout = xx)$y)/sdMarg[idxT]
-    
-    ## Remove the extrapolated values
-    yy[(xx < min(robMarg$x)) | (xx > max(robMarg$x))] = 0
-    
-    ## Add original and robust to their respective mixtures
-    yO = yO + prob[idxT]*dnorm(xs, mean = muMarg[idxT], sd = sdMarg[idxT])
-    yR = yR + prob[idxT]*yy
-  }
-  
-  ##  Calculate KLD between original and added uncertainty
-  intG = yR*log(yR/yO)
-  intG[yR == 0] = 0
-  KLD = sum((intG[-nGrid] + intG[-1])*(xs[2]-xs[1])/2)
-  
-  ## Convert to distance and return value
-  return(sqrt(2*KLD))
-}
+library(doParallel)
+# Load in INLA objects
+load("diagnostics_sc1.RData")
+
+tactical error: Where does error occur: seems like there is an issue when doParallel maybe (in debug mode)
+  it seemed to 'jump' out. If inla.sens.distance() not available then, that is issue. Error inla.sens.distance 
+  not found
+
+inla.sens(proper1_noInt_ADM1, 
+          lambda = 0.3,
+          nThreads = NULL, 
+          seed = 5050332,
+          nGrid = 1e1,
+          nSamples = 2e1,
+          useSkew = F,
+          calcPriorSens = F,
+          makePlots = T)
+
+
+
+
+
+
+
+
+
+
+
+
 
 inla.sens.distance.skew = function(muMarg, sdMarg, skMarg, prob, robMarg, nGrid, extraLen = 20)
 {

@@ -59,8 +59,6 @@ for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
 
-# Calculate expected number of counts per 100,000
-Data_LungCancer$exp_per_1E5 <- (Data_LungCancer$exp * 1E5)/Data_LungCancer$pop
 ################################################################################
 # Create precision matrix required, and specify the proper2_onlyInt formula
 
@@ -92,9 +90,7 @@ spatial_hyper = list(prec= list(prior = 'pc.prec',
 
 ### Group hyper
 group_hyper = list(pacf1 = list(prior = 'pc.cor1', 
-                                param = c(0.5, 0.85)),
-                   pacf2 = list(prior = 'pc.cor0',
-                                param = c(0.5, 0.5)))
+                                param = c(0.5, 0.75)))
 
 ### hyperprior for BYM2 over time w. RW1
 RW1_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.05)), 
@@ -108,7 +104,7 @@ spatial_hyper_Imp = list(prec= list(prior = 'pc.prec', param = c(1, 0.05)),
 
 
 #Define a model with intercept, BYM2 temporal and spatial effects and spatiotemporal interaction by ar1 and properbesag
-proper2Int_imp1Effect <- obs ~ 1 + 
+proper1Int_imp1Effect <- obs ~ 1 + 
   f(year_id, 
     model = 'bym2',
     scale.model = T, 
@@ -129,7 +125,7 @@ proper2Int_imp1Effect <- obs ~ 1 +
     hyper = spatial_hyper,
     group = year_id, 
     control.group = list(model = "ar", 
-                         order = 2,
+                         order = 1,
                          hyper = group_hyper))
 
 
@@ -142,15 +138,15 @@ Data_LungCancer <- Data_LungCancer[order(Data_LungCancer$area_id, decreasing = F
 rownames(Data_LungCancer) <- 1:nrow(Data_LungCancer)
 
 
-proper2Int_impEffects_Spain = inla(proper2Int_imp1Effect, 
-                             data = Data_LungCancer, 
-                             family = "poisson",
-                             E = pop, 
-                             verbose = T,
-                             control.predictor = list(compute = TRUE, link = 1),       #For predictions
-                             control.compute = list(return.marginals.predictor=TRUE))
+proper1Int_imp1Effects_Spain = inla(proper1Int_imp1Effect, 
+                                   data = Data_LungCancer, 
+                                   family = "poisson",
+                                   E = pop, 
+                                   verbose = T,
+                                   control.predictor = list(compute = TRUE, link = 1),       #For predictions
+                                   control.compute = list(return.marginals.predictor=TRUE))
 
 
 
-save(proper2Int_impEffects_Spain,
-     file = "./case_study/proper2Int_impEffects_Spain.RData")
+save(proper1Int_imp1Effects_Spain,
+     file = "./case_study/proper1Int_impEffects_Spain.RData")
