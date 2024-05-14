@@ -1022,7 +1022,7 @@ min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 2, ]$val
 model_choice_rates.df[model_choice_rates.df$model_choice == 2 & model_choice_rates.df$value == min1, ]
 
 
-### Scenario 5
+Improper### Scenario 5
 min1 <- min(model_choice_rates.df[model_choice_rates.df$model_choice == 3, ]$value) 
 model_choice_rates.df[model_choice_rates.df$model_choice == 3 & model_choice_rates.df$value == min1, ]
 

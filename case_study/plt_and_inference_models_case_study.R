@@ -20,6 +20,8 @@ library(RColorBrewer)
 load("case_study/imp_typeIV.RData")
 
 load("case_study/proper2_onlyInt_Spain.RData")
+
+load("case_study/proper1Int_impEffects_Spain.RData")
 ################################################################################
 
 # Load in the considered lung-cancer data
@@ -65,9 +67,13 @@ Data_LungCancer$exp_per_1E5 <- (Data_LungCancer$exp * 1E5)/Data_LungCancer$pop
 ################################################################################
 # plot objects themselves
 
-plot(proper2_onlyInt_Spain)
+
 
 plot(imp_typeIV)
+
+plot(proper2_onlyInt_Spain)
+
+plot(proper1Int_imp1Effects_Spain)
 
 ################################################################################
 # Plot the fit on the map
@@ -105,6 +111,32 @@ Map.risks <- tm_shape(carto_prop2_OI) +
   tm_facets(nrow=3, ncol=3)
 
 print(Map.risks)
+
+# Estimated rate proper2_onlyInt_Spain
+est_r_prop1_impEff <- matrix(proper1Int_imp1Effects_Spain$summary.fitted.values$mean * 1E5, 
+                         nrow = n, 
+                         ncol = tT, 
+                         byrow = F)
+
+colnames(est_r_prop1_impEff) = paste("Year", seq(t.from, t.to), sep = ".")
+
+carto_prop1_impEff <- cbind(map_Spain, est_r_prop1_impEff)
+
+
+Map.risks <- tm_shape(carto_prop1_impEff) +
+  tm_polygons(col=paste("Year",round(seq(t.from,t.to,length.out=9)),sep= "."),
+              palette=paleta, title="proper1_impEff:\n Posterior mean of\n rate per 100,000", legend.show=T, border.col="transparent",
+              legend.reverse=T, style="fixed", breaks=values, midpoint=0, interval.closure="left") +
+  tm_grid(n.x=5, n.y=5, alpha=0.2, labels.format=list(scientific=T),
+          labels.inside.frame=F, labels.col="white") +
+  tm_layout(main.title="", main.title.position="center", panel.label.size=1.5,
+            legend.outside=T, legend.outside.position="right", legend.frame=F,
+            legend.outside.size=0.2, outer.margins=c(0.02,0.01,0.02,0.01),
+            panel.labels=as.character(round(seq(t.from,t.to,length.out=9)))) +
+  tm_facets(nrow=3, ncol=3)
+
+print(Map.risks)
+
 
 
 # Estimated rate Improper1\_typeIV

@@ -36,6 +36,15 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
                 "proper1_noInt", "proper1_onlyInt", "proper1_full", "proper1_iid",
                 "proper2_noInt", "proper2_onlyInt", "proper2_full", "proper2_iid")
 
+scenario_names_ADM4 <- c("sc2", "sc4", "sc6",
+                         "sc8", "sc10", "sc12")
+
+scenario_names_ADM1 <- c("sc1", "sc3", "sc5",
+                         "sc7", "sc9", "sc11")
+
+scenario_names_ADMnew <- c("sc13", "sc14", "sc15",
+                         "sc16", "sc17", "sc18")
+
 ################################################################################
 # Splines
 
@@ -1039,6 +1048,8 @@ ridgeplot_mse_is_rates_all_years(model_names = model_names,
 
 
 
+### ADM3
+
 #Save as 15 by 15 sc13_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
                                  "sc13", xlim_mse = c(0.35, 3.5), 
@@ -1074,7 +1085,8 @@ ridgeplot_mse_is_rates_all_years(model_names = model_names,
 # Plot the average IS for predicted rate per 100 for each model on each scenario compactly
 
 plt_overall_results_all_scenarios <- function(model_names, 
-                                              scenario_names){
+                                              scenario_names,
+                                              xlab){
   
   scenario_name = scenario_names[1]
   model_name = model_names[1]
@@ -1124,12 +1136,12 @@ plt_overall_results_all_scenarios <- function(model_names,
                   geom_point(size = 3,
                            position = position_dodge(0.5),
                            alpha = 1.5) + 
-    geom_stripped_cols(odd = "#00FF0022", even = "#FF000022", alpha = .05) +
+    geom_stripped_cols(odd = "#00FF0022", even = "#FF000022", alpha = .12) +
     theme_bw() + 
-    theme(axis.text = element_text(size = 16),
-          axis.title = element_text(size = 17.5),
-          legend.title = element_text(size = 16.5),
-          legend.text = element_text(size = 15),
+    theme(axis.text = element_text(size = 18.5),
+          axis.title = element_text(size = 18.5),
+          legend.title = element_text(size = 18.5),
+          legend.text = element_text(size = 16),
           legend.position = "top") + 
   scale_shape_manual(name = "Models",
                      values = c(Improper1_noInt = 24,  Improper1_typeI = 24,
@@ -1151,7 +1163,7 @@ plt_overall_results_all_scenarios <- function(model_names,
                                proper1_full = "#D94D3DFF", proper1_iid = "#F2EA69FF",
                                proper2_noInt = "#1E0C45FF", proper2_onlyInt = "#00CC99FF",
                                proper2_full = "#990033FF", proper2_iid = "#0A47FFFF")) + 
-    xlab("Scenarios on ADM4 map") + 
+    xlab(xlab) + 
     ylab(TeX(r'(Average IS $\left(\widehat{\lambda_{11,12,13}E_{11,12,13}}\right)$)')) + 
     scale_x_discrete(labels = c("Const, Short", "Lin, Short", "CP, Short",
                                 "Const, Long", "Lin, Long", "CP, Long")) + 
@@ -1163,9 +1175,22 @@ plt_overall_results_all_scenarios <- function(model_names,
 }
 
 
+#Save as overall_ADM1_results 15 by 15
+plt_overall_results_all_scenarios(model_names = model_names,
+                                  scenario_names = scenario_names_ADM1,
+                                  xlab = "Scenarios on ADM1 map")
+
+
+
 #Save as overall_ADM4_results 15 by 15
 plt_overall_results_all_scenarios(model_names = model_names,
-                                  scenario_names = scenario_names_ADM4)
+                                  scenario_names = scenario_names_ADM4,
+                                  xlab = "Scenarios on ADM4 map")
+
+#Save as overall_ADM3_results 15 by 15
+plt_overall_results_all_scenarios(model_names = model_names,
+                                  scenario_names = scenario_names_ADMnew,
+                                  xlab = "Scenarios on ADM3 map")
 
 
 
@@ -1200,7 +1225,8 @@ plt_width_CI_one_scenario <- function(to_plot.df,
     xlab("years ahead") + 
     ylab(ylab) + scale_colour_discrete(name="Model:",
                                        labels=c(legend.labels[1], 
-                                                legend.labels[2]))
+                                                legend.labels[2])) +
+    ylim(-4, 4)
 }
 
 
@@ -1304,8 +1330,6 @@ width_CIs_one_two_three_years_ahead("Improper1_typeIV", "proper1_full",
 
 
 ### ADM4
-
-# Dataframe to plot
 
 
 # Save as width_CIs_ADM4 10 by 6
@@ -3681,7 +3705,8 @@ plt <- plt_true_discrete_rate_four_years(scenario_name = "sc1",
                                          dataset_id = dataset_id,
                                          admin_map = first_level_admin_map,
                                          scale_col = scale_col,
-                                         scale = scale)
+                                         scale = scale,
+                                         which.legend = 4)
 
 # Save as sc1_true_rate 8.5 by 3
 annotate_figure(plt, 
@@ -3713,7 +3738,8 @@ plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2",
                                           dataset_id = dataset_id_2,
                                           admin_map = second_level_admin_map,
                                           scale_col = scale_col,
-                                          scale = scale)
+                                          scale = scale,
+                                          which.legend = 4)
 
 # Save as sc2_true_rate 8.5 by 3
 annotate_figure(plt5, 
