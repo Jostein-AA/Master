@@ -30,6 +30,8 @@ data("Carto_SpainMUN")
 str(Data_LungCancer)
 str(Carto_SpainMUN)
 
+head(Data_LungCancer)
+
 # Get the years and areas
 years = unique(Data_LungCancer$year)
 tT = length(years)
@@ -63,6 +65,48 @@ ggplot(data = map_Spain) +
   scale_fill_manual(values = c("no" = "lightgrey", "yes" = "red"))
 
 
+
+map_Spain$Extremadura = rep("No", nrow(map_Spain))
+map_Spain[map_Spain$region == "Extremadura", ]$Extremadura = "Yes"
+
+
+# Save as map_Spain 5 by 5
+ggplot(data = map_Spain) + 
+  geom_sf(aes(fill = Extremadura), 
+          alpha = 1,
+          color="black",
+          show.legend = FALSE) + 
+  #geom_sf_label(data = map_Spain[2454, ],
+  #             aes(label = name), 
+  #             colour = "black", size = 2,
+  #             nudge_y = 0.2) +
+  ggrepel::geom_label_repel(
+          data = map_Spain[2454, ],
+          aes(label = name, geometry = geometry),
+              stat = "sf_coordinates",
+              min.segment.length = 0,
+              colour = "black",
+              segment.colour = "black",
+              size = 2) +
+  theme(plot.title = element_text(size = 15,  hjust = 0.5),
+        axis.title.x = element_blank(), #Remove axis and background grid
+        axis.title.y = element_blank(), #Remove axis and background grid
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank(),
+        plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+        panel.spacing = unit(1, 'lines')) + 
+  scale_fill_manual(values = c("No" = "lightgrey", 
+                               "Yes" = "#00BFC4"))
+
+  
+################################################################################
+
+#provinces
+provinces = unique(map_Spain$region)
+
+tmp <- map_Spain[map_Spain$region == "Extremadura", ]
+
 ################################################################################
 # Plot the expected counts in each and the observed number of counts for select years
 
@@ -80,22 +124,48 @@ values <- c(min(Data_LungCancer$exp_per_1E5), 45, 70, 90,
             110, 140, 170, 200, Inf)
 
 Map.risks <- tm_shape(carto) +
-  tm_polygons(col=paste("Year",round(seq(t.from,t.to,length.out=9)),sep= "."),
-              palette=paleta, title="Expected count\n per 100,000", legend.show=T, border.col="transparent",
-              legend.reverse=T, style="fixed", breaks=values, midpoint=0, interval.closure="left") +
-  tm_grid(n.x=5, n.y=5, alpha=0.2, labels.format=list(scientific=T),
-          labels.inside.frame=F, labels.col="white") +
-  tm_layout(main.title="", main.title.position="center", panel.label.size=1.5,
-            legend.outside=T, legend.outside.position="right", legend.frame=F,
-            legend.outside.size=0.2, outer.margins=c(0.02,0.01,0.02,0.01),
+  tm_polygons(col=paste("Year", round(seq(t.from,t.to,length.out=9)),sep= "."),
+              palette=paleta, 
+              title="Expected count\n per 100,000", 
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks=values, 
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.2, 
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
             panel.labels=as.character(round(seq(t.from,t.to,length.out=9)))) +
   tm_facets(nrow=3, ncol=3)
 
+
 print(Map.risks)
+
+# Save Map
+tmap_save(Map.risks,
+          filename = "Plots/case_study_expected_counts_per_100000.pdf",
+          width = 8,
+          height = 6)
 
 #####
 # Observed number of counts
-
 
 observed <- matrix(Data_LungCancer$obs, nrow = n, ncol = tT, byrow = F)
 colnames(observed) = paste("Year", seq(t.from, t.to), sep = ".")

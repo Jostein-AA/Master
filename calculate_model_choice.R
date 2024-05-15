@@ -1370,6 +1370,13 @@ model_choice_counts_alt.df <- data.frame(Model = rep(c("proper1_iid_woTemporal_t
                                                           rep(5, 5),rep(6, 5)),
                                          value = 1:(6 * 5))
 
+model_choice_counts_alt.df <- data.frame(Model = rep(c("Improper1_typeIV", 
+                                                       "Improper1_typeV"), 6), 
+                                         model_choice = c(rep(1, 2),rep(2, 2),
+                                                          rep(3, 2),rep(4, 2),
+                                                          rep(5, 2),rep(6, 2)),
+                                         value = 1:(6 * 2))
+
 scenario_names_ADM4 = c("sc2", "sc4", "sc6", "sc8", "sc10", "sc12")
 
 for(i in 1:length(scenario_names_ADM4)){
