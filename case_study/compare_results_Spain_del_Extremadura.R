@@ -7,16 +7,16 @@ source("Utilities.R")
 
 library(bigDM)
 
-load("case_study/proper2_RW1_Extremadura.RData")
-load("case_study/proper2_impEff_Extremadura.RData")
-load("case_study/Improper1_typeIV_Extremadura.RData")
+load("case_study/proper2_RW1_Spain_del_Extremadura.RData")
+#load("case_study/proper2_impEff_Extremadura.RData")
+#load("case_study/Improper1_typeIV_Extremadura.RData")
 
 ################################################################################
-plot(proper2_RW1_Extremadura)
+plot(proper2_RW1_Spain_del_Extremadura)
 
-plot(proper2_impEff_Extremadura)
+#plot(proper2_impEff_Extremadura)
 
-plot(Improper1_typeIV_Extremadura)
+#plot(Improper1_typeIV_Extremadura)
 
 ################################################################################
 
@@ -91,7 +91,7 @@ calc_model_choice <- function(model,
   ### Take the years predicted on
   years_pred_on <- 21:25
   
-    
+  
   #### For each year calculate the MSE and IS that year
   for(year in years_pred_on){
     print(paste("Year: ", year, sep = ""))
@@ -114,7 +114,7 @@ calc_model_choice <- function(model,
     
     ## IS for count in year ahead 
     model_choice.df[1, year - years_pred_on[1] + 7] =  count_IS_one_year_case_study(one_year_counts, 
-                                                                                     one_year_margs, 
+                                                                                    one_year_margs, 
                                                                                     population = one_year_pop)
     
     
@@ -127,14 +127,14 @@ calc_model_choice <- function(model,
     
     
   }
-    
-    #Get the total MSE for count
+  
+  #Get the total MSE for count
   model_choice.df[1, 6] = mean(as.numeric(model_choice.df[i, 1:5]))
-    
-    
-    #Get the total IS for count
+  
+  
+  #Get the total IS for count
   model_choice.df[1, 12] = mean(as.numeric(model_choice.df[i, 7:11]))
-    
+  
   
   
   #filename = paste("./results/model_choice/", "model_choice_", model_name, "_", 

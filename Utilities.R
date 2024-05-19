@@ -3,14 +3,20 @@
 
 count_mse_one_year_one_dataset <- function(sampled_counts_one_year, 
                                            lambda_marginals_one_year,
-                                           E_it){
+                                           E_it = 100){
   
   ## For each area find the expected predicted count (i.e. point prediction)
-  pred_count <- 100 * as.numeric(sapply(lambda_marginals_one_year, 
-                                        FUN = function(x){return(mean(x[, 1]))}))
+  pred_count <- E_it * as.numeric(sapply(lambda_marginals_one_year, 
+                                        FUN = function(x){return(mean(inla.rmarginal(2000, 
+                                                                                     x)))}))
+  
+  
   
   ## Calculate the MSE
   mse_one_year <- mean((sampled_counts_one_year - pred_count)**2)
+  
+  
+  
   
   # Return the MSE of that year
   return(mse_one_year)
@@ -27,9 +33,13 @@ rate_mse_one_year_one_dataset <- function(sampled_rates_one_year,
                                           lambda_marginals_one_year,
                                           E_it = 100){
   
+  #inla.emarginal
+  
   ## For each area find the expected predicted count (i.e. point prediction)
   pred_rate <- as.numeric(sapply(lambda_marginals_one_year, 
-                                  FUN = function(x){return(mean(x[, 1]))}))
+                                  FUN = function(x){return(mean(inla.rmarginal(2000, 
+                                                                               x))
+                                                           )}))
   
   ## Calculate the MSE of rate per 100
   mse_one_year <- mean((sampled_rates_one_year * E_it - pred_rate * E_it)**2)
@@ -77,14 +87,39 @@ find_IS_one_obs <- function(l, u, true_value){
 }
 
 
+
+count_IS_one_year_case_study <- function(counts,
+                                         marginals,
+                                         population){
+  
+  IS_each_instance = rep(0, length(marginals))
+  
+  # Iterate over each marginal
+  for(i in 1:length(marginals)){
+    ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
+                                                          population[i])
+    
+    
+    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year$l, ul_each_one_year$u, 
+                                          counts[i])
+  }
+  
+  ## Find the average IS this year
+  IS_this_year <- mean(IS_each_instance)
+  
+  return(IS_this_year)
+}
+
+
+
 count_IS_one_year_one_dataset <- function(sampled_counts_one_year,
                                           lambda_marginals_one_year,
-                                          E_it){
+                                          E_it = 100){
   
   ## Find the l and u for each singular instance in a year
   ul_each_one_year <- lapply(lambda_marginals_one_year, 
                              FUN = function(x){
-                               return(find_ul_quants_counts_single_pred(x, 100))
+                               return(find_ul_quants_counts_single_pred(x, E_it))
                              })
   
   ## Find the IS for each singular instance in a year
@@ -176,6 +211,34 @@ rate_IS_one_year_one_dataset <- function(sampled_rates_one_year,
   return(IS_this_year)
 }
 
+
+count_log_s_one_year <- function(counts,
+                                 marginals,
+                                 population){
+  
+
+  log_s_each = rep(0, length(marginals))
+  
+  # Iterate over each marginal
+  for(i in 1:length(marginals)){
+    #scaled_marg <- inla.tmarginal(fun = function(x){x * population[i]},
+    #                              marginal = marginals[[i]])
+    
+    #This dont include the Poisson noise...
+    
+    log_s_each[i] <- inla.dmarginal(counts[i], 
+                                    scaled_marg) 
+  }
+  
+  
+  
+  ## Find the average IS this year
+  avg_log_s <- mean(log_s_each)
+  
+  return(avg_log_s)
+  
+  
+}
 
 
 

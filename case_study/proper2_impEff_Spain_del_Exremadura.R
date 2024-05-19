@@ -8,7 +8,6 @@ source("Utilities.R")
 library(bigDM)
 
 ################################################################################
-
 # Load in the considered lung-cancer data
 data(Data_LungCancer)
 
@@ -22,12 +21,12 @@ problem_area = Carto_SpainMUN[2454, ]
 
 Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID != problem_area$ID, ]
 
-# Extract the areas within the principality of Extremadura
-map_Spain <- map_Spain[map_Spain$region == "Extremadura", ]
-IDs_Extremadura <- unique(map_Spain$ID)
+# Extract the areas NOT within the principality of Extremadura
+map_Spain <- map_Spain[map_Spain$region != "Extremadura", ]
+IDs_NOT_within_Extremadura <- unique(map_Spain$ID)
 
-# Extract the data within Extremadura
-Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID %in% IDs_Extremadura, ]
+# Extract the data NOT within Extremadura
+Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID %in% IDs_NOT_within_Extremadura, ]
 
 # Get the years and areas
 years = unique(Data_LungCancer$year)
@@ -80,14 +79,14 @@ rm(matrix4inla)
 #---
 
 ### Temporal hyperparameters (Precision of iid and precision of RW1) w. corresponding priors: penalized constraint 
-temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.01)), 
-                      phi = list(prior = 'pc',  param = c(0.5, 0.5))) 
+temporal_hyper = list(prec = list(prior = 'pc.prec',  param = c(1, 0.05)), 
+                      phi = list(prior = 'pc',  param = c(0.5, 0.15))) 
 
 
 
 ### Spatial hyperparameters (Leroux prec. and Leroux mixing param) w. corresponding priors: penalized constraint
 spatial_hyper = list(prec= list(prior = 'pc.prec', 
-                                param = c(1, 0.01))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
+                                param = c(1, 0.05))) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) #, lambda = list(prior = 'gaussian', param = c(0, 0.45)) 
 
 
 ### Group hyper
@@ -97,8 +96,8 @@ group_hyper = list(pacf1 = list(prior = 'pc.cor1',
                                 param = c(0.5, 0.5)))
 
 ### Spatial hyperparameters (Precision of iid and precision of ICAR) w. corresponding priors: penalized constraint
-spatial_hyper_Imp = list(prec= list(prior = 'pc.prec', param = c(1, 0.01)), 
-                         phi = list(prior = 'pc', param = c(0.5, 0.5)))
+spatial_hyper_Imp = list(prec= list(prior = 'pc.prec', param = c(1, 0.05)), 
+                         phi = list(prior = 'pc', param = c(0.5, 0.85)))
 #---
 
 
@@ -123,6 +122,7 @@ proper2_impEff_formula <- obs ~ 1 +
     hyper = spatial_hyper_Imp) +
   f(area_id.copy, 
     model = "besagproper2",
+    constr = T,
     graph = Besag_prec_spain,
     hyper = spatial_hyper,
     group = year_id, 
@@ -139,7 +139,7 @@ Data_LungCancer <- Data_LungCancer[order(Data_LungCancer$area_id, decreasing = F
 rownames(Data_LungCancer) <- 1:nrow(Data_LungCancer)
 
 
-proper2_impEff_Extremadura = inla(proper2_impEff_formula, 
+proper2_impEff_Spain_del_Extremadura = inla(proper2_impEff_formula, 
                                   data = Data_LungCancer, 
                                   family = "poisson",
                                   E = pop, 
