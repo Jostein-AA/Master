@@ -5,6 +5,7 @@ count_mse_one_year_one_dataset <- function(sampled_counts_one_year,
                                            lambda_marginals_one_year,
                                            E_it = 100){
   
+  
   ## For each area find the expected predicted count (i.e. point prediction)
   pred_count <- E_it * as.numeric(sapply(lambda_marginals_one_year, 
                                         FUN = function(x){return(mean(inla.rmarginal(2000, 
@@ -33,13 +34,17 @@ rate_mse_one_year_one_dataset <- function(sampled_rates_one_year,
                                           lambda_marginals_one_year,
                                           E_it = 100){
   
-  #inla.emarginal
+  pred_rate <- as.numeric(sapply(lambda_marginals_one_year,
+                                 FUN = function(x){
+                                   return(inla.emarginal(function(x){x}, marginal = x))
+                                   })
+                          )
   
   ## For each area find the expected predicted count (i.e. point prediction)
-  pred_rate <- as.numeric(sapply(lambda_marginals_one_year, 
-                                  FUN = function(x){return(mean(inla.rmarginal(2000, 
-                                                                               x))
-                                                           )}))
+  #pred_rate <- as.numeric(sapply(lambda_marginals_one_year, 
+  #                                FUN = function(x){return(mean(inla.rmarginal(2000, 
+  #                                                                             x))
+  #                                                         )}))
   
   ## Calculate the MSE of rate per 100
   mse_one_year <- mean((sampled_rates_one_year * E_it - pred_rate * E_it)**2)
