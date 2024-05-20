@@ -6,6 +6,17 @@ source("libraries.R")
 source("Utilities.R")
 
 library(bigDM)
+library(latex2exp)
+library(tables)
+library("geofacet")
+library(ggh4x)
+library(ggridges)
+library(geoR)
+library(paletteer)
+library('ggsci')
+library(ggstats)
+library(tmap)
+library(RColorBrewer)
 
 load("case_study/proper2_RW1_Extremadura.RData")
 load("case_study/proper2_impEff_Extremadura.RData")
@@ -19,7 +30,6 @@ plot(proper2_impEff_Extremadura)
 plot(Improper1_typeIV_Extremadura)
 
 ################################################################################
-
 # Load in the considered lung-cancer data
 data(Data_LungCancer)
 
@@ -121,19 +131,19 @@ calc_model_choice <- function(model,
     
     
     ## Log-score
-    model_choice.df[1, year - years_pred_on[1] + 13] = count_log_s_one_year(one_year_counts,
-                                                                            one_year_margs,
-                                                                            population = one_year_pop)
+    #model_choice.df[1, year - years_pred_on[1] + 13] = count_log_s_one_year(one_year_counts,
+    #                                                                        one_year_margs,
+    #                                                                        population = one_year_pop)
     
     
   }
     
     #Get the total MSE for count
-  model_choice.df[1, 6] = mean(as.numeric(model_choice.df[i, 1:5]))
+  model_choice.df[1, 6] = mean(as.numeric(model_choice.df[1, 1:5]))
     
     
     #Get the total IS for count
-  model_choice.df[1, 12] = mean(as.numeric(model_choice.df[i, 7:11]))
+  model_choice.df[1, 12] = mean(as.numeric(model_choice.df[1, 7:11]))
     
   
   
@@ -146,22 +156,209 @@ calc_model_choice <- function(model,
 }
 
 
-calc_model_choice(proper2_RW1_Extremadura,
+tmp <- calc_model_choice(proper2_RW1_Extremadura,
                   Data_LungCancer,
                   n, tT, 
                   Improper = F)
 
 
-calc_model_choice(Improper1_typeIV_Extremadura,
+tmp2 <- calc_model_choice(Improper1_typeIV_Extremadura,
                   Data_LungCancer,
                   n, tT, 
                   Improper = T)
 
-calc_model_choice(proper2_impEff_Extremadura,
+tmp3 <- calc_model_choice(proper2_impEff_Extremadura,
                   Data_LungCancer,
                   n, tT, 
                   Improper = F)
 
+tmp.df <- data.frame(model = c(rep("proper2_RW1", 12),
+                               rep("proper2_impEff", 12),
+                               rep("Improper1_typeIV", 12)),
+                     model_choice = rep(1:12, 3),
+                     value = 1:(12*3))
+for(i in 1:12){
+  tmp.df[tmp.df$model == "proper2_RW1", ]$value[i] <- tmp[1, i]
+  tmp.df[tmp.df$model == "proper2_impEff", ]$value[i] <- tmp2[1, i]
+  tmp.df[tmp.df$model == "Improper1_typeIV", ]$value[i] <- tmp3[1, i]
+}
+
+### Create a table
+#Make caption and label for latex table
+caption = "HEIHEI"
+label = "model choice Extremadura"
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    Heading()*Factor(model_choice, 
+                     levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (4)", "MSE (5)", "MSE (total)",
+                                    "IS (1)", "IS (2)", "IS (3)", "IS (4)", "IS (5)", "IS (total)"))*
+    Heading()*value*Heading()*identity,
+  data = tmp.df),
+  caption = caption,
+  label = label
+)
+
+#Save latex table
+cat(latex_tabular, file = "./case_study/Extremadura_model_choice.tex")
+
+  
+
+
 ################################################################################
 
-# Plot things...
+# Just for the sake of simplicity, sort the marginals of the proper models now
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
+                                                                        n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
+                                                                           n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
+                                                                         n, tT)
+  
+  proper2_impEff_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Extremadura$marginals.fitted.values,
+                                                                           n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$mean,
+                                                                           n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$sd,
+                                                                         n, tT)
+}
+
+
+
+# Predicted number of counts per 100,000
+pred_count_prop2_RW1 <- matrix(proper2_RW1_Extremadura$summary.fitted.values$mean * 1E5, nrow = n, ncol = tT, byrow = F)
+colnames(pred_count_prop2_RW1) = paste("Year", seq(t.from, t.to), sep = ".")
+
+carto <- cbind(map_Spain, pred_count_prop2_RW1)
+
+
+paleta <- brewer.pal(8,"RdYlGn")[8:1]
+pred_count_qs <- quantile(pred_count_prop2_RW1, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+values <- c(min(pred_count_prop2_RW1), pred_count_qs, Inf)
+
+
+
+#values <- c(, 45, 70, 90, 
+#            110, 140, 170, 200, Inf)
+
+Map.risks <- tm_shape(carto) +
+  tm_polygons(col=paste("Year", round(seq(t.from,t.to,length.out=9)),sep= "."),
+              palette=paleta, 
+              title="Predicted count\n per 100,000\n proper2_RW1", 
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks=values, 
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.2, 
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
+            panel.labels=as.character(round(seq(t.from,t.to,length.out=9)))) +
+  tm_facets(nrow=3, ncol=3)
+
+
+print(Map.risks)
+
+# Save Map
+tmap_save(Map.risks,
+          filename = "Plots/remove.pdf",
+          width = 8,
+          height = 6)
+
+
+
+
+# Predicted number of counts per 100,000
+pred_count_impIV <- matrix(Improper1_typeIV_Extremadura$summary.fitted.values$mean * 1E5, nrow = n, ncol = tT, byrow = F)
+colnames(pred_count_impIV) = paste("Year", seq(t.from, t.to), sep = ".")
+
+carto <- cbind(map_Spain, pred_count_impIV)
+
+
+paleta <- brewer.pal(8,"RdYlGn")[8:1]
+pred_count_qs <- quantile(pred_count_impIV, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+values <- c(min(pred_count_impIV), pred_count_qs, Inf)
+
+
+
+#values <- c(, 45, 70, 90, 
+#            110, 140, 170, 200, Inf)
+
+Map.risks <- tm_shape(carto) +
+  tm_polygons(col=paste("Year", round(seq(t.from,t.to,length.out=9)),sep= "."),
+              palette=paleta, 
+              title="Predicted count\n per 100,000\n Improper1_typeIV", 
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks=values, 
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.2, 
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
+            panel.labels=as.character(round(seq(t.from,t.to,length.out=9)))) +
+  tm_facets(nrow=3, ncol=3)
+
+
+print(Map.risks)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

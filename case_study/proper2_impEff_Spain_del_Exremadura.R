@@ -122,7 +122,6 @@ proper2_impEff_formula <- obs ~ 1 +
     hyper = spatial_hyper_Imp) +
   f(area_id.copy, 
     model = "besagproper2",
-    constr = T,
     graph = Besag_prec_spain,
     hyper = spatial_hyper,
     group = year_id, 

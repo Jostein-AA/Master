@@ -8,15 +8,15 @@ source("Utilities.R")
 library(bigDM)
 
 load("case_study/proper2_RW1_Spain_del_Extremadura.RData")
-#load("case_study/proper2_impEff_Extremadura.RData")
-#load("case_study/Improper1_typeIV_Extremadura.RData")
+load("case_study/proper2_impEff_Spain_del_Extremadura.RData")
+load("case_study/imp_typeIV_Spain_del_Extremadura.RData")
 
 ################################################################################
 plot(proper2_RW1_Spain_del_Extremadura)
 
-#plot(proper2_impEff_Extremadura)
+plot(proper2_impEff_Spain_del_Extremadura)
 
-#plot(Improper1_typeIV_Extremadura)
+plot(imp_typeIV)
 
 ################################################################################
 
@@ -33,12 +33,12 @@ problem_area = Carto_SpainMUN[2454, ]
 
 Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID != problem_area$ID, ]
 
-# Extract the areas within the principality of Extremadura
-map_Spain <- map_Spain[map_Spain$region == "Extremadura", ]
-IDs_Extremadura <- unique(map_Spain$ID)
+# Extract the areas NOT within the principality of Extremadura
+map_Spain <- map_Spain[map_Spain$region != "Extremadura", ]
+IDs_NOT_within_Extremadura <- unique(map_Spain$ID)
 
-# Extract the data within Extremadura
-Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID %in% IDs_Extremadura, ]
+# Extract the data NOT within Extremadura
+Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID %in% IDs_NOT_within_Extremadura, ]
 
 # Get the years and areas
 years = unique(Data_LungCancer$year)
@@ -49,19 +49,18 @@ t.to <- max(Data_LungCancer$year)
 # Create time-ids 1,...,25 instead of 1991,...,2015 for the sake of INLA
 Data_LungCancer$year_id <- Data_LungCancer$year - min(Data_LungCancer$year) + 1
 
-# For sake of INLA, transform ID from chr to num
-Data_LungCancer$ID <- as.numeric(Data_LungCancer$ID) 
-
 areas = unique(Data_LungCancer$ID)
 n = length(areas)
 
-# Ad a area-id starting at 1 and ending at 380 to both map_Spain and Data_LungCancer
+# Create provinces IDs
+map_Spain$ID.prov <- substr(map_Spain$ID, 1, 2)
+
+# Ad a area-id starting at 1 and ending at 7906 to both map_Spain and Data_LungCancer
 map_Spain$area_id = 1:nrow(map_Spain)
 Data_LungCancer$area_id = rep(NA, nrow(Data_LungCancer))
 for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
-
 
 
 ################################################################################
@@ -121,19 +120,19 @@ calc_model_choice <- function(model,
     
     
     ## Log-score
-    model_choice.df[1, year - years_pred_on[1] + 13] = count_log_s_one_year(one_year_counts,
-                                                                            one_year_margs,
-                                                                            population = one_year_pop)
+    #model_choice.df[1, year - years_pred_on[1] + 13] = count_log_s_one_year(one_year_counts,
+    #                                                                        one_year_margs,
+    #                                                                        population = one_year_pop)
     
     
   }
   
   #Get the total MSE for count
-  model_choice.df[1, 6] = mean(as.numeric(model_choice.df[i, 1:5]))
+  model_choice.df[1, 6] = mean(as.numeric(model_choice.df[1, 1:5]))
   
   
   #Get the total IS for count
-  model_choice.df[1, 12] = mean(as.numeric(model_choice.df[i, 7:11]))
+  model_choice.df[1, 12] = mean(as.numeric(model_choice.df[1, 7:11]))
   
   
   
@@ -146,21 +145,54 @@ calc_model_choice <- function(model,
 }
 
 
-calc_model_choice(proper2_RW1_Extremadura,
-                  Data_LungCancer,
-                  n, tT, 
-                  Improper = F)
+tmp <- calc_model_choice(proper2_RW1_Spain_del_Extremadura,
+                         Data_LungCancer,
+                         n, tT, 
+                         Improper = F)
 
 
-calc_model_choice(Improper1_typeIV_Extremadura,
-                  Data_LungCancer,
-                  n, tT, 
-                  Improper = T)
+tmp2 <- calc_model_choice(imp_typeIV,
+                          Data_LungCancer,
+                          n, tT, 
+                          Improper = T)
 
-calc_model_choice(proper2_impEff_Extremadura,
-                  Data_LungCancer,
-                  n, tT, 
-                  Improper = F)
+tmp3 <- calc_model_choice(proper2_impEff_Spain_del_Extremadura,
+                          Data_LungCancer,
+                          n, tT, 
+                          Improper = F)
+
+tmp.df <- data.frame(model = c(rep("proper2_RW1", 12),
+                               rep("proper2_impEff", 12),
+                               rep("Improper1_typeIV", 12)),
+                     model_choice = rep(1:12, 3),
+                     value = 1:(12*3))
+for(i in 1:12){
+  tmp.df[tmp.df$model == "proper2_RW1", ]$value[i] <- tmp[1, i]
+  tmp.df[tmp.df$model == "proper2_impEff", ]$value[i] <- tmp2[1, i]
+  tmp.df[tmp.df$model == "Improper1_typeIV", ]$value[i] <- tmp3[1, i]
+}
+
+### Create a table
+#Make caption and label for latex table
+caption = "HEIHEI"
+label = "model choice Extremadura"
+
+#Make latex table
+latex_tabular <- latexTable(tabular(
+  Heading("Model")*RowFactor(model, 
+                             nopagebreak = "\\hline",
+                             spacing = 0)~
+    Heading()*Factor(model_choice, 
+                     levelnames = c("MSE (1)", "MSE (2)", "MSE (3)", "MSE (4)", "MSE (5)", "MSE (total)",
+                                    "IS (1)", "IS (2)", "IS (3)", "IS (4)", "IS (5)", "IS (total)"))*
+    Heading()*value*Heading()*identity,
+  data = tmp.df),
+  caption = caption,
+  label = label
+)
+
+#Save latex table
+cat(latex_tabular, file = "./case_study/Spain_del_Extremadura_model_choice.tex")
 
 ################################################################################
 
