@@ -245,7 +245,99 @@ count_log_s_one_year <- function(counts,
   
 }
 
+get_pred_SD <- function(rate_marginals,
+                        population,
+                        n, 
+                        year){
+  one_year_marg <- rate_marginals[(n * (year - 1) + 1):(n * year)]
+  one_year_pop <- population[(n * (year - 1) + 1):(n * year)]
+  
+  #ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
+  #                                                      population[i])
+  tmp_sd <- rep(NA, n)
+  
+  
+  
+  for(i in 1:n){
+    poisson_param_sample <- 1E5 * inla.rmarginal(5000, one_year_marg[[i]]) #[[1]]
+    
+    ## Sample from Poisson
+    count_sample <- sapply(poisson_param_sample, 
+                           FUN = function(x){return(rpois(1, x))})
+    
+    tmp_sd[i] <- sd(count_sample)
+  }
+  
+  return(tmp_sd)
+}
 
+calc_width_CI_and_count_obs_outside <- function(marginals,
+                                                observations, 
+                                                population,
+                                                n, tT = 25, start_of_predictions = 21){
+  ### Initialize data frame to store the avg width of the 95% CI 1,...,5 years ahead
+  ### and the number of obs that fall outside the 95% CIs
+  tmp.df <- data.frame(width_CI_1_year_ahead = NA, width_CI_2_year_ahead = NA,
+                       width_CI_3_year_ahead = NA, width_CI_4_year_ahead = NA,
+                       width_CI_5_year_ahead = NA, width_CI_avg = NA,
+                       obs_outside_1_year = NA, obs_outside_2_year = NA,
+                       obs_outside_3_year = NA, obs_outside_4_year = NA,
+                       obs_outside_5_year = NA, obs_outside_tot = NA)
+  
+  
+  #### Take the years predicted on
+  years_pred_on <- start_of_predictions:tT
+  
+  
+  #### For each year calculate the width of the avg width of the CI that year
+  #### and the number of obs outside the 95% CIs
+  for(year in years_pred_on){
+    print(year)
+    
+    ## Extract the predicted marginals for this year
+    one_year_margs <- marginals[((year - 1) * n + 1):(year * n)]
+    
+    ### Extract the observed counts for this year
+    one_year_obs <- observations[((year - 1) * n + 1):(year * n)]
+    
+    ### Extrect the population for this year
+    one_year_pop <- population[((year - 1) * n + 1):(year * n)]
+    
+    ### Calculate the 95% CIs for each area, check if obs outside record
+    one_year_widths <- rep(NA, n)
+    one_year_count_misses = 0
+    for(i in 1:n){
+      
+      # Get samples of the poisson parameters
+      poisson_param_sample <- one_year_pop[i] * inla.rmarginal(5000, one_year_margs[[i]]) #[[1]]
+      
+      ## Sample from Poisson
+      count_sample <- sapply(poisson_param_sample,
+                             FUN = function(x){return(rpois(1, x))})
+      
+      # Calculate upper and lower quantiles to get 95% CI
+      u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
+      
+      # Get the width of the 95% CI
+      one_year_widths[i] = u - l
+      
+      # Check if observation is outside of 95% CI, if so record it as a miss
+      if(one_year_obs[i] < l |
+         one_year_obs[i] > u){
+        one_year_count_misses = one_year_count_misses + 1
+      }
+    }
+    
+    tmp.df[1, year - years_pred_on[1] + 1] =  mean(one_year_widths)
+    tmp.df[1, year - years_pred_on[1] + 7] =  one_year_count_misses
+    
+    
+  }
+  tmp.df[1, 6] = mean(as.numeric(tmp.df[1, 1:5]))
+  tmp.df[1, 12] = sum(as.numeric(tmp.df[1, 7:11]))
+  
+  return(tmp.df)
+}
 
 
 ################################################################################
