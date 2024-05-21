@@ -73,6 +73,27 @@ for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
 
+# Just for the sake of simplicity, sort the marginals of the proper models now
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+  proper2_RW1_Spain_del_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values,
+                                                                                  n, tT)
+  
+  proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean,
+                                                                                     n, tT)
+  
+  proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd,
+                                                                                   n, tT)
+  
+  proper2_impEff_Spain_del_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$marginals.fitted.values,
+                                                                                     n, tT)
+  
+  proper2_impEff_Spain_del_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$summary.fitted.values$mean,
+                                                                                        n, tT)
+  
+  proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd,
+                                                                                      n, tT)
+}
+
 
 ################################################################################
 # Calculate model choice
@@ -207,26 +228,7 @@ cat(latex_tabular, file = "./case_study/Spain_del_Extremadura_model_choice.tex")
 
 ################################################################################
 
-# Just for the sake of simplicity, sort the marginals of the proper models now
-if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
-  proper2_RW1_Spain_del_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values,
-                                                                        n, tT)
-  
-  proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean,
-                                                                           n, tT)
-  
-  proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd,
-                                                                         n, tT)
-  
-  proper2_impEff_Spain_del_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$marginals.fitted.values,
-                                                                           n, tT)
-  
-  proper2_impEff_Spain_del_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$summary.fitted.values$mean,
-                                                                              n, tT)
-  
-  proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd,
-                                                                            n, tT)
-}
+
 
 #########
 # Mean pred count
@@ -484,8 +486,38 @@ tmap_save(Map.risks_impIV,
 # Times observations land outside the 95% CI
 
 
+widths_and_misses_prop2_RW1 <- calc_width_CI_and_count_obs_outside(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values,
+                                                                   Data_LungCancer$obs,
+                                                                   Data_LungCancer$pop,
+                                                                   n)  
 
 
+widths_and_misses_prop2_impEff <- calc_width_CI_and_count_obs_outside(proper2_impEff_Spain_del_Extremadura$marginals.fitted.values,
+                                                                      Data_LungCancer$obs,
+                                                                      Data_LungCancer$pop,
+                                                                      n)
+
+widths_and_misses_impIV <- calc_width_CI_and_count_obs_outside(imp_typeIV$marginals.fitted.values,
+                                                               Data_LungCancer$obs,
+                                                               Data_LungCancer$pop,
+                                                               n)
+
+# Create a plot showing, for each model, the number of observations outside the 95% CI
+tmp.df <- data.frame(model_name = c(rep("proper2_RW1", 5),
+                                rep("proper2_impEff", 5),
+                                rep("Improper1_typeIV", 5)),
+                     year = rep(c(2011, 2012, 2013, 2014, 2015), 3),
+                     misses = 1:(3 * 5))
+
+for(i in 1:5){
+  tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_RW1[1, 6 + i]
+  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_impEff[1, 6 + i]
+  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_impIV[1, 6 + i]
+}
+
+
+ggplot(data  = tmp.df[tmp.df$model_name != "proper2_impEff", ]) + 
+  geom_point(aes(x = year, y = misses, col = model_name))
 
 
 
