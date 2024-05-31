@@ -13,6 +13,7 @@ library(geoR)
 library(paletteer)
 library('ggsci')
 library(ggstats)
+library(tidyverse)
 
 load("maps_and_nb.RData")
 load("grids_and_mappings.RData")
@@ -710,7 +711,7 @@ plt_overall_results_all_scenarios <- function(model_names,
                   geom_point(size = 3,
                            position = position_dodge(0.5),
                            alpha = 1.5) + 
-    geom_stripped_cols(odd = "#00FF0022", even = "#FF000022", alpha = .12) +
+    geom_stripped_cols(odd = "#FFFFFF00", even = "#00000011", alpha = .12) +
     theme_bw() + 
     theme(axis.text = element_text(size = 18.5),
           axis.title = element_text(size = 18.5),
@@ -728,17 +729,17 @@ plt_overall_results_all_scenarios <- function(model_names,
                                  proper2_noInt = 22, proper2_onlyInt = 22,
                                  proper2_full = 22, proper2_iid = 22)) +
   scale_fill_manual(name = "Models",
-                    values = c(Improper1_noInt = "#5050FFFF",  Improper1_typeI = "#CE3D32FF",
-                               Improper1_typeII = "#749B58FF", Improper1_typeIII = "#F0E685FF",
-                               Improper1_typeIV = "#466983FF", Improper2_noInt = "#5DB1DDFF",
-                               Improper2_typeI = "#802268FF", Improper2_typeII = "#FFC20AFF",
-                               Improper2_typeIII = "#924822FF", Improper2_typeIV = "#E4AF69FF",
+                    values = c(Improper1_noInt = "#466983FF",  Improper1_typeI = "#749B58FF",
+                               Improper1_typeII = "#CE3D32FF", Improper1_typeIII = "#F0E685FF",
+                               Improper1_typeIV = "#5050FFFF", Improper2_noInt = "#5DB1DDFF",
+                               Improper2_typeI = "#E4AF69FF", Improper2_typeII = "#FFC20AFF",
+                               Improper2_typeIII = "#924822FF", Improper2_typeIV = "#802268FF",
                                proper1_noInt = "#D595A7FF", proper1_onlyInt = "#0A0722FF",
                                proper1_full = "#D94D3DFF", proper1_iid = "#F2EA69FF",
                                proper2_noInt = "#1E0C45FF", proper2_onlyInt = "#00CC99FF",
                                proper2_full = "#990033FF", proper2_iid = "#0A47FFFF")) + 
     xlab(xlab) + 
-    ylab(TeX(r'(Average IS $\left(\widehat{\lambda_{11,12,13}E_{11,12,13}}\right)$)')) + 
+    ylab(TeX(r'(Average IS $\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)')) + 
     scale_x_discrete(labels = c("Const, Short", "Lin, Short", "CP, Short",
                                 "Const, Long", "Lin, Long", "CP, Long")) + 
     guides(shape = guide_legend(nrow = 3),

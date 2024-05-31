@@ -1025,25 +1025,29 @@ ridgeplot_mse_is_rates <- function(to_plot.df,
     title = "Average all years"
   }
   
-  return(ggplot(data = to_plot.df, 
-                aes(x = value_to_plot, 
-                    y = model_name, 
-                    fill = model_name)) + 
-           ggtitle(title) +
-           geom_density_ridges() +
-           theme_ridges() + 
-           theme(legend.position = "none",
-                 axis.text.y = axis.text.y,
-                 axis.title.y = element_text(hjust = 0.5, vjust = 0.5,
-                                             size = 15),
-                 axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
-                 axis.text.x = element_text(size = 15),
-                 axis.title = element_text(size=15),
-                 plot.title = element_text(size = 15, hjust = 0.5,
-                                           face = "plain")) + 
-           xlab(xlab) + 
-           ylab(ylab) +
-           xlim(xlim[1], xlim[2]))
+  return(to_plot.df %>% 
+           mutate(model_name = fct_reorder(.f = model_name,
+                                            .x = IS_tot,
+                                            .fun = mean,
+                                           .na_rm = TRUE)) %>% 
+           ggplot(aes(x = value_to_plot,
+                  y = model_name,
+                  fill = model_name)) +
+         ggtitle(title) +
+         geom_density_ridges() +
+         theme_ridges() +
+         theme(legend.position = "none",
+               axis.text.y = axis.text.y,
+               axis.title.y = element_text(hjust = 0.5, vjust = 0.5,
+                                           size = 15),
+               axis.title.x = element_text(hjust = 0.5, vjust = 0.5),
+               axis.text.x = element_text(size = 15),
+               axis.title = element_text(size=15),
+               plot.title = element_text(size = 15, hjust = 0.5,
+                                         face = "plain")) +
+         xlab(xlab) +
+         ylab(ylab) +
+         xlim(xlim[1], xlim[2]))
 }
 
 ridgeplot_mse_is_rates_all_years <- function(model_names,
@@ -1096,6 +1100,10 @@ ridgeplot_mse_is_rates_all_years <- function(model_names,
     to_plot_ridge.df = rbind(to_plot_ridge.df, tmp2_)
   }
   
+  
+  
+  
+  
   widths = c(1.4, 1, 1, 1)
   
   if(presentation){
@@ -1111,50 +1119,50 @@ ridgeplot_mse_is_rates_all_years <- function(model_names,
                                  value_to_plot = to_plot_ridge.df$mse_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\widehat{\lambda_{11}E_{11}}\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{11}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
   plt2 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_2_year_ahead,
                                  one_2_3_or_total = 2, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\widehat{\lambda_{12}E_{12}}\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{12}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
   
   plt3 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_3_year_ahead,
                                  one_2_3_or_total = 3, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\widehat{\lambda_{13}E_{13}}\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{13}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
   
   plt_mse_tot <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                         value_to_plot = to_plot_ridge.df$MSE_tot,
                                         one_2_3_or_total = 4, 
                                         IS_or_MSE = "MSE",
-                                        xlab = TeX(r'(MSE$\left(\widehat{\lambda_{11,12,13}E_{11,12,13}}\right)$)'), xlim_mse)
+                                        xlab = TeX(r'(MSE$\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
   
   
   plt4 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\widehat{\lambda_{11}E_{11}}\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{11}100|y_{1},...,y_{10})\right)$)'), xlim_is)
   
   plt5 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_2_year_ahead,
                                  one_2_3_or_total = 2,
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\widehat{\lambda_{12}E_{12}}\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{12}100|y_{1},...,y_{10})\right)$)'), xlim_is)
   
   
   plt6 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_3_year_ahead,
                                  one_2_3_or_total = 3,
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\widehat{\lambda_{13}E_{13}}\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{13}100|y_{1},...,y_{10})\right)$)'), xlim_is)
   
   plt_is_tot <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                        value_to_plot = to_plot_ridge.df$IS_tot,
                                        one_2_3_or_total = 4, 
                                        IS_or_MSE = "IS",
-                                       xlab = TeX(r'(IS$\left(\widehat{\lambda_{11,12,13}E_{11,12,13}}\right)$)'), xlim_is)
+                                       xlab = TeX(r'(IS$\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)'), xlim_is)
   
   
   plt <- ggarrange(plt1, plt2, plt3, plt_mse_tot,

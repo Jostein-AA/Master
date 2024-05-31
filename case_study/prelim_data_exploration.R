@@ -44,6 +44,11 @@ n = length(areas)
 # Calculate expected number of counts per 100,000
 Data_LungCancer$exp_per_1E5 <- (Data_LungCancer$exp * 1E5)/Data_LungCancer$pop
 ################################################################################
+# Count the number of observations that are equal to zero
+sum(Data_LungCancer$obs == 0)
+
+
+################################################################################
 map_Spain = Carto_SpainMUN
 map_Spain$disjoint = "no"
 map_Spain[2454, ]$disjoint = "yes"

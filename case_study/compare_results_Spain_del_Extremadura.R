@@ -74,7 +74,7 @@ for(year_id in 1:tT){
 }
 
 # Just for the sake of simplicity, sort the marginals of the proper models now
-if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to. Need sorting only once
   proper2_RW1_Spain_del_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values,
                                                                                   n, tT)
   
@@ -350,6 +350,55 @@ tmap_save(Map.risks_impIV,
           height = 4)
 
 
+### Difference plot
+diff <- (pred_count_prop2_RW1 - pred_count_impIV)/(pred_count_impIV) 
+quantiles.diff <- quantile(diff, probs = c(0.025, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 0.975))
+
+carto_diff <- cbind(map_Spain, diff)
+
+paleta.diff <- brewer.pal(9,"RdBu")[9:1]
+values.diff <- c(-Inf, quantiles.diff, Inf)
+
+
+Map.diff <- tm_shape(carto_diff) +
+  tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
+              palette=paleta.diff, 
+              title="Relative difference\nin posterior mean\npredicted counts", #(Improper1_typeIV\n - proper2_RW1)/\nproper2_RW1
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks = values.diff,
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.15, 
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
+            panel.labels=as.character(c(2011, 2013, 2015))) +
+  tm_facets(nrow=1, ncol=3)
+
+
+print(Map.diff)
+
+tmap_save(Map.diff,
+          filename = "Plots/Spain_del_Extremadura_pred_counts_relative_diff.pdf",
+          width = 12, #12 by 4
+          height = 4)
 
 
 
@@ -507,17 +556,36 @@ tmp.df <- data.frame(model_name = c(rep("proper2_RW1", 5),
                                 rep("proper2_impEff", 5),
                                 rep("Improper1_typeIV", 5)),
                      year = rep(c(2011, 2012, 2013, 2014, 2015), 3),
-                     misses = 1:(3 * 5))
+                     misses = 1:(3 * 5),
+                     width_CI = 1:(3 * 5))
 
 for(i in 1:5){
-  tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_RW1[1, 6 + i]
-  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_impEff[1, 6 + i]
-  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_impIV[1, 6 + i]
+  tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_RW1[1, 6 + i]/n
+  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_impEff[1, 6 + i]/n
+  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_impIV[1, 6 + i]/n
+  
+  tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_prop2_RW1[1, i]
+  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_prop2_impEff[1, i]
+  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_impIV[1, i]
 }
 
+# Save as prop_obs_outside_95_CI_Spain_del_Extremadura 6 by 3
+ggplot(data  = tmp.df[tmp.df$model_name != "proper2_impEff", ]) + 
+  geom_point(aes(x = year, y = misses, col = model_name)) + 
+  theme_bw() + 
+  theme(legend.position = "top") + 
+  ylab("Proportion of observations outside\nthe posterior predictive 95% CI") + 
+  ylim(0, 0.015) + 
+  scale_colour_discrete(name="Model:")
 
 ggplot(data  = tmp.df[tmp.df$model_name != "proper2_impEff", ]) + 
-  geom_point(aes(x = year, y = misses, col = model_name))
+  geom_errorbar(aes(x = year, ymax = 0.5 * width_CI,
+                    ymin = -0.5 * width_CI, colour = model_name)) + 
+  theme_bw() + 
+  theme(legend.position = "top") + 
+  ylab("Average width of the\n posterior predictive 95% CI") 
+
+
 
 
 

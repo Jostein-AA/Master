@@ -72,6 +72,26 @@ for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
 
+# Just for the sake of simplicity, sort the marginals of the proper models now
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
+                                                                        n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
+                                                                           n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
+                                                                         n, tT)
+  
+  proper2_impEff_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Extremadura$marginals.fitted.values,
+                                                                           n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$mean,
+                                                                              n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$sd,
+                                                                            n, tT)
+}
 
 
 ################################################################################
@@ -210,26 +230,7 @@ cat(latex_tabular, file = "./case_study/Extremadura_model_choice.tex")
 
 ################################################################################
 
-# Just for the sake of simplicity, sort the marginals of the proper models now
-if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
-  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
-                                                                        n, tT)
-  
-  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
-                                                                           n, tT)
-  
-  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
-                                                                         n, tT)
-  
-  proper2_impEff_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Extremadura$marginals.fitted.values,
-                                                                           n, tT)
-  
-  proper2_impEff_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$mean,
-                                                                           n, tT)
-  
-  proper2_impEff_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$sd,
-                                                                         n, tT)
-}
+
 
 #########
 # Mean pred count
@@ -351,25 +352,83 @@ tmap_save(Map.risks_impIV,
           height = 4)
 
 
+
+
+### Difference plot
+diff <- (pred_count_prop2_RW1 - pred_count_impIV)/(pred_count_impIV) 
+quantiles.diff <- quantile(diff, probs = c(0.025, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 0.975))
+
+carto_diff <- cbind(map_Spain, diff)
+
+paleta.diff <- brewer.pal(9,"RdBu")[9:1]
+values.diff <- c(-Inf, quantiles.diff, Inf)
+  
+  
+Map.diff <- tm_shape(carto_diff) +
+  tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
+              palette=paleta.diff, 
+              title="Relative difference\nin posterior mean\npredicted counts", #(Improper1_typeIV\n - proper2_RW1)/\nproper2_RW1
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks = values.diff,
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.15, 
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
+            panel.labels=as.character(c(2011, 2013, 2015))) +
+  tm_facets(nrow=1, ncol=3)
+
+
+print(Map.diff)
+
+tmap_save(Map.diff,
+          filename = "Plots/Extremadura_pred_counts_relative_diff.pdf",
+          width = 12, #12 by 4
+          height = 4)
+
 ########
 # SD count
 
-
-
-
 # Predicted SD of counts per 100,000
-sd_2011 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 21)
-sd_2013 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 23)
-sd_2015 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 25)
+#sd_2011 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 21)
+#sd_2013 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 23)
+#sd_2015 <- get_pred_SD(proper2_RW1_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 25)
+
+sd_2011 <- proper2_RW1_Extremadura$summary.fitted.values$sd[(n * 20 + 1):(n * 21)] * 1E5
+sd_2013 <- proper2_RW1_Extremadura$summary.fitted.values$sd[(n * 22 + 1):(n * 23)] * 1E5
+sd_2015 <- proper2_RW1_Extremadura$summary.fitted.values$sd[(n * 24 + 1):(n * 25)] * 1E5
+
 
 pred_SD_prop2_RW1 <- matrix(c(sd_2011, sd_2013, sd_2015), nrow = n, ncol = 3, byrow = F)
 colnames(pred_SD_prop2_RW1) = paste("Year", c(2011, 2013, 2015), sep = ".")
 
 
 # Predicted SD of counts per 100,000
-sd_IV_2011 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 21)
-sd_IV_2013 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 23)
-sd_IV_2015 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 25)
+#sd_IV_2011 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 21)
+#sd_IV_2013 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 23)
+#sd_IV_2015 <- get_pred_SD(Improper1_typeIV_Extremadura$marginals.fitted.values, Data_LungCancer$pop, n, 25)
+
+sd_IV_2011 <- Improper1_typeIV_Extremadura$summary.fitted.values$sd[(n * 20 + 1):(n * 21)] * 1E5
+sd_IV_2013 <- Improper1_typeIV_Extremadura$summary.fitted.values$sd[(n * 22 + 1):(n * 23)] * 1E5
+sd_IV_2015 <- Improper1_typeIV_Extremadura$summary.fitted.values$sd[(n * 24 + 1):(n * 25)] * 1E5
 
 pred_SD_impIV <- matrix(c(sd_IV_2011, sd_IV_2013, sd_IV_2015), nrow = n, ncol = 3, byrow = F)
 colnames(pred_SD_impIV) = paste("Year", c(2011, 2013, 2015), sep = ".")
