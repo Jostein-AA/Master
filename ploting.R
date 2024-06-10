@@ -770,8 +770,117 @@ plt_overall_results_all_scenarios(model_names = model_names,
 
 
 
+plt_overall_results_all_scenarios_combinaion_models <- function(model_names, 
+                                                                scenario_names,
+                                                                xlab){
+  
+  scenario_name = scenario_names[1]
+  model_name = model_names[1]
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_rates
+  
+  to_plot.df <- data.frame(model_name = model_name,
+                           scenario_name = scenario_name,
+                           IS_tot = mean(tmp_$total_IS, na.rm = TRUE))
+  
+  
+  
+  for(scenario_name in scenario_names){
+    for(model_name in model_names){
+      if(scenario_name == scenario_names[1] & model_name == model_names[1]){
+        # Skip this one as it is all ready done
+        next
+      }
+      
+      load(paste("./results/model_choice/model_choice_", 
+                 model_name, "_", 
+                 scenario_name, ".RData",
+                 sep = ""))
+      
+      tmp_ <- model_choice_for_rates
+      
+      tmp2_ <- data.frame(model_name = model_name,
+                          scenario_name = scenario_name,
+                          IS_tot = mean(tmp_$total_IS, na.rm = TRUE))
+      
+      
+      to_plot.df = rbind(to_plot.df, tmp2_)
+    }
+  }
+  
+  level_order = scenario_names
+  
+  plt <- ggplot(data = to_plot.df, aes(x = factor(scenario_name, 
+                                                  level = level_order),
+                                       y = IS_tot,
+                                       fill = model_name,
+                                       shape = model_name)) + 
+    geom_point(size = 3,
+               position = position_dodge(0.5),
+               alpha = 1.5) + 
+    geom_stripped_cols(odd = "#FFFFFF00", even = "#00000011", alpha = .12) +
+    theme_bw() + 
+    theme(axis.text = element_text(size = 18.5),
+          axis.title = element_text(size = 18.5),
+          legend.title = element_text(size = 18.5),
+          legend.text = element_text(size = 16),
+          legend.position = "top") + 
+    scale_shape_manual(name = "Models",
+                        values = c(Improper1_typeIV_woSpatial_diff_constraints = 24, Improper1_typeIV = 24,
+                                   proper1_iid_woTemporal_trend = 23, proper1_iid = 23,
+                                   proper2_propInt_Improp_temporal = 22, proper2_onlyInt = 22,
+                                   proper2Int_imp1Effects = 22),
+                       labels = c(Improper1_typeIV_woSpatial_diff_constraints = "Improper1_typeIV_woS",
+                                  Improper1_typeIV = "Improper1_typeIV",
+                                  proper1_iid_woTemporal_trend = "proper1_iidNoF",
+                                  proper1_iid = "proper1_iid",
+                                  proper2Int_imp1Effects = "proper2_impEff",
+                                  proper2_propInt_Improp_temporal = "proper2_RW1",
+                                  proper2_onlyInt = "proper2_onlyInt")) +
+     scale_fill_manual(name = "Models",
+                       values = c(Improper1_typeIV_woSpatial_diff_constraints = "#466983FF",  Improper1_typeIV = "#749B58FF",
+                                  proper1_iid_woTemporal_trend = "#CE3D32FF",  proper1_iid = "#5050FFFF", 
+                                  proper2Int_imp1Effects = "#FFC20AFF", proper2_onlyInt = "#00CC99FF",
+                                  proper2_propInt_Improp_temporal = "#0A47FFFF"),
+                       labels = c(Improper1_typeIV_woSpatial_diff_constraints = "Improper1_typeIV_woS",
+                                  Improper1_typeIV = "Improper1_typeIV",
+                                  proper1_iid_woTemporal_trend = "proper1_iidNoF",
+                                  proper1_iid = "proper1_iid",
+                                  proper2Int_imp1Effects = "proper2_impEff",
+                                  proper2_propInt_Improp_temporal = "proper2_RW1",
+                                  proper2_onlyInt = "proper2_onlyInt")) + 
+    xlab(xlab) + 
+    ylab(TeX(r'(Average IS $\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)')) + 
+    scale_x_discrete(labels = c("Const, Short", "Lin, Short", "CP, Short",
+                                "Const, Long", "Lin, Long", "CP, Long")) + 
+    guides(shape = guide_legend(nrow = 3),
+           fill = guide_legend(nrow = 3))
+  
+  
+  return(plt)
+}
+
+comb_models_and_others_names <- c("proper1_iid_woTemporal_trend",
+                                  "proper1_iid",
+                                  "proper2_propInt_Improp_temporal",
+                                  "proper2Int_imp1Effects",
+                                  "proper2_onlyInt",
+                                  "Improper1_typeIV_woSpatial_diff_constraints",
+                                  "Improper1_typeIV")
 
 
+#Save as combination_models_ADM4_results 15 by 15
+plt_overall_results_all_scenarios_combinaion_models(comb_models_and_others_names, 
+                                                    scenario_names_ADM4,
+                                                    xlab = "Scenarios on ADM4 map")
+
+plt_overall_results_all_scenarios_combinaion_models(comb_models_and_others_names, 
+                                                    scenario_names_ADM1,
+                                                    xlab = "Scenarios on ADM1 map")
 
 
 
@@ -3309,16 +3418,16 @@ annotate_figure(plt,
 # ADM4
 
 #### SC2
-plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", 
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc12", 
                                           dataset_id = dataset_id_2,
                                           admin_map = second_level_admin_map,
                                           scale_col = scale_col,
                                           scale = scale,
-                                          which.legend = 4)
+                                          which.legend = 3)
 
-# Save as sc2_true_rate 8.5 by 3
+# Save as sc12_true_rate 8.5 by 3
 annotate_figure(plt5, 
-                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated rate per 100 for )'), 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, long}$, Simulated rate per 100 for )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 14))

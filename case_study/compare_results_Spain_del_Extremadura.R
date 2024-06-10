@@ -310,7 +310,7 @@ carto_impIV <- cbind(map_Spain, pred_count_impIV)
 Map.risks_impIV <- tm_shape(carto_impIV) +
   tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
               palette=paleta, 
-              title="Predicted count\n per 100,000\n Improper1_typeIV", 
+              title="Predicted count\n per 100,000\n Div_and_conquer", 
               legend.show=T, 
               border.col="transparent",
               legend.reverse=T, 
@@ -490,7 +490,7 @@ carto_impIV <- cbind(map_Spain, pred_SD_impIV)
 Map.risks_impIV <- tm_shape(carto_impIV) +
   tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
               palette=paleta, 
-              title="Posterior SD of the \npredicted counts\nper 100,000\n Improper1_typeIV", 
+              title="Posterior SD of the \npredicted counts\nper 100,000\nDiv_and_conquer", 
               legend.show=T, 
               border.col="transparent",
               legend.reverse=T, 
@@ -554,19 +554,19 @@ widths_and_misses_impIV <- calc_width_CI_and_count_obs_outside(imp_typeIV$margin
 # Create a plot showing, for each model, the number of observations outside the 95% CI
 tmp.df <- data.frame(model_name = c(rep("proper2_RW1", 5),
                                 rep("proper2_impEff", 5),
-                                rep("Improper1_typeIV", 5)),
+                                rep("Div_and_conquer", 5)),
                      year = rep(c(2011, 2012, 2013, 2014, 2015), 3),
                      misses = 1:(3 * 5),
                      width_CI = 1:(3 * 5))
 
 for(i in 1:5){
   tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_RW1[1, 6 + i]/n
-  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_impEff[1, 6 + i]/n
-  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_impIV[1, 6 + i]/n
+  #tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_prop2_impEff[1, 6 + i]/n
+  tmp.df[tmp.df$model_name == "Div_and_conquer" & tmp.df$year == (2010 + i), ]$misses <- widths_and_misses_impIV[1, 6 + i]/n
   
   tmp.df[tmp.df$model_name == "proper2_RW1" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_prop2_RW1[1, i]
-  tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_prop2_impEff[1, i]
-  tmp.df[tmp.df$model_name == "Improper1_typeIV" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_impIV[1, i]
+  #tmp.df[tmp.df$model_name == "proper2_impEff" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_prop2_impEff[1, i]
+  tmp.df[tmp.df$model_name == "Div_and_conquer" & tmp.df$year == (2010 + i), ]$width_CI <- widths_and_misses_impIV[1, i]
 }
 
 # Save as prop_obs_outside_95_CI_Spain_del_Extremadura 6 by 3
