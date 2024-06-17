@@ -70,9 +70,24 @@ find_ul_quants_counts_single_pred <- function(lambda_marginal,
   count_sample <- sapply(poisson_param_sample, 
                          FUN = function(x){return(rpois(1, x))})
   
+  
+  ## Get quantiles as decimals in some way
+  
+  # Maybe use ecdf instead?
+  
+  # Potentially need to remove type = ...
+  u = as.numeric(quantile(x = count_sample, probs = 0.975, type = 9)) # type 4, 5
+  l = as.numeric(quantile(x = count_sample, probs = 0.025, type = 3)) # type 1, 2
+  median = as.numeric(quantile(count_sample, 0.5, type = 7)) # type 6
+  
+  #print(paste("u: ", u))
+  #print(paste("l: ", l))
+  #print(paste("median: ", median))
+  
   ## Calculate upper and lower quantile (and median)
-  u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
-  median = as.numeric(quantile(count_sample, 0.5))
+  #u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
+  #median = as.numeric(quantile(count_sample, 0.5))
+  
   mean <- as.numeric(mean(count_sample))
   
   return(list(l = l, u = u, median = median,
@@ -105,14 +120,39 @@ count_IS_one_year_case_study <- function(counts,
                                                           population[i])
     
     
-    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year$l, ul_each_one_year$u, 
+    IS_each_instance[i] = find_IS_one_obs(ul_each_one_year$l, 
+                                          ul_each_one_year$u, 
                                           counts[i])
+    
   }
   
   ## Find the average IS this year
   IS_this_year <- mean(IS_each_instance)
   
   return(IS_this_year)
+}
+
+
+width_CI_one_year_case_study <- function(marginals,
+                                         population){
+  
+  
+  CI_each_instance = rep(0, length(marginals))
+  
+  # Iterate over each marginal
+  for(i in 1:length(marginals)){
+    ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
+                                                          population[i])
+    
+    #ul_each_one_year <- find_ul_quants_rate_single_pred(marginals[[i]], n_samps = 10000)
+    
+    CI_each_instance[i] = ul_each_one_year$u - ul_each_one_year$l 
+  }
+  
+  ## Find the average CI width this year
+  avg_CI_this_year <- mean(CI_each_instance)
+  
+  return(avg_CI_this_year)
 }
 
 
@@ -147,12 +187,12 @@ count_IS_one_year_one_dataset <- function(sampled_counts_one_year,
 #test2 <- count_IS_one_year_one_dataset(lambda.df$sampled_counts[(10 * n_ADM1 + 1):(11 * n_ADM1), 1], marginals[(10 * n_ADM1 + 1):(11 * n_ADM1)], 100)
 
 
-find_ul_quants_rate_single_pred <- function(lambda_marginal){
+find_ul_quants_rate_single_pred <- function(lambda_marginal, n_samps = 5000){
   # Function to calculate upper (u) and lower (l) quantiles for a single
   # rate prediction
   
   ## Sample lambda and scale w. E_it to get an instance of Poisson
-  rate_sample <- inla.rmarginal(5000, lambda_marginal) #[[1]]
+  rate_sample <- inla.rmarginal(n_samps, lambda_marginal) #[[1]]
   
   ## Calculate upper and lower quantile (and median)
   u = as.numeric(quantile(rate_sample, 0.975)); l = as.numeric(quantile(rate_sample, 0.025))
@@ -1261,13 +1301,19 @@ plot_temporal_trend_data_one_data_set <- function(scenario_name, data_set_id, ti
       ggtitle(title) + 
       geom_line(aes(x = time_id, y = aggregated_value, col = type, linetype = type)) + #linetype = type
       scale_linetype_manual(values = c("longdash", "solid")) +
-      scale_color_manual(values = c("darkred", "blue")) +
+      scale_color_manual(labels = c("Aggregated rate per 100", "Aggregated sampled counts"),
+                         values = c("darkred", "blue")) +
       ylim(8, 14) + 
       theme_bw() + 
-      theme(axis.title=element_text(size=11),
-            plot.title = element_text(size=11),
-            strip.text.x = element_text(size = 9)) +
-      labs(col = NULL) + 
+      theme(axis.title=element_text(size=13),
+            plot.title = element_text(size=14),
+            axis.title.x = element_text(size=13),
+            axis.text.x = element_text(size = 13),
+            axis.title.y = element_text(size=14),
+            axis.text.y = element_text(size = 13),
+            legend.text = element_text(size = 13)) +
+      scale_x_continuous(breaks = c(1, 4, 7, 10, 13)) + 
+      labs(col = NULL) + #scale_color_manual(labels = c("Aggregated rate per 100", TeX(r'(\bar{y}_t)'))) +
       guides(linetype = "none") +
       xlab(xlab) + 
       ylab(ylab) 
@@ -1380,7 +1426,10 @@ heatmap_areas <- function(map_w_values,
                           scale_col = NULL,
                           scale = NULL,
                           hardcoded_bins = NULL,
-                          title = NULL){
+                          title = NULL,
+                          legend.title = NULL, 
+                          legend.text.size = 15,
+                          plot.title.size = 15){
   
   map_w_values$to_plot = value
   
@@ -1395,7 +1444,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 19, hjust = 0.5),
+      theme(plot.title = element_text(size = plot.title.size, hjust = 0.5),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
             axis.ticks = element_blank(),
@@ -1403,9 +1452,9 @@ heatmap_areas <- function(map_w_values,
             plot.margin =  unit(c(0, 0, 0, 0), "inches"),
             legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-            legend.text = element_text(size = 15),
+            legend.text = element_text(size = legend.text.size),
             panel.spacing = unit(1, 'lines')) +
-      guides(fill=guide_legend(title=NULL,
+      guides(fill=guide_legend(title=legend.title,
                                reverse = TRUE,
                                label.position = "right",
                                drop = F)) + #Remove colorbar title
@@ -1421,7 +1470,7 @@ heatmap_areas <- function(map_w_values,
       geom_sf(aes(fill = to_plot), 
               alpha = 1,
               color="black") + ggtitle(title) + 
-      theme(plot.title = element_text(size = 19, hjust = 0.5,
+      theme(plot.title = element_text(size = plot.title.size, hjust = 0.5,
                                       vjust = -0.1),
             axis.title.x = element_blank(), #Remove axis and background grid
             axis.text = element_blank(),
@@ -1430,9 +1479,9 @@ heatmap_areas <- function(map_w_values,
             plot.margin =  unit(c(0, 0, 0, 0), "inches"),
             legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
             legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-            legend.text = element_text(size = 15),
+            legend.text = element_text(size = legend.text.size),
             panel.spacing = unit(1, 'lines')) +
-      guides(fill=guide_legend(title=NULL,
+      guides(fill=guide_legend(title=legend.title,
                                reverse = TRUE, 
                                label.position = "right",
                                ncol = 1,
@@ -1453,7 +1502,8 @@ heatmap_points <- function(risk_surface.list,
                            admin_map,
                            t,
                            title,
-                           legends.title = NULL){
+                           legends.title = NULL,
+                           hardcoded_bins = NULL){
   
   ## join risk_surface.list to polygon_grid2 based on polygon_id in order to plot
   tmp_ = data.frame(values = risk_surface.list$values, 
@@ -1468,46 +1518,82 @@ heatmap_points <- function(risk_surface.list,
   tmp_ = st_set_geometry(tmp3_[, c("t", "values", "polygon_id")], 
                          tmp3_$geometry)
   
-  
-  # Make it so that each heatmap is plotted on similar color scale 
   scale_col = heat.colors(50, rev=TRUE)          #Divide color gradient into 30 
-  scale = scale_col[seq(3, 50, length.out = 15)] #Select color scale to be more red
-  risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
-  hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 15), 4)
+  scale = scale_col[seq(7, 50, length.out = 12)] #Select color scale to be more red
+  
+  if(is.null(hardcoded_bins)){
+    # Make it so that each heatmap is plotted on similar color scale 
+    risk.min = min(tmp_$values); risk.max = max(tmp_$values) 
+    hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 15), 4)
     
-  #Extract the values for time = t
-  tmp2_ = tmp_[tmp_$t == t, ]
+    #Extract the values for time = t
+    tmp2_ = tmp_[tmp_$t == t, ]
     
-  p <- ggplot(data = tmp2_) +  
+    p <- ggplot(data = tmp2_) +  
+      
+      geom_sf(aes(fill = values), 
+              alpha = 1,
+              color = NA) + ggtitle(title) + #"lightgrey"
+      theme(plot.title = element_text(size = 15, hjust = 0.5), 
+            axis.title.x = element_blank(), #Remove axis and background grid
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            panel.background = element_blank(),
+            plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+            legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            panel.spacing = unit(1, 'lines')) +
+      guides(fill=guide_legend(title = legends.title, 
+                               reverse = TRUE, 
+                               label.position = "right")) + #Remove colorbar title
+      binned_scale( #Scaling the color
+        aesthetics = "fill",
+        scale_name = "gradientn",
+        palette = function(x) c(scale),
+        labels = function(x){x},
+        breaks = hardcoded_bins,
+        guide = "colorscale") + 
+      geom_sf(data = admin_map,
+              aes(), 
+              alpha = 0,
+              color="black")
     
-    geom_sf(aes(fill = values), 
-            alpha = 1,
-            color = NA) + ggtitle(title) + #"lightgrey"
-    theme(plot.title = element_text(size = 15, hjust = 0.5), 
-          axis.title.x = element_blank(), #Remove axis and background grid
-          axis.text = element_blank(),
-          axis.ticks = element_blank(),
-          panel.background = element_blank(),
-          plot.margin =  unit(c(0, 0, 0, 0), "inches"),
-          legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-          legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-          panel.spacing = unit(1, 'lines')) +
-    guides(fill=guide_legend(title = legends.title, 
-                             reverse = TRUE, 
-                             label.position = "right")) + #Remove colorbar title
-    binned_scale( #Scaling the color
-      aesthetics = "fill",
-      scale_name = "gradientn",
-      palette = function(x) c(scale),
-      labels = function(x){x},
-      breaks = hardcoded_bins,
-      guide = "colorscale") + 
-    geom_sf(data = admin_map,
-            aes(), 
-            alpha = 0,
-            color="black")
+    return(p)
+  } else{
+    #Extract the values for time = t
+    tmp2_ = tmp_[tmp_$t == t, ]
     
-  return(p)
+    p <- ggplot(data = tmp2_) +  
+      
+      geom_sf(aes(fill = values), 
+              alpha = 1,
+              color = NA) + ggtitle(title) + #"lightgrey"
+      theme(plot.title = element_text(size = 15, hjust = 0.5), 
+            axis.title.x = element_blank(), #Remove axis and background grid
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            panel.background = element_blank(),
+            plot.margin =  unit(c(0, 0, 0, 0), "inches"),
+            legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+            panel.spacing = unit(1, 'lines')) +
+      guides(fill=guide_legend(title = legends.title, 
+                               reverse = TRUE, 
+                               label.position = "right")) + #Remove colorbar title
+      binned_scale( #Scaling the color
+        aesthetics = "fill",
+        scale_name = "gradientn",
+        palette = function(x) c(scale),
+        labels = function(x){x},
+        breaks = hardcoded_bins,
+        guide = "colorscale") + 
+      geom_sf(data = admin_map,
+              aes(), 
+              alpha = 0,
+              color="black")
+    
+    return(p)
+  }
 }
 
 

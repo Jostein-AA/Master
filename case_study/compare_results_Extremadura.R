@@ -72,26 +72,27 @@ for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
 
-# Just for the sake of simplicity, sort the marginals of the proper models now
-if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
-  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
-                                                                        n, tT)
-  
-  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
-                                                                           n, tT)
-  
-  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
-                                                                         n, tT)
-  
-  proper2_impEff_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Extremadura$marginals.fitted.values,
-                                                                           n, tT)
-  
-  proper2_impEff_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$mean,
-                                                                              n, tT)
-  
-  proper2_impEff_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$sd,
-                                                                            n, tT)
+
+
+################################################################################
+### Sanity checks
+print(n)
+for(t in 1:tT){
+  print(paste("year: ", t, " value: ",mean(Improper1_typeIV_Extremadura$summary.fitted.values$sd[((t - 1) * n + 1):(t * n)])))
 }
+
+#Huh, WTF???
+for(t in 1:tT){
+  print(paste("year: ", t, " value: ",mean(proper2_impEff_Extremadura$summary.fitted.values$sd[((t - 1) * n + 1):(t * n)])))
+}
+
+#Huh, WTF???
+for(t in 1:tT){
+  print(paste("year: ", t, " value: ",mean(proper2_RW1_Extremadura$summary.fitted.values$sd[((t - 1) * n + 1):(t * n)])))
+}
+
+# It could be the sort_proper_fitted function maybe  
+
 
 
 ################################################################################
@@ -107,13 +108,12 @@ calc_model_choice <- function(model,
   model_choice.df <- data.frame(mse_1 = NA, mse_2 = NA, mse_3 = NA,
                                 mse_4 = NA, mse_5 = NA, mse_avg = NA,
                                 is_1 = NA, is_2 = NA, is_3 = NA,
-                                is_4 = NA, is_5 = NA, is_avg = NA,
-                                log_s_1 = NA, log_s_2 = NA, log_s_3 = NA,
-                                log_s_4 = NA, log_s_5 = NA, log_s_avg = NA)
+                                is_4 = NA, is_5 = NA, is_avg = NA)
   
   
   # If proper models, sort the marginals to get the correct order
   if(!Improper){
+    print("Sorting")
     model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
                                                         n, tT)
   }
@@ -135,6 +135,9 @@ calc_model_choice <- function(model,
     ## Extract the populations for this year
     one_year_pop <- data$pop[((year - 1) * n + 1):(year * n)]
     
+    print(length(unique(data$year[((year - 1) * n + 1):(year * n)])))
+    print(data$year[(year - 1) * n + 1])
+    
     
     ## MSE
     model_choice.df[1, year - years_pred_on[1] + 1] =  count_mse_one_year_one_dataset(one_year_counts,
@@ -143,18 +146,26 @@ calc_model_choice <- function(model,
     
     
     ## IS for count in year ahead 
-    model_choice.df[1, year - years_pred_on[1] + 7] =  count_IS_one_year_case_study(one_year_counts, 
-                                                                                     one_year_margs, 
+    model_choice.df[1, year - years_pred_on[1] + 7] =  count_IS_one_year_case_study(counts = one_year_counts, 
+                                                                                    marginals = one_year_margs, 
                                                                                     population = one_year_pop)
     
     
     
     
-    ## Log-score
-    #model_choice.df[1, year - years_pred_on[1] + 13] = count_log_s_one_year(one_year_counts,
-    #                                                                        one_year_margs,
-    #                                                                        population = one_year_pop)
     
+    
+    # Check the width of the 95% CI of the predicted rate. If that is increasing over the years
+    # Then, the 95% CI for the predicted number of counts ought to increase as well!!! 
+    
+    
+    
+    
+    
+    
+    print(width_CI_one_year_case_study(marginals = one_year_margs, population = one_year_pop))
+    
+    #print(model_choice.df[1, year - years_pred_on[1] + 7])
     
   }
     
@@ -197,6 +208,9 @@ tmp.df <- data.frame(model = c(rep("proper2_RW1", 12),
                                rep("Improper1_typeIV", 12)),
                      model_choice = rep(1:12, 3),
                      value = 1:(12*3))
+
+
+
 for(i in 1:12){
   tmp.df[tmp.df$model == "proper2_RW1", ]$value[i] <- tmp[1, i]
   tmp.df[tmp.df$model == "proper2_impEff", ]$value[i] <- tmp2[1, i]
@@ -229,6 +243,27 @@ cat(latex_tabular, file = "./case_study/Extremadura_model_choice.tex")
 
 
 ################################################################################
+
+# Just for the sake of simplicity, sort the marginals of the proper models now
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
+                                                                        n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
+                                                                           n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
+                                                                         n, tT)
+  
+  proper2_impEff_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_impEff_Extremadura$marginals.fitted.values,
+                                                                           n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$mean,
+                                                                              n, tT)
+  
+  proper2_impEff_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Extremadura$summary.fitted.values$sd,
+                                                                            n, tT)
+}
 
 
 

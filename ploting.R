@@ -273,30 +273,41 @@ risk_surface.list_sc7$values = risk_surface.list$values[, 1]
 rm(risk_surface.list)
 gc()
 
+# Make it so that each heatmap is plotted on similar color scale 
+scale_col = heat.colors(50, rev=TRUE)          #Divide color gradient into 30 
+scale = scale_col[seq(3, 50, length.out = 15)] #Select color scale to be more red
+risk.min = min(risk_surface.list_sc1$values); risk.max = max(risk_surface.list_sc1$values) 
+hardcoded_bins =  round(seq(risk.min, risk.max, length.out = 12), 4)
+
 plt_sc1 <- heatmap_points(risk_surface.list_sc1,
                           polygon_grid2,
                           admin_map = germany_border,
                           t_axis[1],
-                          title = "20 X 20 Knots")
+                          title = "20 X 20 Knots",
+                          hardcoded_bins = hardcoded_bins)
 
 
 plt_sc7 <- heatmap_points(risk_surface.list_sc7,
                           polygon_grid2,
                           admin_map = germany_border,
                           t_axis[1],
-                          title = "10 X 10 Knots")
+                          title = "10 X 10 Knots",
+                          legends.title = TeX(r'(\Lambda(x, 0))'),
+                          hardcoded_bins = hardcoded_bins)
 
-# Save to pdf as 10 by 6, name: continuous_risk_20_vs_10
+# Save to pdf as 10 by 5, name: continuous_risk_20_vs_10
 ggarrange(plt_sc1, NULL, plt_sc7,
-          ncol = 3, nrow = 1, widths = c(1, 0.05, 1),
-          common.legend = F)
+          ncol = 3, nrow = 1, widths = c(1, 0.02, 1),
+          common.legend = T,
+          legend.grob = get_legend(plt_sc7),
+          legend = "right")
 
 ################################################################################
 # Plot the temporal trends
 
 
 xlab = "Year"
-ylab = TeX(r'($\bar{Y}_{t}$)')
+ylab = TeX(r'($\bar{y}_{t}$)')
 
 plt1 <- plot_temporal_trend_data_one_data_set("sc1", 3, "ADM1: const trend, short range", xlab = NULL, ylab = ylab)
 plt2 <- plot_temporal_trend_data_one_data_set("sc2", 3, "ADM4: const trend, short range", xlab = NULL, ylab = ylab)
@@ -3243,7 +3254,7 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
   
   ### Create bins
   min_mu = min(lambda_$mu); max_mu = max(lambda_$mu)
-  hardcoded_bins_mu = round(seq(min_mu, max_mu, length.out = 12), 2)
+  hardcoded_bins_mu = round(quantile(lambda_$mu, probs = seq(0.025, 0.975, length.out = 8)), 2)
   
   ### Attach the simulated values to the admin_map for the years 3, 7, 11, and 13
   tmp_map_ = admin_map
@@ -3252,25 +3263,37 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
   tmp_map_$mu <- lambda_[lambda_$time_id == 3, ]$mu
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "year 3")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 3",
+                        legend.title = TeX(r'($100\cdot\lambda_{it}$)'),
+                        legend.text.size = 13,
+                        plot.title.size = 13)
   
   #### Plot year 7
   tmp_map_$mu <- lambda_[lambda_$time_id == 7, ]$mu
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "year 7")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 7",
+                        legend.title = TeX(r'($100\cdot\lambda_{it}$)'),
+                        legend.text.size = 13,
+                        plot.title.size = 13)
   
   #### Plot year 11
   tmp_map_$mu <- lambda_[lambda_$time_id == 11, ]$mu
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "year 11")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 11",
+                        legend.title = TeX(r'($100\cdot\lambda_{it}$)'),
+                        legend.text.size = 13,
+                        plot.title.size = 13)
   
   #### Plot year 13
   tmp_map_$mu <- lambda_[lambda_$time_id == 13, ]$mu
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$mu,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins_mu, title = "year 13")
+                        hardcoded_bins = hardcoded_bins_mu, title = "year 13",
+                        legend.title = TeX(r'($100\cdot\lambda_{it}$)'),
+                        legend.text.size = 13,
+                        plot.title.size = 13)
   
   
   if(which.legend == 1){
@@ -3291,25 +3314,7 @@ plt_true_discrete_rate_four_years <- function(scenario_name,
                    legend.grob = legend,
                    legend = "right"))
 }
-# 
-# load(paste("Simulated_data/", "sc2", "/",
-#            "sc2", "_data.RData", sep = ""))
-# 
-# lambda_ <- lambda.df[, c("area_id", "time_id", "E_it", "space.time")]
-# lambda_$lambda_it <- lambda.df$lambda_it[, 1]
-# lambda_$mu <- lambda_$lambda_it * lambda_$E_it
-# lambda_$sampled_counts <- lambda.df$sampled_counts[, 1]
-# 
-# tmp_ <- second_level_admin_map
-# tmp_$to_plot <- lambda_[lambda_$time_id == 1, ]$sampled_counts
-# 
-# min_ = min(tmp_$to_plot); max_ = max(tmp_$to_plot)
-# hardcoded_bins = round(seq(min_, max_, length.out = 8), 0)
-# 
-# heatmap_areas(tmp_, value = tmp_$to_plot, 
-#               scale_col = scale_col, scale = scale,
-#               hardcoded_bins = hardcoded_bins, 
-#               title = "Kaka")
+
 
 
 plt_true_counts_four_years <- function(scenario_name, 
@@ -3397,7 +3402,7 @@ annotate_figure(plt,
                 top = text_grob(TeX(r'(Scenario: ADM1$_{const, short}$, Simulated rate per 100 for )'), 
                                 color = "black", 
                                 face = "bold", 
-                                size = 15))
+                                size = 13))
 
 
 plt <- plt_true_counts_four_years(scenario_name = "sc1", 
@@ -3410,7 +3415,7 @@ plt <- plt_true_counts_four_years(scenario_name = "sc1",
 annotate_figure(plt,
                 top = text_grob(TeX(r'(Scenario: ADM1$_{const, short}$, Simulated counts for )'), 
                                 color = "black", 
-                                face = "bold", 
+                                #face = "bold", 
                                 size = 15))
 
 
@@ -3430,7 +3435,7 @@ annotate_figure(plt5,
                 top = text_grob(TeX(r'(Scenario: ADM4$_{cp, long}$, Simulated rate per 100 for )'), 
                                 color = "black", 
                                 face = "bold", 
-                                size = 14))
+                                size = 13))
 
 
 
