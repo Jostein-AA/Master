@@ -79,7 +79,7 @@ nb_spain <- spdep::poly2nb(map_Spain, queen = T)
 
 
 ### Make precision matrix for Besag on Extremadura map
-matrix4inla <- nb2mat(nb_spain, style="B")
+matrix4inla <- nb2mat(nb_spain, style = "B")
 mydiag = rowSums(matrix4inla)
 matrix4inla <- -matrix4inla
 diag(matrix4inla) <- mydiag

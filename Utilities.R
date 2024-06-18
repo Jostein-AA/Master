@@ -76,17 +76,17 @@ find_ul_quants_counts_single_pred <- function(lambda_marginal,
   # Maybe use ecdf instead?
   
   # Potentially need to remove type = ...
-  u = as.numeric(quantile(x = count_sample, probs = 0.975, type = 9)) # type 4, 5
-  l = as.numeric(quantile(x = count_sample, probs = 0.025, type = 3)) # type 1, 2
-  median = as.numeric(quantile(count_sample, 0.5, type = 7)) # type 6
+  #u = as.numeric(quantile(x = count_sample, probs = 0.975, type = 9)) # type 4, 5
+  #l = as.numeric(quantile(x = count_sample, probs = 0.025, type = 3)) # type 1, 2
+  #median = as.numeric(quantile(count_sample, 0.5, type = 7)) # type 6
   
   #print(paste("u: ", u))
   #print(paste("l: ", l))
   #print(paste("median: ", median))
   
   ## Calculate upper and lower quantile (and median)
-  #u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
-  #median = as.numeric(quantile(count_sample, 0.5))
+  u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
+  median = as.numeric(quantile(count_sample, 0.5))
   
   mean <- as.numeric(mean(count_sample))
   

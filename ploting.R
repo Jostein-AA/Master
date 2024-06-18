@@ -3384,7 +3384,7 @@ plt_true_counts_four_years <- function(scenario_name,
 
 
 scale_col = heat.colors(30, rev=TRUE)
-scale = scale_col[seq(3, 30, length.out = 12)]
+scale = scale_col[seq(3, 30, length.out = 11)]
 
 ######
 # ADM1
@@ -3395,7 +3395,7 @@ plt <- plt_true_discrete_rate_four_years(scenario_name = "sc1",
                                          admin_map = first_level_admin_map,
                                          scale_col = scale_col,
                                          scale = scale,
-                                         which.legend = 4)
+                                         which.legend = 1)
 
 # Save as sc1_true_rate 8.5 by 3
 annotate_figure(plt, 
@@ -3423,16 +3423,16 @@ annotate_figure(plt,
 # ADM4
 
 #### SC2
-plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc12", 
+plt5 <- plt_true_discrete_rate_four_years(scenario_name = "sc2", #"sc2"
                                           dataset_id = dataset_id_2,
                                           admin_map = second_level_admin_map,
                                           scale_col = scale_col,
                                           scale = scale,
                                           which.legend = 3)
 
-# Save as sc12_true_rate 8.5 by 3
+# Save as sc2_true_rate 8.5 by 3
 annotate_figure(plt5, 
-                top = text_grob(TeX(r'(Scenario: ADM4$_{cp, long}$, Simulated rate per 100 for )'), 
+                top = text_grob(TeX(r'(Scenario: ADM4$_{const, short}$, Simulated rate per 100 for )'), 
                                 color = "black", 
                                 face = "bold", 
                                 size = 13))

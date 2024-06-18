@@ -36,19 +36,30 @@ data(Data_LungCancer)
 # Load in a map of Spain containing 7907 areas
 data("Carto_SpainMUN")
 
+###
+# Nothing wrong so far.
+###
+
 # Remove disjointed area
-map_Spain <- Carto_SpainMUN[-2454, ]
+
+### Maybe its better to overwrite Carto_SpainMUN for clarity...
+map_Spain <- Carto_SpainMUN[-2454, ] 
 row.names(map_Spain) = 1:nrow(map_Spain)
 problem_area = Carto_SpainMUN[2454, ]
 
+# Remove Llivia from Data_lungCancer
+
+### Strictly speaking this should not be necessary for the Extremadura analysis (as it is removed anyways)
 Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID != problem_area$ID, ]
 
 # Extract the areas within the principality of Extremadura
 map_Spain <- map_Spain[map_Spain$region == "Extremadura", ]
-IDs_Extremadura <- unique(map_Spain$ID)
+IDs_Extremadura <- unique(map_Spain$ID) # IDs either 06... or 10...
 
 # Extract the data within Extremadura
 Data_LungCancer <- Data_LungCancer[Data_LungCancer$ID %in% IDs_Extremadura, ]
+
+### So far everything seems all right
 
 # Get the years and areas
 years = unique(Data_LungCancer$year)
@@ -56,22 +67,37 @@ tT = length(years)
 t.from <- min(Data_LungCancer$year)
 t.to <- max(Data_LungCancer$year)
 
+### So far everything seems all right
+
 # Create time-ids 1,...,25 instead of 1991,...,2015 for the sake of INLA
+### Seems to work just all right
 Data_LungCancer$year_id <- Data_LungCancer$year - min(Data_LungCancer$year) + 1
 
 # For sake of INLA, transform ID from chr to num
-Data_LungCancer$ID <- as.numeric(Data_LungCancer$ID) 
+###
+Data_LungCancer$ID <- as.numeric(Data_LungCancer$ID) #Hmmmmmm
+###
 
-areas = unique(Data_LungCancer$ID)
+
+areas = unique(Data_LungCancer$ID) # Is this and the as.numeric above any use, or detrimental?
+
+# n is all right
 n = length(areas)
 
+
+
 # Ad a area-id starting at 1 and ending at 380 to both map_Spain and Data_LungCancer
+
+### The area_id here may not be entirely working if the corresponding areas dont ?cooperate?
 map_Spain$area_id = 1:nrow(map_Spain)
 Data_LungCancer$area_id = rep(NA, nrow(Data_LungCancer))
 for(year_id in 1:tT){
   Data_LungCancer[Data_LungCancer$year_id == year_id, ]$area_id = map_Spain$area_id
 }
 
+
+#####
+# Make sure the split of the data set works out all right!
 
 
 ################################################################################
