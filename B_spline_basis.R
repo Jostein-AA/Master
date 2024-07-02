@@ -23,8 +23,9 @@ B <- spline.des(knots, x, bdeg + 1)$design
 
 # Save to pdf as 7.5 by 3.5, name: B_spline_basis_func_deg_1
 plot(B[, 2] ~ x, type = "l", ylim = c(0, 1), 
-     ylab = "B(x)", xlab = "x", xaxt='n')
-axis(1, at= c(0, 0.5, 1))
+     ylab = "B(x)", xlab = "x", xaxt='n', cex.lab=1.5, 
+     cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+axis(1, at= c(0, 0.5, 1), cex.axis=1.5)
 
 
 bdeg = 3
@@ -44,8 +45,9 @@ B <- spline.des(knots, x, bdeg + 1)$design
 
 # Save to pdf as 7.5 by 3.5, name: B_spline_basis_func_deg_3
 plot(B[, 4] ~ x, type = "l", ylim = c(0, 1), 
-     ylab = "B(x)", xlab = "x", xaxt='n')
-axis(1, at=knots[knots >= 0 & knots <= 1])
+     ylab = "B(x)", xlab = "x", xaxt='n', cex.lab=1.5, 
+     cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+axis(1, at=knots[knots >= 0 & knots <= 1], cex.axis=1.5)
 
 
 

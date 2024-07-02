@@ -74,7 +74,8 @@ var_samps.df <- data.frame(var_samps = var_samps)
 variance_plot <- ggplot(var_samps.df,
                      aes(x = var_samps)) + 
                 geom_density(fill = "#e9acaf", alpha = 0.8) + 
-                theme_bw() + 
+                theme_bw() + theme(axis.title = element_text(size = 13),
+                                   axis.text = element_text(size = 13)) +
                 xlab(TeX(r'($\sigma_{st}^2$)')) + 
                 ylab(TeX(r'(Posterior density: $\sigma_{st}^2$)'))
 
@@ -88,25 +89,31 @@ split_variance_plot <- ggplot(tmp.df,
                              aes(x = var_samps)) + 
                         geom_density(aes(fill = type), 
                                      alpha = 0.8) + 
-                        theme_bw() + 
-                        theme(legend.position = "top") + 
-                        xlab(TeX(r'($\sigma_{*}^2$)')) + 
-                        ylab(TeX(r'(Posterior density: $\sigma_{*}^2$)')) + 
-                        guides(fill = guide_legend(title="*"))
+                        theme_bw() + theme(axis.title = element_text(size = 13),
+                                           axis.text = element_text(size = 13),
+                                           legend.title=element_blank(),
+                                           legend.text = element_text(size = 13),
+                                           legend.position = "bottom") +
+                        xlab(NULL) + 
+                        ylab(TeX(r'(Posterior density)')) + 
+  scale_fill_discrete(labels = c(TeX(r'($\varphi_{st}\sigma_{st}^2$)'),
+                               TeX(r'($(1-\varphi_{st})\sigma_{st}^2$)'))) 
+
 
 
 
 weight_st_samps_typeIV.df <- data.frame(weight_st_samps_typeIV = weight_st_samps_typeIV)
 
-weight_typeIV <- ggplot(tmp.df,
+weight_typeIV <- ggplot(weight_st_samps_typeIV.df,
                         aes(x = weight_st_samps_typeIV)) + 
                     geom_density(fill = "#69b3a2", alpha = 0.8) + 
-                    theme_bw() + 
-                    xlab(TeX(r'($w_{IV}$)')) + 
-                    ylab(TeX(r'(Posterior density: $w_{IV}$)'))
+                    theme_bw() + theme(axis.title = element_text(size = 13),
+                                       axis.text = element_text(size = 13)) +
+                    xlab(TeX(r'($1-\varphi_{st}$)')) + 
+                    ylab(TeX(r'(Posterior density: $1-\varphi_{st}$)')) 
 
 # Save as 10 by 3.5 typeV_variance
-ggarrange(split_variance_plot, variance_plot, weight_typeIV,
+ggarrange(variance_plot, weight_typeIV, split_variance_plot,
           ncol = 3, nrow = 1, 
           widths = c(1, 1, 1))
 

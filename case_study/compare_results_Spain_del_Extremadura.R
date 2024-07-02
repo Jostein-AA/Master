@@ -81,6 +81,9 @@ if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to. Nee
   proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean,
                                                                                      n, tT)
   
+  proper2_RW1_Spain_del_Extremadura$summary.fitted.values$'0.5quant' <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$'0.5quant',
+                                                                                 n, tT)
+  
   proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$sd,
                                                                                    n, tT)
   
@@ -93,6 +96,34 @@ if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to. Nee
   proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_impEff_Spain_del_Extremadura$summary.fitted.values$sd,
                                                                                       n, tT)
 }
+
+
+
+####
+pop.df <- data.frame(year = t.from:t.to,
+                     u = rep(NA, tT),
+                     median = rep(NA, tT),
+                     l = rep(NA, tT))
+
+for(year in t.from:t.to){
+  
+  pop_quants_in_year <- quantile(Data_LungCancer[Data_LungCancer$year == year, ]$pop,
+                                 probs = c(0.25, 0.5, 0.75)) #
+  
+  pop.df[pop.df$year == year, ]$l = pop_quants_in_year[[1]]
+  pop.df[pop.df$year == year, ]$median = pop_quants_in_year[[2]]
+  pop.df[pop.df$year == year, ]$u = pop_quants_in_year[[3]]
+}
+
+## Spain_del_Extremadura_population 5 by 3
+ggplot(data = pop.df) + 
+  geom_line(aes(x = year, y = median)) + 
+  geom_ribbon(aes(x = year, ymin = l, ymax = u), alpha = 0.3) + 
+  theme_bw() + xlab("Year") + ylab("Population") + ylim(0, 1250) + 
+  theme(axis.title = element_text(size = 14, face = "plain"),
+        axis.text = element_text(size = 14)) + 
+  scale_x_continuous(breaks = c(1991, 1995, 2000, 2005, 2010, 2015))
+
 
 
 ################################################################################
@@ -228,41 +259,119 @@ cat(latex_tabular, file = "./case_study/Spain_del_Extremadura_model_choice.tex")
 
 ################################################################################
 
-
-
-#########
-# Mean pred count
-
 # Predicted number of counts per 100,000
-pred_count_prop2_RW1 <- matrix(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$mean * 1E5, nrow = n, ncol = tT, byrow = F)
-colnames(pred_count_prop2_RW1) = paste("Year", seq(t.from, t.to), sep = ".")
+pred_counts <- matrix(c(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$'0.5quant' * 1E5,
+                        imp_typeIV$summary.fitted.values$'0.5quant' * 1E5), nrow = n, ncol = 2 * tT, byrow = F)
 
-
-# Predicted number of counts per 100,000
-pred_count_impIV <- matrix(imp_typeIV$summary.fitted.values$mean * 1E5, 
-                           nrow = n, ncol = tT, byrow = F)
-colnames(pred_count_impIV) = paste("Year", seq(t.from, t.to), sep = ".")
+colnames(pred_counts) = c(paste("proper2_RW1: Year", seq(t.from, t.to), sep = "."),
+                          paste("Div_and_conq.: Year", seq(t.from, t.to), sep = "."))   #paste("Year", seq(t.from, t.to), sep = ".")
 
 
 # Create a common color-palet
 paleta <- brewer.pal(8,"RdYlGn")[8:1]
-pred_count_qs <- quantile(pred_count_impIV, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
-values <- c(min(pred_count_impIV), pred_count_qs, Inf)
+pred_count_qs <- quantile(pred_counts, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+values <- c(min(pred_counts), pred_count_qs, Inf)
 
 
 
-# Plot the predicted counts per 100,000 for the proper2_RW1
-carto_prop2_RW1 <- cbind(map_Spain, pred_count_prop2_RW1)
+# Plot the predicted counts per 100,000
+carto <- cbind(map_Spain, pred_counts)
+
+# paleta <- brewer.pal(8,"RdYlGn")[8:1]
+# pred_count_qs <- quantile(pred_count_prop2_RW1, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+# values <- c(min(pred_count_prop2_RW1), pred_count_qs, Inf)
+
+columns_ <- c(paste("proper2_RW1..Year", c(2011, 2013, 2015),sep= "."),
+              paste("Div_and_conq...Year", c(2011, 2013, 2015),sep= "."))
+
+Map.risks <- tm_shape(carto) +
+  tm_polygons(col = columns_,
+              palette=paleta, 
+              title="Posterior median\npredicted rate\nper 100,000", 
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks=values, 
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.55,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size = 0.2, #0.15
+            legend.title.size = 1.5,
+            legend.text.size = 1.25,
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.001, 0.001, 0.001, 0.001),
+            between.margin = 0.001,
+            panel.labels=as.character(c(paste("proper2_RW1:", c(2011, 2013, 2015), sep = " "),
+                                        paste("Div_and_conquer:", c(2011, 2013, 2015), sep = " ")))
+  ) +
+  tm_facets(nrow=2, ncol=3)
+
+
+print(Map.risks)
+
+# Save Map
+tmap_save(Map.risks,
+          filename = "Plots/Spain_del_Extremadura_pred_count.pdf",
+          width = 12,
+          height = 6)
+
+
+###
+
+
+# Predicted SD of counts per 100,000
+sd_2011 <- get_pred_SD(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values, 1E5, n, 21)
+sd_2013 <- get_pred_SD(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values, 1E5, n, 23)
+sd_2015 <- get_pred_SD(proper2_RW1_Spain_del_Extremadura$marginals.fitted.values, 1E5, n, 25)
+# # Predicted SD of counts per 100,000
+sd_IV_2011 <- get_pred_SD(imp_typeIV$marginals.fitted.values, 1E5, n, 21)
+sd_IV_2013 <- get_pred_SD(imp_typeIV$marginals.fitted.values, 1E5, n, 23)
+sd_IV_2015 <- get_pred_SD(imp_typeIV$marginals.fitted.values, 1E5, n, 25)
+
+
+
+
+pred_SD <- matrix(c(sd_2011, sd_2013, sd_2015,
+                    sd_IV_2011, sd_IV_2013, sd_IV_2015), nrow = n, ncol = 2 * 3, byrow = F)
+
+colnames(pred_SD) = c(paste("proper2_RW1: Year", c(2011, 2013, 2015), sep = "."),
+                      paste("Div_and_conq.: Year", c(2011, 2013, 2015), sep = "."))
+
+
+
+# Create a common color-palet
+paleta <- brewer.pal(8,"RdYlGn")[8:1]
+pred_count_qs <- quantile(pred_SD, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+values <- round(c(min(pred_SD) - 0.1, pred_count_qs, Inf))
+
+
+
+# Plot the predicted SD of counts per 100,000 for the proper2_RW1
+carto_SD <- cbind(map_Spain, pred_SD)
 
 # paleta <- brewer.pal(8,"RdYlGn")[8:1]
 # pred_count_qs <- quantile(pred_count_prop2_RW1, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
 # values <- c(min(pred_count_prop2_RW1), pred_count_qs, Inf)
 
 
-Map.risks_prop2_RW1 <- tm_shape(carto_prop2_RW1) +
-  tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
+Map.risks_SD <- tm_shape(carto_SD) +
+  tm_polygons(col = columns_,
               palette=paleta, 
-              title="Predicted count\n per 100,000\n proper2_RW1", 
+              title="Posterior SD of the \npredicted rate\nper 100,000", 
               legend.show=T, 
               border.col="transparent",
               legend.reverse=T, 
@@ -284,86 +393,52 @@ Map.risks_prop2_RW1 <- tm_shape(carto_prop2_RW1) +
             legend.outside=T, 
             legend.outside.position="right", 
             legend.frame=F,
-            legend.outside.size=0.15, 
+            legend.outside.size = 0.2, #0.15
+            legend.title.size = 1.5,
+            legend.text.size = 1.25,
             outer.margins=c(0.01,0.01,0.02,0.01),
-            inner.margins = c(0.01, 0.01, 0.01, 0.01),
-            between.margin = 0.01,
-            panel.labels=as.character(c(2011, 2013, 2015))) +
-  tm_facets(nrow=1, ncol=3)
+            inner.margins = c(0.001, 0.001, 0.001, 0.001),
+            between.margin = 0.001,
+            panel.labels=as.character(c(paste("proper2_RW1:", c(2011, 2013, 2015), sep = " "),
+                                        paste("Div_and_conquer:", c(2011, 2013, 2015), sep = " ")))
+  ) +
+  tm_facets(nrow=2, ncol=3)
 
 
-print(Map.risks_prop2_RW1)
+print(Map.risks_SD)
 
 # Save Map
-tmap_save(Map.risks_prop2_RW1,
-          filename = "Plots/Spain_del_Extremadura_pred_counts_prop2_RW1.pdf",
+tmap_save(Map.risks_SD,
+          filename = "Plots/Spain_del_Extremadura_SD.pdf",
           width = 12,
-          height = 4)
+          height = 6)
 
 
 
-
-
-# Plot the predicted counts Improper1_typeIV
-carto_impIV <- cbind(map_Spain, pred_count_impIV)
-
-Map.risks_impIV <- tm_shape(carto_impIV) +
-  tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
-              palette=paleta, 
-              title="Predicted count\n per 100,000\n Div_and_conquer", 
-              legend.show=T, 
-              border.col="transparent",
-              legend.reverse=T, 
-              style="fixed", 
-              breaks=values, 
-              midpoint=0, 
-              interval.closure="left") +
-  tm_grid(n.x=5, 
-          n.y=5, 
-          alpha=0.2, 
-          labels.format=list(scientific=T),
-          labels.inside.frame=F, 
-          labels.col="white") +
-  tm_layout(main.title="", 
-            main.title.position="center",
-            bg.color = "white", # Background color, white
-            outer.bg.color = "white", 
-            panel.label.size=1.5,
-            legend.outside=T, 
-            legend.outside.position="right", 
-            legend.frame=F,
-            legend.outside.size=0.15, 
-            outer.margins=c(0.01,0.01,0.02,0.01),
-            inner.margins = c(0.01, 0.01, 0.01, 0.01),
-            between.margin = 0.01,
-            panel.labels=as.character(c(2011, 2013, 2015))) +
-  tm_facets(nrow=1, ncol=3)
-
-
-print(Map.risks_impIV)
-
-
-# Save Map
-tmap_save(Map.risks_impIV,
-          filename = "Plots/Spain_del_Extremadura_pred_counts_Improper1_typeIV.pdf",
-          width = 12, #12 by 4
-          height = 4)
 
 
 ### Difference plot
-diff <- (pred_count_prop2_RW1 - pred_count_impIV)/(pred_count_impIV) 
-quantiles.diff <- quantile(diff, probs = c(0.025, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 0.975))
+#(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$'0.5quant' * 1E5 - imp_typeIV$summary.fitted.values$'0.5quant' * 1E5)/(imp_typeIV$summary.fitted.values$'0.5quant' * 1E5) 
+
+pred_counts_1 <- matrix(proper2_RW1_Spain_del_Extremadura$summary.fitted.values$'0.5quant' * 1E5, nrow = n, ncol = tT, byrow = F)
+colnames(pred_counts_1) = paste("proper2_RW1: Year", seq(t.from, t.to), sep = ".")
+
+pred_counts_2 <- matrix(imp_typeIV$summary.fitted.values$'0.5quant' * 1E5, nrow = n, ncol = tT, byrow = F)
+colnames(pred_counts_2) = paste("Div_and_conq.: Year", seq(t.from, t.to), sep = ".")
+
+diff <- (pred_counts_1 - pred_counts_2)/pred_counts_2
+quantiles.diff <- quantile(diff, probs = c(0.025, 0.1, 0.35, 0.5, 0.65, 0.9, 0.975))
 
 carto_diff <- cbind(map_Spain, diff)
 
-paleta.diff <- brewer.pal(9,"RdBu")[9:1]
+paleta.diff <- brewer.pal(8,"RdBu")[8:1]
 values.diff <- c(-Inf, quantiles.diff, Inf)
 
 
 Map.diff <- tm_shape(carto_diff) +
-  tm_polygons(col=paste("Year", c(2011, 2013, 2015),sep= "."),
+  tm_polygons(col=paste("proper2_RW1..Year", c(2011, 2013, 2015),sep= "."),
               palette=paleta.diff, 
-              title="Relative difference\nin posterior mean\npredicted counts", #(Improper1_typeIV\n - proper2_RW1)/\nproper2_RW1
+              title="Relative difference\nof posterior medians", 
               legend.show=T, 
               border.col="transparent",
               legend.reverse=T, 
@@ -385,7 +460,9 @@ Map.diff <- tm_shape(carto_diff) +
             legend.outside=T, 
             legend.outside.position="right", 
             legend.frame=F,
-            legend.outside.size=0.15, 
+            legend.outside.size=0.25,
+            legend.title.size = 2,
+            legend.text.size = 1.5,
             outer.margins=c(0.01,0.01,0.02,0.01),
             inner.margins = c(0.01, 0.01, 0.01, 0.01),
             between.margin = 0.01,
@@ -398,7 +475,67 @@ print(Map.diff)
 tmap_save(Map.diff,
           filename = "Plots/Spain_del_Extremadura_pred_counts_relative_diff.pdf",
           width = 12, #12 by 4
-          height = 4)
+          height = 3)
+
+
+
+
+
+
+### Population plot
+pop_df <- matrix(Data_LungCancer$pop, nrow = n, ncol = tT, byrow = F)
+colnames(pop_df) = paste("Population: Year", seq(t.from, t.to), sep = ".")
+
+
+# Create a common color-palet
+paleta <- brewer.pal(8,"RdYlGn")[8:1]
+pred_count_qs <- quantile(pop_df, probs = c(0.15, 0.3, 0.45, 0.6, 0.75, 0.875, 0.975))
+values <- c(min(pop_df), pred_count_qs, Inf)
+
+carto_pop <- cbind(map_Spain, pop_df)
+
+Map.pop <- tm_shape(carto_pop) +
+  tm_polygons(col=paste("Population..Year", c(2011, 2013, 2015),sep= "."),
+              palette=paleta, 
+              title="Population", 
+              legend.show=T, 
+              border.col="transparent",
+              legend.reverse=T, 
+              style="fixed", 
+              breaks = values,
+              midpoint=0, 
+              interval.closure="left") +
+  tm_grid(n.x=5, 
+          n.y=5, 
+          alpha=0.2, 
+          labels.format=list(scientific=T),
+          labels.inside.frame=F, 
+          labels.col="white") +
+  tm_layout(main.title="", 
+            main.title.position="center",
+            bg.color = "white", # Background color, white
+            outer.bg.color = "white", 
+            panel.label.size=1.5,
+            legend.outside=T, 
+            legend.outside.position="right", 
+            legend.frame=F,
+            legend.outside.size=0.25,
+            legend.title.size = 2,
+            legend.text.size = 1.5,
+            outer.margins=c(0.01,0.01,0.02,0.01),
+            inner.margins = c(0.01, 0.01, 0.01, 0.01),
+            between.margin = 0.01,
+            panel.labels=as.character(c(2011, 2013, 2015))) +
+  tm_facets(nrow=1, ncol=3)
+
+
+print(Map.pop)
+
+tmap_save(Map.pop,
+          filename = "Plots/Spain_del_Extremadura_population_map.pdf",
+          width = 12, #12 by 4
+          height = 3)
+
 
 
 

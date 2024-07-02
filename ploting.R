@@ -570,32 +570,32 @@ model_names = c("Improper1_noInt", "Improper1_typeI", "Improper1_typeII",
 
 #Save as 15 by 15 sc1_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc1", xlim_mse = c(0.35, 3.5), 
+                                 "sc1", xlim_mse = c(0, 3.5), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc3_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc3", xlim_mse = c(0.35, 3.5), 
+                                 "sc3", xlim_mse = c(0, 3.5), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc5_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc5", xlim_mse = c(0.35, 3.5), 
+                                 "sc5", xlim_mse = c(0, 4), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc7_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc7", xlim_mse = c(0.35, 3.5), 
+                                 "sc7", xlim_mse = c(0, 3.5), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc9_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc9", xlim_mse = c(0.35, 3.5), 
+                                 "sc9", xlim_mse = c(0, 4), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc11_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc11", xlim_mse = c(0.35, 3.5), 
+                                 "sc11", xlim_mse = c(0, 4), 
                                  xlim_is = c(2, 11))
 
 
@@ -604,32 +604,32 @@ ridgeplot_mse_is_rates_all_years(model_names = model_names,
 
 #Save as 15 by 15 sc2_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc2", xlim_mse = c(0.35, 3.5), 
+                                 "sc2", xlim_mse = c(0.35, 2), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc4_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc4", xlim_mse = c(0.35, 3.5), 
+                                 "sc4", xlim_mse = c(0.35, 3), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc6_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc6", xlim_mse = c(0.35, 3.5), 
+                                 "sc6", xlim_mse = c(0.35, 4), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc8_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc8", xlim_mse = c(0.35, 3.5), 
+                                 "sc8", xlim_mse = c(0, 3.5), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc10_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc10", xlim_mse = c(0.35, 3.5), 
+                                 "sc10", xlim_mse = c(0, 3.5), 
                                  xlim_is = c(2, 11))
 
 #Save as 15 by 15 sc12_IS_ridgeplot_all
 ridgeplot_mse_is_rates_all_years(model_names = model_names,
-                                 "sc12", xlim_mse = c(0.35, 3.5), 
+                                 "sc12", xlim_mse = c(0, 4), 
                                  xlim_is = c(2, 11))
 
 
@@ -712,6 +712,19 @@ plt_overall_results_all_scenarios <- function(model_names,
     }
   }
   
+  ## Add two dummy-variables as placeholders
+  dummy_one <- data.frame(model_name = rep("proper1_x", length(scenario_names)),
+                          scenario_name = scenario_names,
+                          IS_tot = rep(NA, length(scenario_names)))
+  dummy_two <- data.frame(model_name = rep("proper2_x", length(scenario_names)),
+                          scenario_name = scenario_names,
+                          IS_tot = rep(NA, length(scenario_names)))
+  
+  to_plot.df = rbind(to_plot.df, dummy_one)
+  to_plot.df = rbind(to_plot.df, dummy_two)
+  
+  
+  
   level_order = scenario_names
   
   plt <- ggplot(data = to_plot.df, aes(x = factor(scenario_name, 
@@ -719,15 +732,15 @@ plt_overall_results_all_scenarios <- function(model_names,
                                        y = IS_tot,
                                        fill = model_name,
                                        shape = model_name)) + 
-                  geom_point(size = 3,
-                           position = position_dodge(0.5),
+                  geom_point(size = 4,
+                           position = position_dodge(0.7),
                            alpha = 1.5) + 
-    geom_stripped_cols(odd = "#FFFFFF00", even = "#00000011", alpha = .12) +
+    geom_stripped_cols(odd = "#FFFFFF00", even = "#00000011", alpha = .08) +
     theme_bw() + 
     theme(axis.text = element_text(size = 18.5),
           axis.title = element_text(size = 18.5),
-          legend.title = element_text(size = 18.5),
-          legend.text = element_text(size = 16),
+          legend.title = element_text(size = 19),
+          legend.text = element_text(size = 15),
           legend.position = "top") + 
   scale_shape_manual(name = "Models",
                      values = c(Improper1_noInt = 24,  Improper1_typeI = 24,
@@ -735,48 +748,73 @@ plt_overall_results_all_scenarios <- function(model_names,
                                  Improper1_typeIV = 24, Improper2_noInt = 25,
                                  Improper2_typeI = 25, Improper2_typeII = 25,
                                  Improper2_typeIII = 25, Improper2_typeIV = 25,
-                                 proper1_noInt = 23, proper1_onlyInt = 23,
-                                 proper1_full = 23, proper1_iid = 23,
+                                 proper1_noInt = 21, proper1_onlyInt = 21,
+                                 proper1_full = 21, proper1_iid = 21, 
                                  proper2_noInt = 22, proper2_onlyInt = 22,
-                                 proper2_full = 22, proper2_iid = 22)) +
+                                 proper2_full = 22, proper2_iid = 22,
+                                proper1_x = 0, proper2_x = 0),
+                     labels = c(Improper1_noInt = "Improper1_noInt",  Improper1_typeI = "Improper1_typeI",
+                                Improper1_typeII = "Improper1_typeII", Improper1_typeIII = "Improper1_typeIII",
+                                Improper1_typeIV = "Improper1_typeIV", Improper2_noInt = "Improper2_noInt",
+                                Improper2_typeI = "Improper2_typeI", Improper2_typeII = "Improper2_typeII",
+                                Improper2_typeIII = "Improper2_typeIII", Improper2_typeIV = "Improper2_typeIV",
+                                proper1_noInt = "proper1_noInt", proper1_onlyInt = "proper1_onlyInt",
+                                proper1_full = "proper1_full", proper1_iid = "proper1_iid", 
+                                proper2_noInt = "proper2_noInt", proper2_onlyInt = "proper2_onlyInt",
+                                proper2_full = "proper2_full", proper2_iid = "proper2_iid",
+                                proper1_x = "", proper2_x = ""),
+                     drop = FALSE) +
   scale_fill_manual(name = "Models",
-                    values = c(Improper1_noInt = "#466983FF",  Improper1_typeI = "#749B58FF",
-                               Improper1_typeII = "#CE3D32FF", Improper1_typeIII = "#F0E685FF",
-                               Improper1_typeIV = "#5050FFFF", Improper2_noInt = "#5DB1DDFF",
-                               Improper2_typeI = "#E4AF69FF", Improper2_typeII = "#FFC20AFF",
-                               Improper2_typeIII = "#924822FF", Improper2_typeIV = "#802268FF",
-                               proper1_noInt = "#D595A7FF", proper1_onlyInt = "#0A0722FF",
-                               proper1_full = "#D94D3DFF", proper1_iid = "#F2EA69FF",
-                               proper2_noInt = "#1E0C45FF", proper2_onlyInt = "#00CC99FF",
-                               proper2_full = "#990033FF", proper2_iid = "#0A47FFFF")) + 
-    xlab(xlab) + 
-    ylab(TeX(r'(Average IS $\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)')) + 
+                    values = c(Improper1_noInt = "#FF0000",  Improper1_typeI = "#0CFF00",
+                               Improper1_typeII = "#00FFFF", Improper1_typeIII = "#0000FF",
+                               Improper1_typeIV = "#FF00DC", Improper2_noInt = "#FF0000",
+                               Improper2_typeI = "#0CFF00", Improper2_typeII = "#00FFFF",
+                               Improper2_typeIII = "#0000FF", Improper2_typeIV = "#FF00DC",
+                               proper1_noInt = "#FF0000", proper1_onlyInt = "#0CFF00",
+                               proper1_full = "#0000FF", proper1_iid = "#FF00DC",
+                               proper2_noInt = "#FF0000", proper2_onlyInt = "#0CFF00",
+                               proper2_full = "#0000FF", proper2_iid = "#FF00DC",
+                               proper1_x = "#FFFFFFFF", proper2_x = "#FFFFFFFF"),
+                    labels = c(Improper1_noInt = "Improper1_noInt",  Improper1_typeI = "Improper1_typeI",
+                               Improper1_typeII = "Improper1_typeII", Improper1_typeIII = "Improper1_typeIII",
+                               Improper1_typeIV = "Improper1_typeIV", Improper2_noInt = "Improper2_noInt",
+                               Improper2_typeI = "Improper2_typeI", Improper2_typeII = "Improper2_typeII",
+                               Improper2_typeIII = "Improper2_typeIII", Improper2_typeIV = "Improper2_typeIV",
+                               proper1_noInt = "proper1_noInt", proper1_onlyInt = "proper1_onlyInt",
+                               proper1_full = "proper1_full", proper1_iid = "proper1_iid", 
+                               proper2_noInt = "proper2_noInt", proper2_onlyInt = "proper2_onlyInt",
+                               proper2_full = "proper2_full", proper2_iid = "proper2_iid",
+                               proper1_x = "", proper2_x = ""),
+                    drop = FALSE) + 
+    xlab(xlab) + scale_y_continuous(breaks = c(4, 5, 6, 7, 8, 9)) + 
+    ylab(TeX(r'(IS$[\lambda]$)')) + 
     scale_x_discrete(labels = c("Const, Short", "Lin, Short", "CP, Short",
                                 "Const, Long", "Lin, Long", "CP, Long")) + 
-    guides(shape = guide_legend(nrow = 3),
-      fill = guide_legend(nrow = 3))
+    guides(shape = guide_legend(nrow = 4, ncol = 5, byrow = T),
+           fill = guide_legend(nrow = 4, ncol = 5, byrow = T))
     
   
   return(plt)
 }
 
 
-#Save as overall_ADM1_results 15 by 15
+#Save as overall_ADM1_results 12.5 by 12.5
 plt_overall_results_all_scenarios(model_names = model_names,
                                   scenario_names = scenario_names_ADM1,
                                   xlab = "Scenarios on ADM1 map")
 
 
 
-#Save as overall_ADM4_results 15 by 15
+#Save as overall_ADM4_results 12.5 by 12.5
 plt_overall_results_all_scenarios(model_names = model_names,
                                   scenario_names = scenario_names_ADM4,
                                   xlab = "Scenarios on ADM4 map")
 
+
 #Save as overall_ADM3_results 15 by 15
-plt_overall_results_all_scenarios(model_names = model_names,
-                                  scenario_names = scenario_names_ADMnew,
-                                  xlab = "Scenarios on ADM3 map")
+#plt_overall_results_all_scenarios(model_names = model_names,
+#                                  scenario_names = scenario_names_ADMnew,
+#                                  xlab = "Scenarios on ADM3 map")
 
 
 
@@ -895,6 +933,203 @@ plt_overall_results_all_scenarios_combinaion_models(comb_models_and_others_names
 
 
 
+
+
+
+
+
+########
+# Plot results of combination models
+
+plt_overall_results_all_scenarios_2 <- function(model_names, 
+                                                scenario_name,
+                                                xlab,
+                                                title, 
+                                                ylim){
+  
+  model_name = model_names[1]
+  load(paste("./results/model_choice/model_choice_", 
+             model_name, "_", 
+             scenario_name, ".RData",
+             sep = ""))
+  
+  tmp_ <- model_choice_for_rates
+  
+  values.df <- data.frame(model_name = rep(model_name, 100),
+                          IS_1_year_ahead = tmp_$IS_1_year_ahead,
+                          IS_2_year_ahead = tmp_$IS_2_year_ahead,
+                          IS_3_year_ahead = tmp_$IS_3_year_ahead,
+                          total_IS = tmp_$total_IS)
+  
+  
+  for(model_name in model_names){
+    if(model_name == model_names[1]){
+      # Skip this one as it is all ready done
+      next
+    }
+    
+    load(paste("./results/model_choice/model_choice_", 
+               model_name, "_", 
+               scenario_name, ".RData",
+               sep = ""))
+    
+    tmp_ <- model_choice_for_rates
+    
+    tmp2_ <- data.frame(model_name = rep(model_name, 100),
+                        IS_1_year_ahead = tmp_$IS_1_year_ahead,
+                        IS_2_year_ahead = tmp_$IS_2_year_ahead,
+                        IS_3_year_ahead = tmp_$IS_3_year_ahead,
+                        total_IS = tmp_$total_IS)
+    
+    
+    values.df = rbind(values.df, tmp2_)
+  }
+  
+  
+  to_plot.df <- data.frame(model_name = rep(model_names, 4 * 100),
+                            div = c(rep("t = 11", length(model_names) * 100),
+                                    rep("t = 12", length(model_names) * 100),
+                                    rep("t = 13", length(model_names) * 100),
+                                    rep("Aggregated", length(model_names) * 100)),
+                            values = 1:(length(model_names) * 4 * 100))
+  
+  
+  
+  
+  for(model_name in model_names){
+     
+     to_plot.df[to_plot.df$model_name == model_name &
+                 to_plot.df$div == "t = 11", ]$values <- values.df[values.df$model_name == model_name, ]$IS_1_year_ahead
+    to_plot.df[to_plot.df$model_name == model_name &
+                 to_plot.df$div == "t = 12", ]$values <- values.df[values.df$model_name == model_name, ]$IS_2_year_ahead
+    to_plot.df[to_plot.df$model_name == model_name &
+                 to_plot.df$div == "t = 13", ]$values <- values.df[values.df$model_name == model_name, ]$IS_3_year_ahead
+    to_plot.df[to_plot.df$model_name == model_name &
+                 to_plot.df$div == "Aggregated", ]$values <- values.df[values.df$model_name == model_name, ]$total_IS
+
+
+  }
+
+  to_plot.df[to_plot.df$model_name == "proper2Int_imp1Effects", ]$model_name = "proper2_impEff"
+  to_plot.df[to_plot.df$model_name == "Improper1_typeIV", ]$model_name = "Improper1_typeIV"
+  to_plot.df[to_plot.df$model_name == "proper2_propInt_Improp_temporal", ]$model_name = "proper2_RW1"
+  
+  
+  to_plot.df$div <- factor(to_plot.df$div, levels = c("t = 11", "t = 12", "t = 13", "Aggregated"))
+  
+  return(to_plot.df <- to_plot.df %>% 
+           mutate(model_name = fct_reorder(.f = model_name,
+                                           .x = values,
+                                           .fun = median,
+                                           .na_rm = TRUE,
+                                           .desc = TRUE)) %>%
+           ggplot(aes(x = div, 
+                      y = values,
+                      fill = model_name)) + 
+           geom_boxplot(outliers = F) + #position="dodge", stat="identity"
+           #geom_stripped_cols(odd = "#FFFFFF00", even = "#00000001", alpha = .08) +
+           theme_bw() + 
+           theme(axis.text = element_text(size = 18.5),
+                 axis.title.x = element_text(size = 18.5),
+                 axis.title.y = element_text(size = 20),
+                 legend.title = element_text(size = 18.5),
+                 legend.text = element_text(size = 18.5),
+                 legend.position = "top",
+                 plot.title = element_text(size = 18.5)) + 
+           ggtitle(title) + guides(fill=guide_legend(title="Model:")) + 
+           xlab(NULL) + 
+           ylab(TeX(r'(IS$[\lambda]_{t}^{(k)}$)')) + ylim(ylim)) 
+}
+
+
+plt_overall_results_all_scenarios_2_wrapper <- function(model_names,
+                                                        scenario_names,
+                                                        xlab = ""){
+  
+  
+  p1 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[1],
+                                            xlab = xlab,
+                                            title = "ADM4: Const, short",
+                                            ylim = c(3, 7))
+  
+  p2 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[2],
+                                            xlab = xlab,
+                                            title = "ADM4: Lin, short",
+                                            ylim = c(3, 10))
+  
+  p3 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[3],
+                                            xlab = xlab,
+                                            title = "ADM4: CP, short",
+                                            ylim = c(3, 7))
+  
+  p4 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[4],
+                                            xlab = xlab,
+                                            title = "ADM4: Const, long",
+                                            ylim = c(3, 7))
+  
+  p5 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[5],
+                                            xlab = xlab,
+                                            title = "ADM4: Lin, long",
+                                            ylim = c(3, 10))
+  
+  p6 <- plt_overall_results_all_scenarios_2(model_names = model_names,
+                                            scenario_name = scenario_names[6],
+                                            xlab = xlab,
+                                            title = "ADM4: CP, long",
+                                            ylim = c(3, 7))
+  
+  return(ggarrange(p1, p2, p3, p4, p5, p6,
+                   ncol = 2, nrow = 3,
+                   common.legend = T,
+                   legend = "top"))
+  
+  
+}
+
+
+
+
+model_names = c("proper2Int_imp1Effects", 
+                "Improper1_typeIV",
+                "proper2_propInt_Improp_temporal")
+
+
+# Save as A_res 15 by 12.5
+plt_overall_results_all_scenarios_2_wrapper(model_names,
+                                            scenario_names_ADM4, #scenario_names_ADM4
+                                            xlab = "")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ################################################################################
 # Plot the width of the CIs for one, two, and three years ahead predictions for
 model_names = c("Improper1_typeIV", "Improper2_typeI",
@@ -991,22 +1226,108 @@ width_CIs_one_two_three_years_ahead <- function(imp_model_name,
                                     legend.labels = legend.labels,
                                     title = paste(title_start,"cp, short"))
   
-  plt4 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[4],
+
+  
+  return(ggarrange(plt1, plt2, plt3,
+                  ncol = 3, nrow = 1,
+                   common.legend = T,
+                   legend = "top"))
+  
+}
+
+
+
+plt_width_CI_one_scenario_boxes <- function(to_plot.df, 
+                                      scenario_name,
+                                      legend.labels,
+                                      title,
+                                      ylab = NULL){
+  ggplot(data = to_plot.df[to_plot.df$scenario_name == scenario_name, ], 
+         aes(x = one_two_three_years_ahead, y = values,  fill = model_names)) + 
+    geom_boxplot(outliers = F) + 
+    ggtitle(title) + 
+    theme_bw() + 
+    theme(plot.title = element_text(size = 14),
+          axis.text = element_text(size = 14),
+          axis.title = element_text(size = 14),
+          legend.title = element_text(size = 14),
+          legend.text = element_text(size = 14)) +
+    xlab("years ahead") + 
+    ylab(ylab) + scale_fill_discrete(name="Model:",
+                                       labels=c(legend.labels[1], 
+                                                legend.labels[2])) + 
+    ylim(4, 10)
+  
+}
+
+
+width_CIs_one_two_three_years_ahead_boxes <- function(imp_model_name,
+                                                prop_model_name,
+                                                legend.labels,
+                                                ADM){
+  
+  if(ADM == "ADM1"){
+    sc_names <- rep(c(rep("sc1", 3 * 100), rep("sc3", 3 * 100),
+                      rep("sc5", 3 * 100), rep("sc7", 3 * 100),
+                      rep("sc9", 3 * 100), rep("sc11", 3 * 100)), 2)
+    title_start = "ADM1"
+  } else if(ADM == "ADM4"){
+    sc_names <- rep(c(rep("sc2", 3 * 100), rep("sc4", 3 * 100),
+                      rep("sc6", 3 * 100), rep("sc8", 3 * 100),
+                      rep("sc10", 3 * 100), rep("sc12", 3 * 100)), 2)
+    title_start = "ADM4"
+  } else if (ADM == "ADMnew"){
+    sc_names <- rep(c(rep("sc13", 3), rep("sc14", 3),
+                      rep("sc15", 3), rep("sc16", 3),
+                      rep("sc17", 3), rep("sc18", 3)), 2)
+    title_start = "ADM3"
+  }
+  
+  
+  width_CIs_to_plot.df <- data.frame(model_names = c(rep(imp_model_name, 3 * 6 * 100),
+                                                     rep(prop_model_name, 3 * 6 * 100)),
+                                     one_two_three_years_ahead = rep(c("1", "2", "3"), 2 * 6 * 100),
+                                     scenario_name = sc_names,
+                                     values = 1:(3 * 2 * 6 * 100))
+  
+  for(model_name in unique(width_CIs_to_plot.df$model_names)){
+    for(scenario_name in unique(width_CIs_to_plot.df$scenario_name)){
+      load(paste("results/width_CIs/width_CIs", model_name, "_", scenario_name, ".RData", sep = ""))
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == "1", ]$values = width_CIs$width_CI_1_year_ahead
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == "2", ]$values = width_CIs$width_CI_2_year_ahead
+      
+      
+      width_CIs_to_plot.df[width_CIs_to_plot.df$model_names == model_name & 
+                             width_CIs_to_plot.df$scenario_name == scenario_name & 
+                             width_CIs_to_plot.df$one_two_three_years_ahead == "3", ]$values = width_CIs$width_CI_3_year_ahead
+      
+    }
+  }
+  scenario_names <- unique(width_CIs_to_plot.df$scenario_name)
+  
+  plt1 <- plt_width_CI_one_scenario_boxes(width_CIs_to_plot.df, scenario_names[1],
                                     legend.labels = legend.labels,
-                                    title = paste(title_start,"const, long"),
+                                    title = paste(title_start,"const, short"),
                                     ylab = "width 95% CI")
   
-  plt5 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[5],
+  plt2 <- plt_width_CI_one_scenario_boxes(width_CIs_to_plot.df, scenario_names[2],
                                     legend.labels = legend.labels,
-                                    title = paste(title_start,"lin, long"))
+                                    title = paste(title_start,"lin, short"))
   
-  plt6 <- plt_width_CI_one_scenario(width_CIs_to_plot.df, scenario_names[6],
+  plt3 <- plt_width_CI_one_scenario_boxes(width_CIs_to_plot.df, scenario_names[3],
                                     legend.labels = legend.labels,
-                                    title = paste(title_start,"cp, long"))
+                                    title = paste(title_start,"cp, short"))
+  
   
   
   return(ggarrange(plt1, plt2, plt3,
-                   plt4, plt5, plt6, ncol = 3, nrow = 2,
+                   ncol = 3, nrow = 1,
                    common.legend = T,
                    legend = "top"))
   
@@ -1018,20 +1339,20 @@ width_CIs_one_two_three_years_ahead <- function(imp_model_name,
 ### ADM1
 
 # Save as width_CIs_ADM1 10 by 6
-width_CIs_one_two_three_years_ahead("Improper1_typeIV", "proper1_full",
-                                    c("Improper1 typeIV", "proper1 full"),
+p1 <- width_CIs_one_two_three_years_ahead_boxes("Improper1_typeIV", "proper1_full",
+                                    c("Improper1_typeIV", "proper1_full"),
                                     ADM = "ADM1")
-
-
-
 ### ADM4
+
+# Save as width_CIs_ADM4 10 by 6
+p2 <- width_CIs_one_two_three_years_ahead_boxes("Improper1_typeIV", "proper1_full",
+                                    c("Improper1_typeIV", "proper1_full"),
+                                    ADM = "ADM4")
 
 
 # Save as width_CIs_ADM4 10 by 6
-width_CIs_one_two_three_years_ahead("Improper1_typeIV", "proper1_full",
-                                    c("Improper1 typeIV", "proper1 full"),
-                                    ADM = "ADM4")
-
+ggarrange(p2, p1, ncol = 1, nrow = 2,
+          common.legend = T, legend = "top")
 
 
 ### ADMnew
@@ -1335,7 +1656,7 @@ dataset_id_2 = 4
 ADM4_grid <- data.frame(
   code = c(250, 350, 354, 150,
            11, 166, 106, 99),
-  name = c("Dusseldorf", "Stendal", "Dresden", "Oberhavel",
+  name = c("Dusseldorf", "Stendal", "Dresden", "Oberhavel", #
            "Freiburg", "Frankfurt", "Nurnberg", "Munchen"),
   row = c(1, 1, 1, 1, 2, 2, 2, 2),
   col = c(1, 2, 3, 4, 1, 2, 3, 4),
@@ -1510,7 +1831,7 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
     tmp$u_quant[(tT+1):(2*tT)] <- model_on_long_range$summary.random$time_id[(tT + 1):(2 * tT), 6] * scale_long
     
     if(ylab_){
-      ylab = TeX(r'(Structured temporal:  $\alpha_{t}$)')
+      ylab = TeX(r'($\alpha_{t}$)')
     } else {
       ylab = NULL
     }
@@ -1544,7 +1865,7 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
     # tmp$u_quant[(tT+1):(2*tT)]<- model_on_long_range$summary.random$time_id.copy[1:tT, 6] + fixed_effect_long
     
     if(ylab_){
-      ylab = TeX(r'(Structured temporal:  $\alpha_{t}+\beta t$)')#expression(alpha[t] + beta*t)
+      ylab = TeX(r'($\alpha_{t}+\beta t$)')#expression(alpha[t] + beta*t)
     } else {
       ylab = NULL
     }
@@ -1553,16 +1874,18 @@ plot_fitted_temporal_trends <- function(model_on_short_range,
   #Make a plot
   plt <- ggplot(data = tmp) + ggtitle(title) +
     theme_bw() +
-    theme(axis.title=element_text(size=14),
-          legend.title = element_text(size = 14),
-          legend.text = element_text(size = 14)) +
+    theme(axis.title=element_text(size=13),
+          legend.title = element_text(size = 13),
+          legend.text = element_text(size = 13),
+          axis.text = element_text(size = 10)) +
     geom_line(aes(years, median, col = range), linewidth = 1) +
     geom_line(aes(years, l_quant, col = range), linewidth = 0.6, linetype = "dashed") + 
     geom_line(aes(years, u_quant, col = range), linewidth = 0.6, linetype = "dashed") + 
     geom_vline(xintercept = 10.5, linetype = "dashed", 
                color = "darkgrey", linewidth = 0.6) +
     xlab("Year") + ylab(ylab) + 
-    ylim(ylim) + guides(col = guide_legend(title="Spatial range"))
+    ylim(ylim) + guides(col = guide_legend(title="Spatial range")) + 
+    scale_x_continuous(breaks = c(1, 4, 7, 10, 13))
   
   if(is.null(y_breaks)){
     return(plt)
@@ -2223,6 +2546,64 @@ plt_cp_prop <- plot_fitted_temporal_trends(model_on_short_range,
                                            ylab = F,
                                            y_breaks = c(-0.5, -0.25, 0,
                                                         0.25, 0.5))
+
+# Save as temporal_trends_proper_ADM1 9 by 3
+ggarrange(plt_const_prop, plt_lin_prop, plt_cp_prop,
+          ncol = 3, nrow = 1, common.legend = T, 
+          legend = "top")
+
+
+
+
+plt_const_prop <- plot_fitted_temporal_trends("not needed",
+                                              "not needed",
+                                              Improper = F, 
+                                              n_ADM1,
+                                              tT,
+                                              "Constant temporal trend",
+                                              ylim = c(-0.5, 0.5),
+                                              scenario_name_short = "sc1",
+                                              scenario_name_long = "sc7")
+
+# Linear trend
+# load("diagnostics_sc4.RData")
+# model_on_short_range = proper1_noInt_ADM4
+# 
+# load("diagnostics_sc10.RData")
+# model_on_long_range = proper1_noInt_ADM4
+
+
+plt_lin_prop <- plot_fitted_temporal_trends("not needed",
+                                            "not needed",
+                                            Improper = F, 
+                                            n_ADM1,
+                                            tT,
+                                            "Linear temporal trend",
+                                            ylim = c(-0.5, 0.5),
+                                            ylab = F,
+                                            scenario_name_short = "sc3",
+                                            scenario_name_long = "sc9")
+
+# CP
+# load("diagnostics_sc6.RData")
+# model_on_short_range = proper1_noInt_ADM4
+# 
+# load("diagnostics_sc12.RData")
+# model_on_long_range = proper1_noInt_ADM4
+
+
+plt_cp_prop <- plot_fitted_temporal_trends("not needed",
+                                           "not needed",
+                                           Improper = F, 
+                                           n_ADM1,
+                                           tT,
+                                           "Change point temporal trend",
+                                           ylim = c(-0.5, 0.55),
+                                           ylab = F,
+                                           y_breaks = c(-0.5, -0.25, 0,
+                                                        0.25, 0.5),
+                                           scenario_name_short = "sc5",
+                                           scenario_name_long = "sc11")
 
 # Save as temporal_trends_proper_ADM1 9 by 3
 ggarrange(plt_const_prop, plt_lin_prop, plt_cp_prop,
@@ -3672,7 +4053,8 @@ get_legend_plot <- function(model,
 }
 
 
-plt_fitted_rate_four_years <- function(model, 
+plt_fitted_rate_four_years <- function(imp_model,
+                                       prop_model,
                                        Improper = T, 
                                        admin_map,
                                        scale_col,
@@ -3684,13 +4066,12 @@ plt_fitted_rate_four_years <- function(model,
   #Find the number of areas
   n_ADM = nrow(admin_map)
   
-  # If a proper model, must sort the fitted rates
-  if(!Improper){
-    print("sort")
-    model$summary.fitted.values$mean <- sort_proper_fitted(model$summary.fitted.values$mean, 
-                                                           n_ADM, tT)
+  #proper model, must sort the fitted rates
+  
+  prop_model$summary.fitted.values$'0.5quant' <- sort_proper_fitted(prop_model$summary.fitted.values$'0.5quant', 
+                                                              n_ADM, tT)
     
-  }
+  
   
   
   ### Attach the fitted values to the admin_map for the years 3, 7, 11, and 13
@@ -3698,37 +4079,70 @@ plt_fitted_rate_four_years <- function(model,
   
   
   #### Plot year 3
-  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  tmp_map_$pred_rate <- imp_model$summary.fitted.values$'0.5quant'[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "year 3")
+                        hardcoded_bins = hardcoded_bins, title = "year 3",
+                        y_label = "Improper1_typeIV")
   
   #### Plot year 7
-  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  tmp_map_$pred_rate <- imp_model$summary.fitted.values$'0.5quant'[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 7")
   
   #### Plot year 11
-  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  tmp_map_$pred_rate <- imp_model$summary.fitted.values$'0.5quant'[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 11")
   
   #### Plot year 13
-  tmp_map_$pred_rate <- model$summary.fitted.values$mean[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  tmp_map_$pred_rate <- imp_model$summary.fitted.values$'0.5quant'[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 13")
+  
+  
+  
+  
+  #### Plot year 3
+  tmp_map_$pred_rate <- prop_model$summary.fitted.values$'0.5quant'[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  plt5 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL,
+                        y_label = "proper2_onlyInt")
+  
+  #### Plot year 7
+  tmp_map_$pred_rate <- prop_model$summary.fitted.values$'0.5quant'[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  plt6 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  #### Plot year 11
+  tmp_map_$pred_rate <- prop_model$summary.fitted.values$'0.5quant'[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  plt7 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  #### Plot year 13
+  tmp_map_$pred_rate <- prop_model$summary.fitted.values$'0.5quant'[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  plt8 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$pred_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  
   if(is.null(legend)){
     plt <- ggarrange(plt1, plt2, plt3, plt4, 
-                     ncol = 4, nrow = 1, 
+                     plt5, plt6, plt7, plt8,
+                     ncol = 4, nrow = 2, 
                      common.legend = T, 
                      legend = "right") + 
       theme(plot.margin = margin(b = 2, unit = "pt"))
   } else{
-    plt <- ggarrange(plt1, plt2, plt3, plt4, 
-                     ncol = 4, nrow = 1, 
+    plt <- ggarrange(plt1, plt2, plt3, plt4,
+                     plt5, plt6, plt7, plt8,
+                     ncol = 4, nrow = 2, 
                      common.legend = T, 
                      legend = "right",
                      legend.grob = legend) + 
@@ -3740,15 +4154,15 @@ plt_fitted_rate_four_years <- function(model,
                   top = text_grob(overall_title, 
                                   color = "black", 
                                   face = "bold", 
-                                  size = 19))
+                                  size = 15))
   
   
   
   return(plt)
 }
 
-plt_fitted_rate_sd_four_years <- function(model, 
-                                       Improper = T, 
+plt_fitted_rate_sd_four_years <- function(imp_model,
+                                          prop_model,
                                        admin_map,
                                        scale_col,
                                        scale,
@@ -3760,11 +4174,9 @@ plt_fitted_rate_sd_four_years <- function(model,
   n_ADM = nrow(admin_map)
   
   # If a proper model, must sort the fitted rates
-  if(!Improper){
-    print("sort")
-    model$summary.fitted.values$sd <- sort_proper_fitted(model$summary.fitted.values$sd, 
+  prop_model$summary.fitted.values$sd <- sort_proper_fitted(prop_model$summary.fitted.values$sd, 
                                                          n_ADM, tT)
-  }
+  
   
   
   ### Attach the fitted values to the admin_map for the years 3, 7, 11, and 13
@@ -3772,29 +4184,62 @@ plt_fitted_rate_sd_four_years <- function(model,
   
   
   #### Plot year 3
-  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  tmp_map_$sd_rate <- imp_model$summary.fitted.values$sd[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
   plt1 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
-                        hardcoded_bins = hardcoded_bins, title = "year 3")
+                        hardcoded_bins = hardcoded_bins, title = "year 3",
+                        y_label = "Improper1_typeIV")
   
   #### Plot year 7
-  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  tmp_map_$sd_rate <- imp_model$summary.fitted.values$sd[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
   plt2 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 7")
   
   #### Plot year 11
-  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  tmp_map_$sd_rate <- imp_model$summary.fitted.values$sd[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
   plt3 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 11")
   
   #### Plot year 13
-  tmp_map_$sd_rate <- model$summary.fitted.values$sd[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  tmp_map_$sd_rate <- imp_model$summary.fitted.values$sd[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
   plt4 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
                         scale_col = scale_col, scale = scale,
                         hardcoded_bins = hardcoded_bins, title = "year 13")
   
+  
+  
+  
+  #### Plot year 3
+  tmp_map_$sd_rate <- prop_model$summary.fitted.values$sd[(n_ADM * (3 - 1) + 1):(n_ADM * 3)] * 100
+  plt5 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL,
+                        y_label = "proper2_onlyInt")
+  
+  #### Plot year 7
+  tmp_map_$sd_rate <- prop_model$summary.fitted.values$sd[(n_ADM * (7 - 1) + 1):(n_ADM * 7)] * 100
+  plt6 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  #### Plot year 11
+  tmp_map_$sd_rate <- prop_model$summary.fitted.values$sd[(n_ADM * (11 - 1) + 1):(n_ADM * 11)] * 100
+  plt7 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  #### Plot year 13
+  tmp_map_$sd_rate <- prop_model$summary.fitted.values$sd[(n_ADM * (13 - 1) + 1):(n_ADM * 13)] * 100
+  plt8 <- heatmap_areas(map_w_values = tmp_map_, value = tmp_map_$sd_rate,
+                        scale_col = scale_col, scale = scale,
+                        hardcoded_bins = hardcoded_bins, title = NULL)
+  
+  
+  
+  
+  print("Gurka")
 
   if(is.null(legend)){
     plt <- ggarrange(plt1, plt2, plt3, plt4, 
@@ -3803,7 +4248,8 @@ plt_fitted_rate_sd_four_years <- function(model,
                      legend = "right")
   } else{
     plt <- ggarrange(plt1, plt2, plt3, plt4, 
-                     ncol = 4, nrow = 1, 
+                     plt5, plt6, plt7, plt8,
+                     ncol = 4, nrow = 2, 
                      common.legend = T, 
                      legend = "right",
                      legend.grob = legend)
@@ -3814,7 +4260,7 @@ plt_fitted_rate_sd_four_years <- function(model,
                          top = text_grob(overall_title, 
                                          color = "black", 
                                          face = "bold", 
-                                         size = 19))
+                                         size = 15))
   
   
   
@@ -3941,8 +4387,8 @@ load(paste("diagnostics_", scenario_name, ".RData", sep = ""))
 best_imp_model <- Improper1_typeIV_ADM4
 best_prop_model <- proper2_onlyInt_ADM4  
 
-hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$mean * 100),
-                                     max(best_prop_model$summary.fitted.values$mean * 100), 
+hardcoded_bins_mean_rate = round(seq(min(best_prop_model$summary.fitted.values$'0.5quant' * 100),
+                                     max(best_prop_model$summary.fitted.values$'0.5quant' * 100), 
                                      length.out = 12), 2)
 
 
@@ -3960,8 +4406,8 @@ legend_post_mean_plots = get_legend_plot(best_prop_model,
                                          3,
                                          rate = T)
 
-legend_post_SD_plots = get_legend_plot(best_prop_model, 
-                                         Improper = F,
+legend_post_SD_plots = get_legend_plot(best_imp_model, 
+                                         Improper = T,
                                          second_level_admin_map,
                                          scale_col,
                                          scale,
@@ -3975,17 +4421,21 @@ legend_post_SD_plots = get_legend_plot(best_prop_model,
 
 
 ## Plot the mean rate 
-# Save as sc2_mean_fitted_rate_Imp 8.5 by 3.1
-plt_fitted_rate_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+# Save as sc2_mean_fitted_rate_Imp 8.5 by 5.5 (3.1)
+plt_fitted_rate_four_years(imp_model = best_imp_model, 
+                           prop_model = best_prop_model,
+                            admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
-                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior mean rate per 100 of Improper1_typeIV for)'),
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior median rate per 100)'),
                            legend_post_mean_plots)
 
 ## Plot the sd of the rate
-# Save as sc2_sd_fitted_rate_Imp 8.5 by 3
-plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = second_level_admin_map,
+# Save as sc2_sd_fitted_rate_Imp 8.5 by 5.5
+plt_fitted_rate_sd_four_years(imp_model = best_imp_model, 
+                              prop_model = best_prop_model, 
+                              admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
-                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior SD of rate per 100 of Improper1_typeIV for)'),
+                           overall_title = TeX(r'(ADM4$_{const, short}$: posterior SD of rate per 100)'),
                            legend_post_SD_plots)
 
 
@@ -3994,17 +4444,21 @@ plt_fitted_rate_sd_four_years(model = best_imp_model, Improper = T, admin_map = 
 
 ## Plot the mean rate
 # Save as sc2_mean_fitted_rate_prop 8.5 by 3.1
-plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+p3 <- plt_fitted_rate_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_mean_rate,
                            overall_title = TeX(r'(ADM4$_{const, short}$: posterior mean rate per 100 of proper2_onlyInt for )'),
                            legend_post_mean_plots)
 
 ## Plot the sd of the rate
 # Save as sc2_sd_fitted_rate_prop 8.5 by 3
-plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
+p4 <- plt_fitted_rate_sd_four_years(model = best_prop_model, Improper = F, admin_map = second_level_admin_map,
                            scale_col = scale_col, scale = scale, hardcoded_bins = hardcoded_bins_sd_rate,
                            overall_title = TeX(r'(ADM4$_{const, short}$: posterior SD of rate per 100 of proper2_onlyInt for )'),
                            legend_post_SD_plots)
+
+
+
+ggarrange(p1, p3, ncol = 1, nrow = 2, common.legend = T)
 
 
 

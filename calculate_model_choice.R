@@ -831,6 +831,102 @@ for(scenario_name in scenario_names_ADM4){
   #Save latex table
   cat(latex_tabular, file =paste("./results/model_choice/table_rates_", scenario_name, ".tex", sep = ""))
 }
+
+
+
+
+
+
+
+
+
+
+
+model_choice_rates.df <- data.frame(Model = rep(c("Improper1_noInt",
+                                                  "Improper1_typeI",
+                                                  "Improper1_typeII",
+                                                  "Improper1_typeIII",
+                                                  "Improper1_typeIV",
+                                                  "Improper2_noInt",
+                                                  "Improper2_typeI",
+                                                  "Improper2_typeII",
+                                                  "Improper2_typeIII",
+                                                  "Improper2_typeIV",
+                                                  "proper1_noInt",
+                                                  "proper1_onlyInt",
+                                                  "proper1_full",
+                                                  "proper1_iid",
+                                                  "proper2_noInt",
+                                                  "proper2_onlyInt",
+                                                  "proper2_full",
+                                                  "proper2_iid"), 8),
+                                    model_choice = c(rep(1, 18),rep(2, 18),
+                                                     rep(3, 18),rep(4, 18),
+                                                     rep(5, 18),rep(6, 18),
+                                                     rep(7, 18),rep(8, 18)),
+                                    value = 1:(8 * 18))
+
+
+scenario_name = "sc11"
+
+for(model_name in model_names){
+  #Load in the model_choice data
+  load(paste("./results/model_choice/model_choice_", model_name, "_", scenario_name, ".RData",
+             sep = ""))
+  tmp_ <- model_choice_for_counts
+  
+  #Remove potential NAs
+  tmp_ <- na.omit(tmp_)
+  
+  #Calculate the average over each data set
+  tmp2_ <- as.numeric(colMeans(tmp_))
+  
+  #Insert values into the model_choice_rates.df
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 1, ]$value = tmp2_[1]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 2, ]$value = tmp2_[2]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 3, ]$value = tmp2_[3]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 4, ]$value = tmp2_[4]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 5, ]$value = tmp2_[5]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 6, ]$value = tmp2_[6]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 7, ]$value = tmp2_[7]
+  model_choice_rates.df[model_choice_rates.df$Model == model_name & model_choice_rates.df$model_choice == 8, ]$value = tmp2_[8]
+  
+}
+
+for(model_choice in unique(model_choice_rates.df$model_choice)){
+  tmp_ = model_choice_rates.df[model_choice_rates.df$model_choice == model_choice, ]
+  
+  
+  min_ = min(tmp_$value)
+  
+  
+  
+  print(tmp_[tmp_$value == min_, ])
+  print("---")
+  
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ################################################################################
 # Get a table for the totals only
 

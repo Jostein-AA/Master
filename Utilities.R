@@ -1,6 +1,32 @@
 ################################################################################
 # Functions for calculating MSE, IS,...
 
+count_mse_one_year_one_dataset_scaled <- function(sampled_counts_one_year, 
+                                           lambda_marginals_one_year,
+                                           E_it,
+                                           poppy,
+                                           version_1 = T){
+  
+  
+  ## For each area find the expected predicted count (i.e. point prediction)
+  pred_count <- poppy * as.numeric(sapply(lambda_marginals_one_year, 
+                                         FUN = function(x){return(inla.emarginal(function(x){x}, 
+                                                                                 marginal = x))}))
+  
+  sampled_counts_one_year_scaled = (sampled_counts_one_year/E_it) * poppy
+  
+  ## Calculate the MSE
+  mse_one_year <- mean((sampled_counts_one_year_scaled - pred_count)**2)
+  
+  
+  # Return the MSE of that year
+  return(mse_one_year)
+}
+
+
+
+
+
 count_mse_one_year_one_dataset <- function(sampled_counts_one_year, 
                                            lambda_marginals_one_year,
                                            E_it = 100){
@@ -59,30 +85,20 @@ rate_mse_one_year_one_dataset <- function(sampled_rates_one_year,
 #count_mean_mse_one_dataset(lambda.df$sampled_counts[, 1],marginals,n_ADM1)
 
 find_ul_quants_counts_single_pred <- function(lambda_marginal,
-                                              E_it){
+                                              E_it,
+                                              n_samps = 5000){
   # Function to calculate upper (u) and lower (l) quantiles for a single
   # count prediction
   
   ## Sample lambda and scale w. E_it to get an instance of Poisson
-  poisson_param_sample <- E_it * inla.rmarginal(5000, lambda_marginal) #[[1]]
+  poisson_param_sample <- E_it * inla.rmarginal(n_samps, lambda_marginal) #[[1]]
   
   ## Sample from Poisson
   count_sample <- sapply(poisson_param_sample, 
                          FUN = function(x){return(rpois(1, x))})
   
   
-  ## Get quantiles as decimals in some way
   
-  # Maybe use ecdf instead?
-  
-  # Potentially need to remove type = ...
-  #u = as.numeric(quantile(x = count_sample, probs = 0.975, type = 9)) # type 4, 5
-  #l = as.numeric(quantile(x = count_sample, probs = 0.025, type = 3)) # type 1, 2
-  #median = as.numeric(quantile(count_sample, 0.5, type = 7)) # type 6
-  
-  #print(paste("u: ", u))
-  #print(paste("l: ", l))
-  #print(paste("median: ", median))
   
   ## Calculate upper and lower quantile (and median)
   u = as.numeric(quantile(count_sample, 0.975)); l = as.numeric(quantile(count_sample, 0.025))
@@ -104,6 +120,45 @@ find_IS_one_obs <- function(l, u, true_value){
     2/0.05 * (l - true_value) * (true_value < l) + 
     2/0.05 * (true_value - u) * (true_value > u) 
   return(IS_score)
+}
+
+count_IS_one_year_case_study_scaled <- function(counts,
+                                         marginals,
+                                         population,
+                                         poppy,
+                                         version_1 = T){
+  
+  IS_each_instance = rep(0, length(marginals))
+  if(version_1){
+    for(i in 1:length(marginals)){
+      ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
+                                                            poppy)
+      
+      
+      IS_each_instance[i] = find_IS_one_obs(ul_each_one_year$l, 
+                                            ul_each_one_year$u, 
+                                            (counts[i]/population[i]) * poppy)
+      
+    }
+    
+  }else{
+    for(i in 1:length(marginals)){
+      ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
+                                                            population[i])
+      
+      
+      IS_each_instance[i] = find_IS_one_obs((ul_each_one_year$l/population[i]) * poppy, 
+                                            (ul_each_one_year$u/population[i]) * poppy, 
+                                            (counts[i]/population[i]) * poppy)
+      
+    }
+  }
+  
+  
+  ## Find the average IS this year
+  IS_this_year <- mean(IS_each_instance)
+  
+  return(IS_this_year)
 }
 
 
@@ -227,9 +282,6 @@ width_CI_one_year_one_dataset <- function(lambda_marginals_one_year,
 }
 
 
-
-
-
 rate_IS_one_year_one_dataset <- function(sampled_rates_one_year,
                                          lambda_marginals_one_year,
                                          E_it = 100){
@@ -264,33 +316,57 @@ count_log_s_one_year <- function(counts,
 
   log_s_each = rep(0, length(marginals))
   
+  # Create a progressbar
+  pb = txtProgressBar(min = 0, max = length(marginals), initial = 0) 
+  
   # Iterate over each marginal
   for(i in 1:length(marginals)){
-    #scaled_marg <- inla.tmarginal(fun = function(x){x * population[i]},
-    #                              marginal = marginals[[i]])
     
-    #This dont include the Poisson noise...
+    # Determine n_samps based on population
+    if(population[i] < 1E3){
+      n_samps = 20000
+    } else{n_samps = 10000}
     
-    log_s_each[i] <- inla.dmarginal(counts[i], 
-                                    scaled_marg) 
+    # Sample realizations of lambda * pop
+    rate_sample <- population[i] * inla.rmarginal(n_samps, marginals[[i]])
+    
+    # Sample Poisson realizations
+    poisson_sample <- sapply(rate_sample, 
+                             FUN = function(x){return(rpois(1, x))})
+    
+    # find empirical cumulative distribution function (ecdf)
+    ecdf_ <- ecdf(poisson_sample)
+    
+    # use ecdf to calculate log-scores
+    if(counts[i] == 0){
+      log_s_each[i] = -log(ecdf_(counts[i]))
+    } else{
+      log_s_each[i] = -log(ecdf_(counts[i]) - ecdf_(counts[i] - 1)) 
+    }
+     
+    
+    
+    # Update progressbar
+    setTxtProgressBar(pb,i)
   }
+  # Close progressbar
+  close(pb)
+
   
-  
-  
-  ## Find the average IS this year
-  avg_log_s <- mean(log_s_each)
-  
-  return(avg_log_s)
+  return(log_s_each)
   
   
 }
 
 get_pred_SD <- function(rate_marginals,
-                        population,
+                        population = 1E5,
                         n, 
                         year){
+  
+  
+  
   one_year_marg <- rate_marginals[(n * (year - 1) + 1):(n * year)]
-  one_year_pop <- population[(n * (year - 1) + 1):(n * year)]
+  #one_year_pop <- population[(n * (year - 1) + 1):(n * year)]
   
   #ul_each_one_year <- find_ul_quants_counts_single_pred(marginals[[i]], 
   #                                                      population[i])
@@ -299,13 +375,9 @@ get_pred_SD <- function(rate_marginals,
   
   
   for(i in 1:n){
-    poisson_param_sample <- 1E5 * inla.rmarginal(5000, one_year_marg[[i]]) #[[1]]
+    poisson_param_sample <- population * inla.rmarginal(5000, one_year_marg[[i]]) #[[1]]
     
-    ## Sample from Poisson
-    count_sample <- sapply(poisson_param_sample, 
-                           FUN = function(x){return(rpois(1, x))})
-    
-    tmp_sd[i] <- sd(count_sample)
+    tmp_sd[i] <- sd(poisson_param_sample)
   }
   
   return(tmp_sd)
@@ -489,11 +561,11 @@ timeseries_plt <- function(geofacet_grid,
                                              "black",
                                              "#00BFC4", 
                                              "blue"),
-                                  labels = unname(TeX(c(" Posterior 95% CI: $Y_{it}$",
-                                                        " Posterior 95% CI: $\\lambda_{it}E_{it}$",
-                                                        " Posterior median $\\lambda_{it}E_{it}$",
+                                  labels = unname(TeX(c(" Posterior 95% CI: $y_{it}$",
+                                                        " Posterior 95% CI: $\\lambda_{it}E_{it}$ ",
+                                                        " Posterior median $\\lambda_{it}E_{it}$ ",
                                                         " True: $\\lambda_{it}E_{it}$",
-                                                        " True: $Y_{it}$")))) # 
+                                                        " True: $y_{it}$")))) # 
   
   plt <- plt + scale_x_continuous(breaks = c(1, 4, 7, 10, 13))
   
@@ -554,7 +626,7 @@ wrapper_timeseries_plt <- function(ADM_grid,
   ## Get the upper, lower, and median quantile for the pred. counts
   ul_each <- lapply(model$marginals.fitted.values, 
                     FUN = function(x){
-                      return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+                      return(find_ul_quants_counts_single_pred(x, 100, n_samps = 1E4)) #100 aka E_it
                     })
   
   print("HELL")
@@ -579,6 +651,10 @@ wrapper_timeseries_plt <- function(ADM_grid,
     pred_to_plot[i, ]$pred_count_quantile_0.025 = ul_each[[i]]$l
     pred_to_plot[i, ]$pred_count_quantile_0.975 = ul_each[[i]]$u
   }
+  
+  
+  
+  
   
   timeseries_plt(ADM_grid, pred_to_plot, title)
 }
@@ -1062,7 +1138,7 @@ ridgeplot_mse_is_rates <- function(to_plot.df,
   } else if(one_2_3_or_total == 4 & IS_or_MSE == "MSE"){
     ylab = NULL
     axis.text.y = element_blank()
-    title = "Average all years"
+    title = "Average of the 3 years"
   }
   
   return(to_plot.df %>% 
@@ -1159,50 +1235,50 @@ ridgeplot_mse_is_rates_all_years <- function(model_names,
                                  value_to_plot = to_plot_ridge.df$mse_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{11}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$[\lambda]_{11}^{(k)}$)'), xlim_mse)
   plt2 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_2_year_ahead,
                                  one_2_3_or_total = 2, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{12}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$[\lambda]_{12}^{(k)}$)'), xlim_mse)
   
   plt3 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$mse_3_year_ahead,
                                  one_2_3_or_total = 3, 
                                  IS_or_MSE = "MSE",
-                                 xlab = TeX(r'(MSE$\left(\pi(\lambda_{13}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
+                                 xlab = TeX(r'(MSE$[\lambda]_{13}^{(k)}$)'), xlim_mse)
   
   plt_mse_tot <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                         value_to_plot = to_plot_ridge.df$MSE_tot,
                                         one_2_3_or_total = 4, 
                                         IS_or_MSE = "MSE",
-                                        xlab = TeX(r'(MSE$\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)'), xlim_mse)
+                                        xlab = TeX(r'(MSE$[\lambda]^{(k)}$)'), xlim_mse)
   
   
   plt4 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_1_year_ahead,
                                  one_2_3_or_total = 1, 
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{11}100|y_{1},...,y_{10})\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$[\lambda]_{11}^{(k)}$)'), xlim_is)
   
   plt5 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_2_year_ahead,
                                  one_2_3_or_total = 2,
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{12}100|y_{1},...,y_{10})\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$[\lambda]_{12}^{(k)}$)'), xlim_is)
   
   
   plt6 <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                  value_to_plot = to_plot_ridge.df$IS_3_year_ahead,
                                  one_2_3_or_total = 3,
                                  IS_or_MSE = "IS",
-                                 xlab = TeX(r'(IS$\left(\pi(\lambda_{13}100|y_{1},...,y_{10})\right)$)'), xlim_is)
+                                 xlab = TeX(r'(IS$[\lambda]_{13}^{(k)}$)'), xlim_is)
   
   plt_is_tot <- ridgeplot_mse_is_rates(to_plot.df = to_plot_ridge.df,
                                        value_to_plot = to_plot_ridge.df$IS_tot,
                                        one_2_3_or_total = 4, 
                                        IS_or_MSE = "IS",
-                                       xlab = TeX(r'(IS$\left(\pi(\lambda_{11, 12, 13}100|y_{1},...,y_{10})\right)$)'), xlim_is)
+                                       xlab = TeX(r'(IS$[\lambda]^{(k)}$)'), xlim_is)
   
   
   plt <- ggarrange(plt1, plt2, plt3, plt_mse_tot,
@@ -1429,7 +1505,9 @@ heatmap_areas <- function(map_w_values,
                           title = NULL,
                           legend.title = NULL, 
                           legend.text.size = 15,
-                          plot.title.size = 15){
+                          plot.title.size = 15,
+                          y_label.size = 15,
+                          y_label = NULL){
   
   map_w_values$to_plot = value
   
@@ -1473,7 +1551,9 @@ heatmap_areas <- function(map_w_values,
       theme(plot.title = element_text(size = plot.title.size, hjust = 0.5,
                                       vjust = -0.1),
             axis.title.x = element_blank(), #Remove axis and background grid
-            axis.text = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.title.y = element_text(size = y_label.size),
             axis.ticks = element_blank(),
             panel.background = element_blank(),
             plot.margin =  unit(c(0, 0, 0, 0), "inches"),
@@ -1492,7 +1572,7 @@ heatmap_areas <- function(map_w_values,
         palette = function(x) c(scale),
         labels = function(x){x},
         breaks = hardcoded_bins,
-        guide = "colorscale") 
+        guide = "colorscale") + ylab(y_label)
     #+ scale_fill_manual(drop = F)
     }
 }

@@ -99,6 +99,12 @@ for(t in 1:tT){ # How does the average population change over the years
   print(paste("year: ", t, " Average pop: ", mean(Data_LungCancer[Data_LungCancer$year_id == t, ]$pop), " Median pop: ", median(Data_LungCancer[Data_LungCancer$year_id == t, ]$pop)))
 } # In the last five years, the average population drops of slightly, median pop also lower
 
+for(t in 1:tT){ # How does the average obs change over the years
+  print(paste("year: ", t, " Average obs: ", mean(Data_LungCancer[Data_LungCancer$year_id == t, ]$obs), " Median obs: ", median(Data_LungCancer[Data_LungCancer$year_id == t, ]$obs)))
+}
+
+
+
 
 ################################################################################
 
@@ -215,9 +221,6 @@ save(Improper1_typeIV_Extremadura,
 load("case_study/Improper1_typeIV_Extremadura.RData")
 
 
-#potential errors seem to occur here (below) for some reason unbeknownst to me:::
-
-
 ### Find coverage of model
 
 
@@ -232,21 +235,64 @@ load("case_study/Improper1_typeIV_Extremadura.RData")
 
 
 
+calc_log_scores <- function(model, data,
+                            n, tT, 
+                            Improper = T){
+  
+  ### Initialize data frame to store the MSE's, IS's, and log-scores 1, 2, 3, 4, and 5 years ahead and average
+  model_choice.df <- data.frame(log_1 = rep(NA, n), log_2 = rep(NA, n), log_3 = rep(NA, n),
+                                log_4 = rep(NA, n), log_5 = rep(NA, n), log_avg = rep(NA, n))
+  
+  
+  # If proper models, sort the marginals to get the correct order
+  if(!Improper){
+    print("Sorting")
+    model$marginals.fitted.values <- sort_proper_fitted(model$marginals.fitted.values,
+                                                        n, tT)
+  }
+  
+  ### Take the years predicted on
+  years_pred_on <- 21:25
+  
+  
+  #### For each year calculate the MSE and IS that year
+  for(year in years_pred_on){
+    print(paste("Year: ", year, sep = ""))
+    
+    ## Extract the predicted marginals for this year
+    one_year_margs = model$marginals.fitted.values[((year - 1) * n + 1):(year * n)]
+    
+    ## Extract the observed counts for this year
+    one_year_counts = data$obs[((year - 1) * n + 1):(year * n)]
+    
+    ## Extract the populations for this year
+    one_year_pop  = data$pop[((year - 1) * n + 1):(year * n)]
+    
+    ### Calculate the year-ahead log-scores 
+    model_choice.df[, year - years_pred_on[1] + 1] =  count_log_s_one_year(counts = one_year_counts,
+                                                                           marginals = one_year_margs,
+                                                                           population = one_year_pop)
+    
+  }
+  
+  #Get the total MSE for count
+  model_choice.df[, 6] = rowMeans(model_choice.df[, 1:5])
+  
+  
+  return(model_choice.df)
+}
+
+
+
+tmp <- calc_log_scores(Improper1_typeIV_Extremadura,
+                Data_LungCancer,
+                n, tT, 
+                Improper = T)
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+colMeans(tmp)
 
 
 
@@ -327,6 +373,468 @@ tmp2 <- calc_model_choice(Improper1_typeIV_Extremadura,
 
 
 
+
+
+################################################################################
+
+### Plot the posterior predictive 95% CIs for (y_it/E_it = lambda_it) for 6 regions
+
+#plt_predcount_vs_true_count <- function(geofacet_grid,
+#                                        pred_to_plot,
+#                                        title){
+  # Function that plots for select regions the fitted linear predictor of
+  # the provided model along w. corresponding 95% CI's
+  # against the true counts
+
+Extremadura_grid <- data.frame(
+  code = c(1, 6, 203,
+           257, 309, 337),
+  name = c("Acedera", "Alburquerque", "Caminomorisco",
+           "Hervas", "Plasencia", "Serrejon"),
+  row = c(1, 1, 1, 2, 2, 2),
+  col = c(1, 2, 3, 1, 2, 3),
+  stringsAsFactors = FALSE)
+
+
+geofacet::grid_preview(Extremadura_grid)
+
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, #lambda_$area_id
+                           time_id = Data_LungCancer$year_id, # lambda_$time_id
+                           median = Improper1_typeIV_Extremadura$summary.fitted.values$'0.5quant', #sort_proper_fitted(model$summary.fitted.values$'0.5quant', length(unique(lambda_$area_id)), tT) * lambda_$E_it, # model$summary.fitted.values$'0.5quant',
+                           quantile_0.025 = Improper1_typeIV_Extremadura$summary.fitted.values$'0.025quant',# model$summary.fitted.values$'0.025quant',
+                           quantile_0.975 = Improper1_typeIV_Extremadura$summary.fitted.values$'0.975quant',
+                           y_it_div_E_it = Data_LungCancer$obs/Data_LungCancer$pop)
+
+
+  
+ggplot(data = pred_to_plot, aes(time_id, median)) + 
+    geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+                fill = "#F8766D", alpha = 0.6) +
+    # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+    geom_point((aes(x = time_id, y = y_it_div_E_it, col = "y/E"))) +
+    geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+    geom_vline(xintercept = 20.5, linetype = "longdash", 
+               color = "darkgrey", linewidth = 0.6) +
+    facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+    labs(title = "HEIHEI",
+         x = "Year",
+         y = "Rate",
+         col = NULL) +
+    theme_bw() + 
+    theme(axis.title=element_text(size=12),
+          plot.title = element_text(hjust = 0.5, size=12),
+          strip.text.x = element_text(size = 10),
+          legend.position = "right",
+          legend.justification = c("right", "top"),
+          legend.box.just = "right",
+          legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+  
+plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                labels = unname(TeX(c("Posterior 95% CI",
+                                                      "Posterior mean $\\hat{Y}_{it}$",
+                                                      "True $Y_{it}$",
+                                                      "Expected true $Y_{it}$")))) # 
+
+
+
+### Posterior predicted counts
+
+# Need to calculate the quantiles for the predictive distribution
+## Get the upper, lower, and median quantile for the pred. counts
+#ul_each <- lapply(Improper1_typeIV_Extremadura$marginals.fitted.values, 
+#                  FUN = function(x){
+#                    return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+#                  })
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           #post_mean = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.025 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.975 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           y_it = Data_LungCancer$obs)
+
+
+for(area_id in Extremadura_grid$code){
+  for(t in 1:tT){
+    ul <- find_ul_quants_counts_single_pred(Improper1_typeIV_Extremadura$marginals.fitted.values[[(t - 1) * n + area_id]],
+                                            Data_LungCancer[Data_LungCancer$area_id == area_id & Data_LungCancer$year_id == t, ]$pop)
+    
+    
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$median = ul$median
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.975 = ul$u
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.025 = ul$l
+  }
+}
+
+
+
+
+ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  geom_point((aes(x = time_id, y = y_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+
+
+### Posterior predicted counts per 100,000
+
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           #post_mean = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.025 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.975 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           y_it = Data_LungCancer$obs/Data_LungCancer$pop * 1E5)
+
+
+for(area_id in Extremadura_grid$code){
+  for(t in 1:tT){
+    ul <- find_ul_quants_counts_single_pred(Improper1_typeIV_Extremadura$marginals.fitted.values[[(t - 1) * n + area_id]],
+                                            1E5)
+    
+    
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$median = ul$median
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.975 = ul$u
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.025 = ul$l
+  }
+}
+
+
+
+
+ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  geom_point((aes(x = time_id, y = y_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+
+
+
+
+
+
+
+poppy = 1E4
+
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           #post_mean = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.025 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.975 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           y_it = Data_LungCancer$obs/Data_LungCancer$pop * poppy)
+
+
+
+
+for(area_id in Extremadura_grid$code){
+  for(t in 1:tT){
+    ul <- find_ul_quants_counts_single_pred(Improper1_typeIV_Extremadura$marginals.fitted.values[[(t - 1) * n + area_id]],
+                                            Data_LungCancer[(t - 1) * n + area_id, ]$pop)
+    
+    
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$median = (ul$median/Data_LungCancer[(t - 1) * n + area_id, ]$pop) * poppy
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.975 = (ul$u/Data_LungCancer[(t - 1) * n + area_id, ]$pop) * poppy
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.025 = (ul$l/Data_LungCancer[(t - 1) * n + area_id, ]$pop) * poppy
+  }
+}
+
+
+
+
+ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  geom_point((aes(x = time_id, y = y_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+
+
+
+
+
+
+
+Data_LungCancer[Data_LungCancer$area_id == 1, ]$pop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################
+
+####
+load("case_study/proper2_RW1_Extremadura.RData")
+
+if(FALSE){ # if(FALSE) added so that dont sort them unless I really want to
+  proper2_RW1_Extremadura$marginals.fitted.values <- sort_proper_fitted(proper2_RW1_Extremadura$marginals.fitted.values,
+                                                                        n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$mean <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$mean,
+                                                                           n, tT)
+  
+  proper2_RW1_Extremadura$summary.fitted.values$sd <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$sd,
+                                                                         n, tT)
+  
+                                                                            
+}
+
+median_ <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$'0.5quant', n, tT)
+l <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$'0.025quant', n, tT)
+u <- sort_proper_fitted(proper2_RW1_Extremadura$summary.fitted.values$'0.975quant', n, tT)
+
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = median_, 
+                           quantile_0.025 = l,
+                           quantile_0.975 = u,
+                           y_it_div_E_it = Data_LungCancer$obs/Data_LungCancer$pop)
+
+
+
+plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  #geom_point((aes(x = time_id, y = y_it_div_E_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+plt <- plt + scale_color_manual(values = c("#F8766D", "black", "#00BFC4", "blue"),
+                                labels = unname(TeX(c("Posterior 95% CI",
+                                                      "Posterior mean $\\hat{Y}_{it}$",
+                                                      "True $Y_{it}$",
+                                                      "Expected true $Y_{it}$")))) # 
+
+
+
+### Posterior predicted counts
+
+# Need to calculate the quantiles for the predictive distribution
+## Get the upper, lower, and median quantile for the pred. counts
+#ul_each <- lapply(Improper1_typeIV_Extremadura$marginals.fitted.values, 
+#                  FUN = function(x){
+#                    return(find_ul_quants_counts_single_pred(x, 100)) #100 aka E_it
+#                  })
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           #post_mean = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.025 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.975 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           y_it = Data_LungCancer$obs)
+
+
+for(area_id in Extremadura_grid$code){
+  for(t in 1:tT){
+    ul <- find_ul_quants_counts_single_pred(Improper1_typeIV_Extremadura$marginals.fitted.values[[(t - 1) * n + area_id]],
+                                            Data_LungCancer[Data_LungCancer$area_id == area_id & Data_LungCancer$year_id == t, ]$pop)
+    
+    
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$median = ul$median
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.975 = ul$u
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.025 = ul$l
+  }
+}
+
+
+
+
+plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  geom_point((aes(x = time_id, y = y_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+
+
+### Posterior predicted counts per 100,000
+
+
+pred_to_plot <- data.frame(area_id = Data_LungCancer$area_id, 
+                           time_id = Data_LungCancer$year_id, 
+                           median = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           #post_mean = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.025 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           quantile_0.975 = rep(NA, nrow(Improper1_typeIV_Extremadura$summary.fitted.values)),
+                           y_it = Data_LungCancer$obs/Data_LungCancer$pop * 1E5)
+
+
+for(area_id in Extremadura_grid$code){
+  for(t in 1:tT){
+    ul <- find_ul_quants_counts_single_pred(Improper1_typeIV_Extremadura$marginals.fitted.values[[(t - 1) * n + area_id]],
+                                            1E5)
+    
+    
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$median = ul$median
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.975 = ul$u
+    pred_to_plot[pred_to_plot$area_id == area_id &
+                   pred_to_plot$time_id == t, ]$quantile_0.025 = ul$l
+  }
+}
+
+
+
+
+plt <- ggplot(data = pred_to_plot, aes(time_id, median)) + 
+  geom_ribbon(aes(x = time_id, ymin = quantile_0.025, ymax = quantile_0.975, col = " Posterior 95% CI"), 
+              fill = "#F8766D", alpha = 0.6) +
+  # geom_point(aes(x = time_id, y = sampled_counts, col = "True count")) + 
+  geom_point((aes(x = time_id, y = y_it, col = "y/E"))) +
+  geom_line(aes(x = time_id, y = median, col = "Posterior median rate")) +
+  geom_vline(xintercept = 20.5, linetype = "longdash", 
+             color = "darkgrey", linewidth = 0.6) +
+  facet_geo(~ area_id, grid = Extremadura_grid, label = "name") + 
+  labs(title = "HEIHEI",
+       x = "Year",
+       y = "Rate",
+       col = NULL) +
+  theme_bw() + 
+  theme(axis.title=element_text(size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        strip.text.x = element_text(size = 10),
+        legend.position = "right",
+        legend.justification = c("right", "top"),
+        legend.box.just = "right",
+        legend.background = element_rect(linetype = 1, linewidth = 1, colour = "grey"))
+
+
+
+################################################################################
+### Plot the 10%-, 50%- and 90% empirical quantiles of the population
+
+pop.df <- data.frame(year = t.from:t.to,
+                     u = rep(NA, tT),
+                     median = rep(NA, tT),
+                     l = rep(NA, tT))
+
+for(year in t.from:t.to){
+  
+  pop_quants_in_year <- quantile(Data_LungCancer[Data_LungCancer$year == year, ]$pop,
+                                 probs = c(0.25, 0.5, 0.75))
+  
+  pop.df[pop.df$year == year, ]$l = pop_quants_in_year[[1]]
+  pop.df[pop.df$year == year, ]$median = pop_quants_in_year[[2]]
+  pop.df[pop.df$year == year, ]$u = pop_quants_in_year[[3]]
+}
+
+ggplot(data = pop.df) + 
+  geom_line(aes(x = year, y = median)) + 
+  geom_line(aes(x = year, y = l), linetype = "dashed") + 
+  geom_line(aes(x = year, y = u), linetype = "dashed") + 
+  theme_bw()
 
 
 
